@@ -12,7 +12,14 @@
  */
 import type { EvalFixture, EvalRunData, Transcript } from '@vercel/agent-eval';
 import { parseTranscript } from '@vercel/agent-eval';
-import type { DimensionScore, Finding, JudgeSummary, ReadinessResult, Variant } from './types.js';
+import type {
+  DimensionScore,
+  Finding,
+  JudgeSummary,
+  ProbeSummary,
+  ReadinessResult,
+  Variant,
+} from './types.js';
 import { variantLabel } from './types.js';
 import { buildSourceBundle } from './source.js';
 import { runLints, type LintContext } from './lints.js';
@@ -21,7 +28,7 @@ import { efficiencyScore } from './efficiency.js';
 import { tallyLevers } from './levers.js';
 import { runJudge } from './judge.js';
 
-export const CONFIG_VERSION = 'readiness-v0.1';
+export const CONFIG_VERSION = 'readiness-v0.2';
 
 const WEIGHTS = { build: 25, functional: 40, apiCorrectness: 20, efficiency: 10, process: 5 } as const;
 
@@ -39,6 +46,37 @@ function detectOAuth(scenario: string, prompt: string): boolean {
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+const PROBE_RE = /__READINESS_PROBE__([\s\S]*?)__READINESS_PROBE_END__/g;
+
+/**
+ * Parse the functional probe's verdict from the EVAL.ts stdout marker (captured as
+ * `outputContent.eval`). Returns `undefined` when no marker is present — old runs and
+ * crashed probes degrade gracefully (functional becomes "not measured").
+ */
+function parseProbe(evalOutput: string | undefined): ProbeSummary | undefined {
+  if (!evalOutput) return undefined;
+  let last: string | undefined;
+  for (let m = PROBE_RE.exec(evalOutput); m !== null; m = PROBE_RE.exec(evalOutput)) last = m[1];
+  PROBE_RE.lastIndex = 0;
+  if (!last) return undefined;
+  try {
+    const j = JSON.parse(last) as Partial<ProbeSummary>;
+    return {
+      measured: true,
+      booted: Boolean(j.booted),
+      connected: Boolean(j.connected),
+      oauthChallenge: Boolean(j.oauthChallenge),
+      toolCount: typeof j.toolCount === 'number' ? j.toolCount : 0,
+      tools: Array.isArray(j.tools) ? j.tools : [],
+      via: j.via ?? null,
+      pass: Boolean(j.pass),
+      error: j.error ?? null,
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 export async function scoreRun(input: ScoreInput): Promise<ReadinessResult> {
@@ -78,14 +116,23 @@ export async function scoreRun(input: ScoreInput): Promise<ReadinessResult> {
         : 'build/typecheck failed',
   });
 
-  // functional — MCP-client probe, not wired yet
+  // functional — MCP-client probe (EVAL.ts boots the server, connects, lists tools).
+  // Enabled only when a probe marker is present; otherwise excluded from normalization.
+  const probe = parseProbe(runData.outputContent?.eval);
+  const functionalPassed = probe?.pass ?? false;
   dimensions.push({
     key: 'functional',
     label: 'Functional (MCP-client probe)',
     weight: WEIGHTS.functional,
-    enabled: false,
-    earned: 0,
-    detail: 'probe not wired yet',
+    enabled: Boolean(probe),
+    earned: functionalPassed ? WEIGHTS.functional : 0,
+    detail: probe
+      ? functionalPassed
+        ? probe.oauthChallenge && probe.toolCount === 0
+          ? `boots + 401 challenge (OAuth) via ${probe.via ?? 'raw'}`
+          : `connected via ${probe.via ?? '?'}, ${probe.toolCount} tool(s): ${probe.tools.slice(0, 8).join(', ')}`
+        : `probe failed: ${probe.error ?? (probe.booted ? 'booted but no tools listed' : 'server did not boot')}`
+      : 'probe not run (no marker)',
   });
 
   // api correctness (start at full, deduct per fired lint)
@@ -176,6 +223,8 @@ export async function scoreRun(input: ScoreInput): Promise<ReadinessResult> {
     findings,
     levers: tallyLevers(findings),
     judge,
+    functionalPassed,
+    probe,
     meta: {
       scenario,
       agent: config.agent,

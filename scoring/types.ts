@@ -55,6 +55,30 @@ export interface DimensionScore {
   detail?: string;
 }
 
+/**
+ * The functional probe's verdict, parsed from the `__READINESS_PROBE__…__END__`
+ * marker the in-sandbox `EVAL.ts` emits (see `scripts/gen-evals.ts`). `measured`
+ * is false when no marker was found (old runs / probe crashed) ⇒ the functional
+ * dimension is excluded from normalization, exactly like a disabled judge.
+ */
+export interface ProbeSummary {
+  /** a marker was found and parsed */
+  measured: boolean;
+  /** the server became reachable over HTTP */
+  booted: boolean;
+  /** an MCP client (SDK or raw JSON-RPC) connected and listed tools */
+  connected: boolean;
+  /** server correctly challenged the unauthenticated probe (OAuth scenarios) */
+  oauthChallenge: boolean;
+  toolCount: number;
+  tools: string[];
+  /** how we connected: 'mcp-use' | 'raw' | null */
+  via?: string | null;
+  /** functional pass verdict: connect+list (non-OAuth) or boot+401 (OAuth) */
+  pass: boolean;
+  error?: string | null;
+}
+
 export interface JudgeSummary {
   enabled: boolean;
   model?: string;
@@ -77,7 +101,7 @@ export interface ReadinessMeta {
   variantLabel: string;
   runIndex: number;
   durationSec?: number;
-  /** build (+ functional, once the probe lands) gate */
+  /** build gate (scripts: ['build'] passed). Functional pass/fail is separate — see `functionalPassed`. */
   gatePassed: boolean;
   configVersion: string;
 }
@@ -92,5 +116,9 @@ export interface ReadinessResult {
   /** count of findings per lever — the improvement-loop worklist */
   levers: Record<Lever, number>;
   judge: JudgeSummary;
+  /** headline pass/fail: did the MCP-client probe connect + list tools (or, for OAuth, boot + 401)? */
+  functionalPassed: boolean;
+  /** full probe verdict (absent on pre-probe runs) */
+  probe?: ProbeSummary;
   meta: ReadinessMeta;
 }

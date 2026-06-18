@@ -29,6 +29,11 @@ operational how-to so you don't re-derive it.
   Discovered automatically. Current set: `basic-tool-server`, `oauth-clerk`,
   `oauth-custom-idp`, `stateful-notes-server`, `stormdesk-mcp-app`,
   `stormdesk-skybridge-app`.
+- **`EVAL.ts` is generated, not hand-written.** It's the **functional probe**: in the
+  sandbox it boots the agent's server, connects with the mcp-use client SDK, and lists
+  tools (OAuth: boot + 401), emitting a `__READINESS_PROBE__…` stdout marker that scoring
+  parses. The probe body lives once in `scripts/gen-evals.ts`; regenerate all six with
+  `node scripts/gen-evals.ts` after editing it. Never hand-edit `evals/<scenario>/EVAL.ts`.
 
 ## Prerequisites
 
@@ -48,7 +53,8 @@ npx agent-eval blank-cc --dry     # preview which scenarios a variant runs (no c
 npx agent-eval blank-cc           # run one variant across ALL scenarios
 npx agent-eval blank-cc --smoke   # run just the first scenario (alphabetical) as a sanity check
 npx agent-eval                    # run the whole matrix (every variant × every scenario)
-npm run scorecard                 # aggregate results/ → per-variant means, reliability, deltas
+node scripts/gen-evals.ts         # (re)generate the EVAL.ts functional probes after editing the generator
+npm run scorecard                 # aggregate results/ → pass / readiness / skill Δ + judge notes + SDK worklist
 npx agent-eval playground         # browse runs in the web UI
 ```
 
@@ -91,5 +97,9 @@ results/<variant>/<model>/<timestamp>/<scenario>/run-N/
   outputs/        # captured stdout/scripts
 ```
 
-Read `result.analysis.readiness` for the 0–100 score + dimension breakdown +
-lever-tagged findings. Then `npm run scorecard` rolls everything up.
+Read `result.analysis.readiness` for the 0–100 `score`, the `dimensions` breakdown,
+lever-tagged `findings`, the LLM `judge.summary`, and the new `functionalPassed` +
+`probe` (the MCP-client probe's verdict: `booted` / `connected` / `toolCount` / `tools` /
+`oauthChallenge` / `pass`). The `__READINESS_PROBE__…` marker is also in
+`outputs/eval.txt`. Then `npm run scorecard` rolls everything into pass / readiness /
+skill Δ per scenario × agent, the judge's prose notes per run, and the SDK-defect worklist.
