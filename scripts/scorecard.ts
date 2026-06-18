@@ -191,12 +191,17 @@ function main(): void {
   // --- 1b. COST (estimated; informational, never part of the score) ---
   if (results.some((r) => r.cost?.measured)) {
     console.log(`\n\n=== Cost (estimated · USD · not part of the score) ===\n`);
+    console.log('  in = full-rate (uncached) input only; cache-rd/cache-wr = prompt-cache read/write.');
+    console.log("  Claude Code caches the prompt + tools + history, so `in` is tiny and spend sits in cache-rd/wr.\n");
     console.log(
-      `${pad('scenario', 24)} ${pad('agent', 7)} ${pad('runs', 5)} ${pad('mean $', 9)} ${pad('in', 8)} ${pad('cached', 8)} ${pad('out', 8)}`,
+      `${pad('scenario', 24)} ${pad('agent', 7)} ${pad('runs', 5)} ${pad('mean $', 9)} ${pad('in', 8)} ${pad('cache-rd', 8)} ${pad('cache-wr', 8)} ${pad('out', 8)}`,
     );
-    console.log('─'.repeat(74));
+    console.log('─'.repeat(84));
+    // `in` is full-rate (uncached) input only — for Claude Code that's tiny because the
+    // system prompt / tools / history are cached, so most spend is in cache-rd + cache-wr.
     const meanTok = (rs: ReadinessResult[], sel: (c: NonNullable<ReadinessResult['cost']>) => number) =>
       mean(rs.map((r) => sel(r.cost!)));
+    const tokCol = (n: number) => pad(n > 0 ? fmtTok(n) : '—', 8);
     for (const c of cells) {
       const withCost = c.runs.filter((r) => r.cost?.measured);
       if (!withCost.length) continue;
@@ -204,14 +209,15 @@ function main(): void {
       const costStr = mc === null ? '—' : fmtUsd(mc);
       console.log(
         `${pad(c.scenario, 24)} ${pad(c.agent, 7)} ${pad(String(withCost.length), 5)} ${pad(costStr, 9)} ` +
-          `${pad(fmtTok(meanTok(withCost, (x) => x.inputTokens)), 8)} ` +
-          `${pad(fmtTok(meanTok(withCost, (x) => x.cachedInputTokens)), 8)} ` +
-          `${pad(fmtTok(meanTok(withCost, (x) => x.outputTokens)), 8)}`,
+          `${tokCol(meanTok(withCost, (x) => x.inputTokens))} ` +
+          `${tokCol(meanTok(withCost, (x) => x.cachedInputTokens))} ` +
+          `${tokCol(meanTok(withCost, (x) => x.cacheWriteTokens ?? 0))} ` +
+          `${tokCol(meanTok(withCost, (x) => x.outputTokens))}`,
       );
     }
     const priced = results.filter((r) => r.cost?.priced && typeof r.cost.usd === 'number');
     const total = priced.reduce((a, r) => a + (r.cost!.usd ?? 0), 0);
-    console.log('─'.repeat(74));
+    console.log('─'.repeat(84));
     console.log(
       `  total: ${fmtUsd(total)} over ${priced.length} priced run(s)` +
         (priced.length ? ` (mean ${fmtUsd(total / priced.length)}/run)` : ''),
