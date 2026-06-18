@@ -14,7 +14,7 @@ import type { Finding } from './types.js';
 import type { SourceFile } from './source.js';
 import { JUDGE_FINDING_CATALOG } from './criteria.js';
 
-export const DEFAULT_JUDGE_MODEL = 'openai/gpt-5.5';
+export const DEFAULT_JUDGE_MODEL = 'anthropic/claude-sonnet-4-6';
 
 export function isJudgeEnabled(): boolean {
   return Boolean(
@@ -26,14 +26,9 @@ export function isJudgeEnabled(): boolean {
  * Prefer the Vercel AI Gateway when its key is present (the production path, shared
  * with agent-eval's failure classifier); otherwise fall back to the Anthropic provider
  * with the bare ANTHROPIC_API_KEY. Adding a gateway key later transparently "upgrades".
- *
- * Gated on the model being an `anthropic/*` id: the bare Anthropic provider can't
- * serve the gateway-only default (`openai/gpt-5.5`) or any other non-Anthropic
- * model, so those always route through the gateway regardless of which keys are set.
  */
-function useAnthropicDirect(model: string): boolean {
+function useAnthropicDirect(): boolean {
   return (
-    model.startsWith('anthropic/') &&
     Boolean(process.env.ANTHROPIC_API_KEY) &&
     !process.env.AI_GATEWAY_API_KEY &&
     !process.env.VERCEL_OIDC_TOKEN
@@ -156,7 +151,7 @@ export async function runJudge(
   try {
     // Direct Anthropic uses an unprefixed model id (e.g. `claude-opus-4-8`); the
     // gateway expects the provider-prefixed form (e.g. `anthropic/claude-opus-4-8`).
-    const direct = useAnthropicDirect(model);
+    const direct = useAnthropicDirect();
     const resolvedModel = direct ? model.replace(/^anthropic\//, '') : model;
     const languageModel = direct
       ? createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })(resolvedModel)
