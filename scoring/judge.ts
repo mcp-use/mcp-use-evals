@@ -2,9 +2,11 @@
  * The readiness judge — an LLM that reads the transcript + final code and emits
  * lever-tagged findings plus a single bounded number (processQuality, 0..1).
  *
- * Routed through the Vercel AI Gateway (same key the built-in classifier uses).
- * Degrades gracefully: if disabled or it errors, the process dimension is simply
- * marked "not measured" — it never throws into onRunComplete.
+ * Routed straight to the Anthropic API (Sonnet 4.6) whenever ANTHROPIC_API_KEY is
+ * set; the Vercel AI Gateway is only a fallback when no direct key exists. Going
+ * direct avoids the gateway's free-tier rate limits that were silently nulling out
+ * judge prose. Degrades gracefully: if disabled or it errors, the process dimension
+ * is simply marked "not measured" — it never throws into onRunComplete.
  */
 import { createGateway, generateObject } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -23,16 +25,13 @@ export function isJudgeEnabled(): boolean {
 }
 
 /**
- * Prefer the Vercel AI Gateway when its key is present (the production path, shared
- * with agent-eval's failure classifier); otherwise fall back to the Anthropic provider
- * with the bare ANTHROPIC_API_KEY. Adding a gateway key later transparently "upgrades".
+ * Prefer the Anthropic API directly whenever ANTHROPIC_API_KEY is set — this is the
+ * deliberate default so the judge never rides the AI Gateway's rate-limited free tier
+ * (which was nulling out judge prose). Only fall back to the gateway when no direct
+ * Anthropic key is available but a gateway/OIDC key is.
  */
 function useAnthropicDirect(): boolean {
-  return (
-    Boolean(process.env.ANTHROPIC_API_KEY) &&
-    !process.env.AI_GATEWAY_API_KEY &&
-    !process.env.VERCEL_OIDC_TOKEN
-  );
+  return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 export function judgeModel(): string {
