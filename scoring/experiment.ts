@@ -51,11 +51,16 @@ export function defineExperiment(o: DefineExperimentOptions): ExperimentConfig {
   // Pin the model per agent family so runs are reproducible and don't silently
   // fall back to the agents' native defaults (claude-code → opus, codex →
   // gpt-5.2-codex). A variant can still override via `model`. Routing here is
-  // direct (ANTHROPIC_API_KEY / OPENAI_API_KEY), so ids are unprefixed; the
-  // codex reasoning tier rides along as a `?reasoningEffort=` query param.
+  // direct (ANTHROPIC_API_KEY / OPENAI_API_KEY), so ids are unprefixed.
+  //
+  // No `?reasoningEffort=` query param: agent-eval bakes the model string into
+  // the results artifact path (results/<variant>/<model>/…), and `?` is an
+  // illegal filename char that actions/upload-artifact rejects. Codex already
+  // defaults reasoning effort (and verbosity) to "medium", so bare `gpt-5.5` is
+  // equivalent to `gpt-5.5?reasoningEffort=medium` without poisoning the path.
   const DEFAULT_MODEL: Record<string, string> = {
     'claude-code': 'claude-sonnet-4-6',
-    codex: 'gpt-5.5?reasoningEffort=medium',
+    codex: 'gpt-5.5',
   };
   const model = o.model ?? DEFAULT_MODEL[o.agent];
   if (model) config.model = model;
