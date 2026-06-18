@@ -59,6 +59,23 @@ function pad(s: string, n: number): string {
 function padL(s: string, n: number): string {
   return s.length >= n ? s : ' '.repeat(n - s.length) + s;
 }
+/** Word-wrap `text` to `width` columns, prefixing every line with `indent`. */
+function wrap(text: string, width: number, indent: string): string {
+  const lines: string[] = [];
+  for (const paragraph of text.split('\n')) {
+    let line = '';
+    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+      if (line && line.length + 1 + word.length > width) {
+        lines.push(indent + line);
+        line = word;
+      } else {
+        line = line ? `${line} ${word}` : word;
+      }
+    }
+    lines.push(indent + line);
+  }
+  return lines.join('\n');
+}
 /** A run "measured" functional iff its probe actually ran (marker parsed). */
 function measured(r: ReadinessResult): boolean {
   return r.probe?.measured === true;
@@ -146,6 +163,31 @@ function main(): void {
     );
   }
 
+  // --- 1a. BY AGENT: mean readiness rolled up across all scenarios/variants ---
+  const byAgent = new Map<string, ReadinessResult[]>();
+  for (const r of results) {
+    const agent = r.meta.variant.agentLabel;
+    const runs = byAgent.get(agent) ?? [];
+    runs.push(r);
+    byAgent.set(agent, runs);
+  }
+  const agents = [...byAgent.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  if (agents.length) {
+    console.log(`\n${pad('by agent', 24)} ${pad('runs', 7)} ${pad('pass', 7)} ${pad('readiness', 10)} cost`);
+    console.log('─'.repeat(72));
+    for (const [agent, runs] of agents) {
+      const m = runs.filter(measured);
+      const passed = m.filter((r) => r.functionalPassed).length;
+      const passStr = m.length ? `${passed}/${m.length}` : '—';
+      const rd = mean(runs.map((r) => r.score)).toFixed(1);
+      const mc = meanCost(runs);
+      const costStr = mc === null ? '—' : fmtUsd(mc);
+      console.log(
+        `${pad(agent, 24)} ${pad(String(runs.length), 7)} ${pad(passStr, 7)} ${padL(rd, 9)}  ${costStr}`,
+      );
+    }
+  }
+
   // --- 1b. COST (estimated; informational, never part of the score) ---
   if (results.some((r) => r.cost?.measured)) {
     console.log(`\n\n=== Cost (estimated · USD · not part of the score) ===\n`);
@@ -209,7 +251,7 @@ function main(): void {
     const tag = `${r.meta.variant.agentLabel}/${condOf(r)}`;
     console.log(`  ${pad(tag, 20)} fn ${fn}  rd ${padL(String(r.score), 3)}`);
     const summary = r.judge?.summary?.trim();
-    if (summary) console.log(`      ${summary}`);
+    if (summary) console.log(wrap(summary, 84, '      '));
     else if (r.judge?.error) console.log(`      (judge: ${r.judge.error})`);
   }
 
