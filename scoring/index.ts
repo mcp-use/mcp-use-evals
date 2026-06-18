@@ -5,7 +5,7 @@ export { scoreRun, CONFIG_VERSION } from './score.js';
 export type { ScoreInput } from './score.js';
 export { defineExperiment } from './experiment.js';
 export type { DefineExperimentOptions } from './experiment.js';
-export { injectSkill, injectScaffold, SKILL_PROMPT_PREFIX } from './injectors.js';
+export { injectSkill, injectScaffold, skillPromptPrefix, SKILL_PROMPT_PREFIX } from './injectors.js';
 export { LINTS, runLints } from './lints.js';
 export type { LintContext } from './lints.js';
 export { runJudge, isJudgeEnabled, judgeModel, DEFAULT_JUDGE_MODEL } from './judge.js';

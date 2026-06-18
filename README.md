@@ -49,6 +49,18 @@ injected into the sandbox before the agent runs (`scoring/injectors.ts` + `editP
 | skill | `skill-cc` | `skill-codex` |
 | skill + scaffold | `skill+scaffold-cc` | `skill+scaffold-codex` |
 
+**Treatments (`scoring/injectors.ts`):**
+
+- **skill** — installs the real mcp-use [`mcp-apps-builder`](assets/skills/mcp-apps-builder) skill
+  (vendored snapshot, re-synced from `$DEV/mcp-use/skills/`) into the agent's skills dir
+  (`cc` → `.claude/skills/`, `codex` → `.codex/skills/`), exactly like `create-mcp-use-app --skills`,
+  and prepends a prompt prefix pointing the agent at it.
+- **scaffold** — runs the real `create-mcp-use-app --template mcp-apps` to seed the workspace with a
+  genuine mcp-use project, then the agent builds on top. Because the scenario files land first and the
+  scaffolder rejects a non-empty dir, it scaffolds into a temp subdir and overlays. The scaffolded
+  project keeps its own `build` (`mcp-use build`), which becomes the build gate for scaffold variants;
+  `vitest` is patched back in so `EVAL.ts` still runs.
+
 ## Layout
 
 ```
@@ -83,7 +95,8 @@ npx agent-eval playground         # browse runs in the UI
 
 - **MCP-client probe** in `EVAL.ts` (boots the server, `initialize → tools/list → tools/call`,
   asserts) → enables the 40-pt functional dimension + a hard boot gate.
-- Drop in the real mcp-use **skill** (`MCP_USE_SKILL_MD` or `scoring/injectors.ts`) and **scaffold**
-  (`MCP_USE_SCAFFOLD_CMD`) — currently placeholders.
 - Bump `runs` per variant for stable distributions. Judge model defaults to
   `anthropic/claude-opus-4-8` (override with `READINESS_JUDGE_MODEL`).
+- **Timeouts:** the per-run default is **1200s** (`scoring/experiment.ts`), doubled from 600s because
+  heavy scenarios were flooring — and the scaffold's `mcp-use build` (vite widget bundling) is heavier
+  than the bare `tsc --noEmit` gate. Bump further per-variant via `timeout` if runs still floor.

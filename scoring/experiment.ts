@@ -9,7 +9,7 @@
 import type { AgentType, ExperimentConfig, Sandbox } from '@vercel/agent-eval';
 import type { Variant } from './types.js';
 import { createReadinessHook } from './hook.js';
-import { injectScaffold, injectSkill, SKILL_PROMPT_PREFIX } from './injectors.js';
+import { injectScaffold, injectSkill, skillPromptPrefix } from './injectors.js';
 
 export interface DefineExperimentOptions {
   /** full agent-eval agent id, e.g. 'claude-code' | 'codex' | 'vercel-ai-gateway/codex' */
@@ -22,7 +22,7 @@ export interface DefineExperimentOptions {
   scaffold: boolean;
   /** trials per scenario (default 1) */
   runs?: number;
-  /** per-run timeout in seconds (default 600) */
+  /** per-run timeout in seconds (default 1200) */
   timeout?: number;
   /** optional model override (else the agent's native default) */
   model?: string | string[];
@@ -32,8 +32,10 @@ export function defineExperiment(o: DefineExperimentOptions): ExperimentConfig {
   const variant: Variant = { agentLabel: o.agentLabel, skill: o.skill, scaffold: o.scaffold };
 
   const setups: Array<(s: Sandbox) => Promise<void>> = [];
+  // Scaffold first, then skill: the scaffold overlays the whole workspace, so the
+  // skill must land afterwards or it'd be clobbered.
   if (o.scaffold) setups.push(injectScaffold);
-  if (o.skill) setups.push(injectSkill);
+  if (o.skill) setups.push((s) => injectSkill(s, o.agentLabel));
 
   const config: ExperimentConfig = {
     agent: o.agent,
@@ -41,7 +43,7 @@ export function defineExperiment(o: DefineExperimentOptions): ExperimentConfig {
     runs: o.runs ?? 1,
     earlyExit: false, // run every trial — we want the distribution, not first-success
     scripts: ['build'],
-    timeout: o.timeout ?? 600,
+    timeout: o.timeout ?? 1200,
     copyFiles: 'changed', // persist the agent's files into results/ as artifacts
     onRunComplete: createReadinessHook({ variant }),
   };
@@ -53,7 +55,8 @@ export function defineExperiment(o: DefineExperimentOptions): ExperimentConfig {
     };
   }
   if (o.skill) {
-    config.editPrompt = (prompt) => `${SKILL_PROMPT_PREFIX}\n\n${prompt}`;
+    const prefix = skillPromptPrefix(o.agentLabel);
+    config.editPrompt = (prompt) => `${prefix}\n\n${prompt}`;
   }
 
   return config;
