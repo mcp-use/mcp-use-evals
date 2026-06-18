@@ -48,7 +48,17 @@ export function defineExperiment(o: DefineExperimentOptions): ExperimentConfig {
     onRunComplete: createReadinessHook({ variant }),
   };
 
-  if (o.model) config.model = o.model;
+  // Pin the model per agent family so runs are reproducible and don't silently
+  // fall back to the agents' native defaults (claude-code → opus, codex →
+  // gpt-5.2-codex). A variant can still override via `model`. Routing here is
+  // direct (ANTHROPIC_API_KEY / OPENAI_API_KEY), so ids are unprefixed; the
+  // codex reasoning tier rides along as a `?reasoningEffort=` query param.
+  const DEFAULT_MODEL: Record<string, string> = {
+    'claude-code': 'claude-sonnet-4-6',
+    codex: 'gpt-5.5?reasoningEffort=medium',
+  };
+  const model = o.model ?? DEFAULT_MODEL[o.agent];
+  if (model) config.model = model;
   if (setups.length > 0) {
     config.setup = async (sandbox) => {
       for (const s of setups) await s(sandbox);
