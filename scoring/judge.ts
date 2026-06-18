@@ -14,7 +14,7 @@ import type { Finding } from './types.js';
 import type { SourceFile } from './source.js';
 import { JUDGE_FINDING_CATALOG } from './criteria.js';
 
-export const DEFAULT_JUDGE_MODEL = 'anthropic/claude-opus-4-8';
+export const DEFAULT_JUDGE_MODEL = 'anthropic/claude-sonnet-4-6';
 
 export function isJudgeEnabled(): boolean {
   return Boolean(

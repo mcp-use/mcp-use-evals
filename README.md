@@ -120,7 +120,7 @@ Artifacts per run: `results-<variant>` (each variant's `results/`) and `scorecar
 - **MCP-client probe** in `EVAL.ts` (boots the server, `initialize → tools/list → tools/call`,
   asserts) → enables the 40-pt functional dimension + a hard boot gate.
 - Bump `runs` per variant for stable distributions. Judge model defaults to
-  `anthropic/claude-opus-4-8` (override with `READINESS_JUDGE_MODEL`).
+  `anthropic/claude-sonnet-4-6` (override with `READINESS_JUDGE_MODEL`).
 - **Timeouts:** the per-run default is **1200s** (`scoring/experiment.ts`), doubled from 600s because
   heavy scenarios were flooring — and the scaffold's `mcp-use build` (vite widget bundling) is heavier
   than the bare `tsc --noEmit` gate. Bump further per-variant via `timeout` if runs still floor.
