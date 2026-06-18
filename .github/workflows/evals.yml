@@ -1,25 +1,29 @@
 name: Readiness evals
 
 # Manual trigger only — each run boots Docker sandboxes and calls paid LLM APIs,
-# so we never run this automatically. Pick a single variant (cheap) or "all"
-# (the full 8-variant matrix) from the Actions tab.
+# so we never run this automatically.
+#
+# Inputs (Actions → Readiness evals → Run workflow):
+#   variants  free-text. "all" = the full 8-variant matrix, or a comma/space-
+#             separated subset of variant names (e.g. "blank-cc, skill-cc").
+#             Unknown names fail the prepare job fast. One name = one cheap job.
+#   evals     free-text. "all" = every scenario, or a comma/space-separated list
+#             of scenario names, or a glob (e.g. "oauth-*" / "stormdesk-*").
+#             Passed to the harness as EVAL_FILTER; defineExperiment turns it
+#             into config.evals (the CLI has no scenario-filter flag).
+#   smoke     1 scenario per variant (cheap end-to-end check of keys + sandbox).
+#   force     ignore run fingerprints and re-run everything.
 on:
   workflow_dispatch:
     inputs:
-      variant:
-        description: 'Variant to run ("all" = full matrix)'
-        type: choice
+      variants:
+        description: 'Variants: "all" or a comma/space list (e.g. "blank-cc, skill-cc")'
+        type: string
         default: all
-        options:
-          - all
-          - blank-cc
-          - blank-codex
-          - scaffold-cc
-          - scaffold-codex
-          - skill-cc
-          - skill-codex
-          - skill+scaffold-cc
-          - skill+scaffold-codex
+      evals:
+        description: 'Scenarios: "all", a glob ("oauth-*"), or a comma/space list'
+        type: string
+        default: all
       smoke:
         description: 'Smoke test: 1 scenario per variant (cheap end-to-end check)'
         type: boolean
@@ -38,19 +42,51 @@ permissions:
   contents: read
 
 jobs:
-  # Expand the chosen variant into a matrix the run job fans out over.
+  # Expand the chosen variant(s) into a matrix the run job fans out over.
+  # "all" → every variant; otherwise split the free-text input on commas/spaces,
+  # validate each name against the known set, and build the matrix JSON with jq.
   prepare:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set.outputs.matrix }}
+    env:
+      VARIANTS_INPUT: ${{ inputs.variants }}
     steps:
       - id: set
         run: |
-          if [ "${{ inputs.variant }}" = "all" ]; then
-            variants='["blank-cc","blank-codex","scaffold-cc","scaffold-codex","skill-cc","skill-codex","skill+scaffold-cc","skill+scaffold-codex"]'
+          set -euo pipefail
+          known='["blank-cc","blank-codex","scaffold-cc","scaffold-codex","skill-cc","skill-codex","skill+scaffold-cc","skill+scaffold-codex"]'
+
+          if [ "$(echo "$VARIANTS_INPUT" | tr '[:upper:]' '[:lower:]' | xargs)" = "all" ]; then
+            variants="$known"
           else
-            variants='["${{ inputs.variant }}"]'
+            # Split on commas/spaces, trim blanks, dedupe (keeping order), JSON-encode.
+            variants=$(echo "$VARIANTS_INPUT" \
+              | tr ',' ' ' \
+              | xargs -n1 \
+              | awk 'NF && !seen[$0]++' \
+              | jq -R . | jq -s -c .)
+
+            if [ "$(echo "$variants" | jq 'length')" -eq 0 ]; then
+              echo "::error::No variants parsed from input: '$VARIANTS_INPUT'"
+              exit 1
+            fi
+
+            # Reject any name not in the known set. Build the human-readable
+            # lists first (a separate jq call), so the error echoes contain no
+            # nested command substitution — bash mis-tokenizes the comma in
+            # jq's join(", ") when it sits inside $(...) in an echo.
+            unknown=$(jq -n -c --argjson got "$variants" --argjson known "$known" '$got - $known')
+            unknown_list=$(echo "$unknown" | jq -r 'join(", ")')
+            known_list=$(echo "$known" | jq -r 'join(", ")')
+            if [ "$(echo "$unknown" | jq 'length')" -ne 0 ]; then
+              echo "::error::Unknown variant(s): $unknown_list"
+              echo "::error::Valid variants: $known_list"
+              exit 1
+            fi
           fi
+
+          echo "Selected variants: $variants"
           echo "matrix={\"variant\":$variants}" >> "$GITHUB_OUTPUT"
 
   # One job per variant. Each runs every scenario in the local Docker sandbox.
@@ -81,6 +117,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # cc variants + LLM judge
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} # codex variants
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }} # optional gateway routing
+          # Scenario filter. defineExperiment reads EVAL_FILTER and sets config.evals
+          # ("all"/empty → every scenario). The CLI has no scenario-filter flag, so
+          # this env var is the supported hook. An unknown name fails here at run time.
+          EVAL_FILTER: ${{ inputs.evals }}
         run: |
           FLAGS=""
           [ "${{ inputs.smoke }}" = "true" ] && FLAGS="$FLAGS --smoke"

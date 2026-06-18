@@ -53,6 +53,7 @@ npx agent-eval blank-cc --dry     # preview which scenarios a variant runs (no c
 npx agent-eval blank-cc           # run one variant across ALL scenarios
 npx agent-eval blank-cc --smoke   # run just the first scenario (alphabetical) as a sanity check
 npx agent-eval                    # run the whole matrix (every variant × every scenario)
+EVAL_FILTER='oauth-*' npx agent-eval blank-cc   # scope to specific scenarios (see below)
 node scripts/gen-evals.ts         # (re)generate the EVAL.ts functional probes after editing the generator
 npm run scorecard                 # aggregate results/ → pass / readiness / skill Δ + judge notes + SDK worklist
 npx agent-eval playground         # browse runs in the web UI
@@ -63,30 +64,38 @@ sandbox + agent + scoring takes minutes per scenario.
 
 ## Run a SINGLE scenario (the common ask)
 
-The CLI has **no scenario-filter flag**. Filtering is done via `config.evals`
-(accepts an exact name, a glob, or an array — `scoring/lib/config.js`
-`resolveEvalNames`). `defineExperiment` doesn't expose `evals`, so temporarily
-mutate the returned config in the variant file, run, then **revert**.
-
-Edit `experiments/<variant>.ts`, e.g. to scope `blank-cc` to one scenario:
-
-```ts
-import { defineExperiment } from '../scoring/index.js';
-const experiment = defineExperiment({ agent: 'claude-code', agentLabel: 'cc', skill: false, scaffold: false });
-experiment.evals = 'stormdesk-mcp-app'; // TEMP — revert after the run
-export default experiment;
-```
-
-Then confirm and run:
+The CLI has **no scenario-filter flag** — filtering is done via `config.evals`
+(accepts an exact name, a glob, or an array — `@vercel/agent-eval`'s
+`resolveEvalNames`). Rather than hand-editing the variant file, `defineExperiment`
+(`scoring/experiment.ts`) reads the **`EVAL_FILTER`** env var and sets `config.evals`
+from it. So scope scenarios by just exporting the env var — no file edits, no revert:
 
 ```bash
-npx agent-eval blank-cc --dry     # should show "will run 1: - stormdesk-mcp-app"
-npx agent-eval blank-cc
+# unset / empty / "all" → run every scenario (default)
+EVAL_FILTER=stormdesk-mcp-app           npx agent-eval blank-cc --dry   # exactly 1
+EVAL_FILTER='basic-tool-server,oauth-clerk' npx agent-eval blank-cc      # comma list → 2
+EVAL_FILTER='basic-tool-server oauth-clerk' npx agent-eval blank-cc      # spaces also OK
+EVAL_FILTER='oauth-*'                   npx agent-eval blank-cc           # glob → both oauth-*
+EVAL_FILTER='stormdesk-*'               npx agent-eval blank-cc           # glob → both stormdesk-*
 ```
 
-Revert the file afterward so the variant runs the full scenario set again.
-(Results still land under the real variant name `blank-cc/`, keeping the scorecard
-consistent — that's why we scope the variant rather than make a throwaway experiment.)
+How it parses: a comma/space-separated value becomes a `string[]` (each item an exact
+name or a glob); a lone value passes through as a string. `all`/empty leaves
+`config.evals` unset (run all). Unknown names error at run time with
+`Eval "<name>" not found. Available evals: …` (note: a `--dry` preview falls back to
+"all" instead of erroring, so a real run is what surfaces a typo).
+
+Results still land under the real variant name (`blank-cc/`), keeping the scorecard
+consistent — filtering only narrows *which* scenarios run, not where they're written.
+
+## Run in CI (GitHub Actions)
+
+`.github/workflows/evals.yml` is `workflow_dispatch`-only (each run costs money). Its
+inputs mirror the local levers: **variants** (`all` or a comma/space list of variant
+names — fans out one parallel job each; unknown names fail the prepare job fast),
+**evals** (`all`, a glob, or a comma/space list of scenario names — wired straight to
+the `EVAL_FILTER` env var above), plus **smoke** and **force**. See `README.md` for
+the required secrets and artifact layout.
 
 ## Where results land
 

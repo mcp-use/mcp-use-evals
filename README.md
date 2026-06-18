@@ -110,11 +110,21 @@ npx agent-eval playground         # browse runs in the UI
 It's **manual only** (`workflow_dispatch`) — each run boots containers and calls paid
 LLM APIs. From the **Actions → Readiness evals → Run workflow** menu:
 
-- **variant** — pick one variant or `all` (the full 8-variant matrix). `all` fans out
-  one parallel job per variant; a final job downloads every job's `results-*` artifact,
-  runs `npm run scorecard`, and writes the scorecard to the run summary.
+- **variants** — `all` (the full 8-variant matrix) or a comma/space-separated subset
+  (e.g. `blank-cc, skill-cc`). Each selected variant fans out to its own parallel job;
+  a final job downloads every job's `results-*` artifact, runs `npm run scorecard`, and
+  writes the scorecard to the run summary. Unknown names fail the prepare job fast with
+  the list of valid variants.
+- **evals** — `all` (every scenario), a glob (`oauth-*`, `stormdesk-*`), or a comma/space
+  list of scenario names (e.g. `basic-tool-server, oauth-clerk`). Passed to the harness
+  as the `EVAL_FILTER` env var, which `defineExperiment` turns into `config.evals` — the
+  `agent-eval` CLI has no scenario-filter flag, so this env var is the supported hook. An
+  unknown scenario name fails the run job (`Eval "<name>" not found`).
 - **smoke** — run just 1 scenario per variant (cheap end-to-end check of keys + sandbox).
 - **force** — ignore run fingerprints and re-run everything.
+
+Examples: run two variants on the OAuth scenarios → `variants: blank-cc, skill-cc`,
+`evals: oauth-*`. Smoke-test the whole matrix → `variants: all`, `smoke: true`.
 
 Required **repository secrets** (Settings → Secrets and variables → Actions):
 

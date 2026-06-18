@@ -59,6 +59,23 @@ export function defineExperiment(o: DefineExperimentOptions): ExperimentConfig {
   };
   const model = o.model ?? DEFAULT_MODEL[o.agent];
   if (model) config.model = model;
+
+  // Scenario filtering. The agent-eval CLI has no scenario-filter flag — the only
+  // hook is config.evals (string | string[] | filter fn; default '*' = all),
+  // resolved by the harness's resolveEvalNames (exact name, glob, or array). We
+  // read EVAL_FILTER so the CI workflow (and ad-hoc runs) can scope scenarios
+  // without editing each variant file. Unset / empty / 'all' → leave config.evals
+  // unset → run every scenario (current behavior). A comma/space-separated list
+  // becomes an array; a lone name or glob (e.g. 'stormdesk-*') passes through.
+  const evalFilter = process.env.EVAL_FILTER?.trim();
+  if (evalFilter && evalFilter.toLowerCase() !== 'all') {
+    const names = evalFilter
+      .split(/[\s,]+/)
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
+    config.evals = names.length === 1 ? names[0] : names;
+  }
+
   if (setups.length > 0) {
     config.setup = async (sandbox) => {
       for (const s of setups) await s(sandbox);
