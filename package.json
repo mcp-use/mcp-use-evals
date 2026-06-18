@@ -1,0 +1,22 @@
+{
+  "name": "mcp-use-eve-evals",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Agentic-readiness evals for the mcp-use TypeScript SDK (MCP-2072)",
+  "scripts": {
+    "scorecard": "node scripts/scorecard.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.0",
+    "ai": "^5.0.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@vercel/agent-eval": "^1.1.1",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
