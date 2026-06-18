@@ -12,3 +12,6 @@ export { runJudge, isJudgeEnabled, judgeModel, DEFAULT_JUDGE_MODEL } from './jud
 export { budgetFor, DEFAULT_BUDGET, SCENARIO_BUDGETS } from './efficiency.js';
 export { buildSourceBundle } from './source.js';
 export { tallyLevers, emptyLeverTally } from './levers.js';
+export { computeCost } from './cost.js';
+export { MODEL_RATES, ratesFor, normalizeModelId } from './pricing.js';
+export type { ModelRates } from './pricing.js';

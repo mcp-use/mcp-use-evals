@@ -39,10 +39,14 @@ One 0–100 score per run, normalized over the dimensions actually measured:
   independent. Runs from before the probe (or where it crashed) show `functional` as *not
   measured* and are excluded from normalization — `configVersion` keeps trends like-for-like.
 
-The scorecard (`npm run scorecard`) reduces every run to three numbers per **scenario × agent**:
-**pass** (functional-probe pass-rate), **readiness** (mean score), and **skill Δ** (readiness
-with the skill vs. without it, scaffold held off) — followed by the **judge's prose notes per
-run** and a compact **SDK-defect worklist**.
+The scorecard (`npm run scorecard`) reduces every run to four numbers per **scenario × agent**:
+**pass** (functional-probe pass-rate), **readiness** (mean score), **cost** (mean estimated USD/run),
+and **skill Δ** (readiness with the skill vs. without it, scaffold held off) — followed by a
+**cost breakdown** (tokens + USD totals), the **judge's prose notes per run**, and a compact
+**SDK-defect worklist**. Cost is read from each run's transcript usage and priced via
+`scoring/pricing.ts` (per-model USD/1M rates — edit to match your account); it is **informational
+only and never folded into the readiness score**, so the headline stays stable across price edits.
+Unpriced models still report token counts and are flagged so you know to add a rate.
 
 ## A/B matrix (experiments)
 

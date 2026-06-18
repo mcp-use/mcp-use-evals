@@ -92,6 +92,31 @@ export interface JudgeSummary {
   error?: string;
 }
 
+/**
+ * Token usage + estimated cost for a run, read from the transcript (see `cost.ts`).
+ * Informational only — NOT part of the Readiness Score. `usd` is set only when the
+ * model is in the pricing table (`pricing.ts`); otherwise tokens are reported with
+ * `priced: false`. Absent entirely on runs with no usage in the transcript.
+ */
+export interface CostSummary {
+  /** usage was found in the transcript */
+  measured: boolean;
+  /** the model was found in the pricing table → `usd` is set */
+  priced: boolean;
+  /** full-rate prompt tokens (cached subtracted out) */
+  inputTokens: number;
+  /** cached / cache-read input tokens (billed at the discounted rate) */
+  cachedInputTokens: number;
+  /** cache-write input tokens (Claude prompt caching) */
+  cacheWriteTokens?: number;
+  /** output tokens, inclusive of reasoning tokens */
+  outputTokens: number;
+  /** reasoning tokens (subset of output), when reported */
+  reasoningOutputTokens?: number;
+  /** total estimated cost in USD, when priced */
+  usd?: number;
+}
+
 export interface ReadinessMeta {
   scenario: string;
   /** full config.agent, e.g. 'claude-code' | 'vercel-ai-gateway/codex' */
@@ -120,5 +145,7 @@ export interface ReadinessResult {
   functionalPassed: boolean;
   /** full probe verdict (absent on pre-probe runs) */
   probe?: ProbeSummary;
+  /** token usage + estimated cost (informational; absent when no usage in transcript) */
+  cost?: CostSummary;
   meta: ReadinessMeta;
 }

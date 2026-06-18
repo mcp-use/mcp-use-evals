@@ -63,6 +63,19 @@ function padL(s: string, n: number): string {
 function measured(r: ReadinessResult): boolean {
   return r.probe?.measured === true;
 }
+function fmtUsd(n: number): string {
+  return `$${n < 1 ? n.toFixed(3) : n.toFixed(2)}`;
+}
+function fmtTok(n: number): string {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
+  return String(Math.round(n));
+}
+/** Mean USD over the runs that were priced; null when none were. */
+function meanCost(runs: ReadinessResult[]): number | null {
+  const xs = runs.filter((r) => r.cost?.priced && typeof r.cost.usd === 'number').map((r) => r.cost!.usd!);
+  return xs.length ? mean(xs) : null;
+}
 
 function main(): void {
   const results = loadReadiness();
@@ -76,6 +89,7 @@ function main(): void {
   console.log(`\n=== Readiness scorecard (${results.length} runs · ${configVersions.join(', ')}) ===\n`);
   console.log('  pass = MCP-client probe connected + listed tools (OAuth: boot + 401). `—` = not measured.');
   console.log('  skill Δ = readiness with skill vs. blank (scaffold held off).');
+  console.log('  cost = mean estimated USD/run (token usage × pricing.ts rates; informational, not scored). `—` = unpriced/no usage.');
   if (configVersions.length > 1) {
     console.log('  ⚠ mixed configVersions: pre-probe (v0.1) runs exclude the 40-pt functional dim — re-run for like-for-like.');
   }
@@ -114,18 +128,63 @@ function main(): void {
     return withSkill !== null && blank !== null ? withSkill - blank : null;
   };
 
-  console.log(`\n${pad('scenario', 24)} ${pad('agent', 7)} ${pad('pass', 7)} ${pad('readiness', 10)} skillΔ`);
-  console.log('─'.repeat(64));
+  console.log(
+    `\n${pad('scenario', 24)} ${pad('agent', 7)} ${pad('pass', 7)} ${pad('readiness', 10)} ${pad('cost', 8)} skillΔ`,
+  );
+  console.log('─'.repeat(72));
   for (const c of cells) {
     const m = c.runs.filter(measured);
     const passed = m.filter((r) => r.functionalPassed).length;
     const passStr = m.length ? `${passed}/${m.length}` : '—';
     const rd = mean(c.runs.map((r) => r.score)).toFixed(1);
+    const mc = meanCost(c.runs);
+    const costStr = mc === null ? '—' : fmtUsd(mc);
     const d = skillDelta(c);
     const dStr = d === null ? '—' : `${d >= 0 ? '+' : ''}${d.toFixed(1)}`;
     console.log(
-      `${pad(c.scenario, 24)} ${pad(c.agent, 7)} ${pad(passStr, 7)} ${padL(rd, 9)}  ${dStr}`,
+      `${pad(c.scenario, 24)} ${pad(c.agent, 7)} ${pad(passStr, 7)} ${padL(rd, 9)}  ${pad(costStr, 8)} ${dStr}`,
     );
+  }
+
+  // --- 1b. COST (estimated; informational, never part of the score) ---
+  if (results.some((r) => r.cost?.measured)) {
+    console.log(`\n\n=== Cost (estimated · USD · not part of the score) ===\n`);
+    console.log(
+      `${pad('scenario', 24)} ${pad('agent', 7)} ${pad('runs', 5)} ${pad('mean $', 9)} ${pad('in', 8)} ${pad('cached', 8)} ${pad('out', 8)}`,
+    );
+    console.log('─'.repeat(74));
+    const meanTok = (rs: ReadinessResult[], sel: (c: NonNullable<ReadinessResult['cost']>) => number) =>
+      mean(rs.map((r) => sel(r.cost!)));
+    for (const c of cells) {
+      const withCost = c.runs.filter((r) => r.cost?.measured);
+      if (!withCost.length) continue;
+      const mc = meanCost(c.runs);
+      const costStr = mc === null ? '—' : fmtUsd(mc);
+      console.log(
+        `${pad(c.scenario, 24)} ${pad(c.agent, 7)} ${pad(String(withCost.length), 5)} ${pad(costStr, 9)} ` +
+          `${pad(fmtTok(meanTok(withCost, (x) => x.inputTokens)), 8)} ` +
+          `${pad(fmtTok(meanTok(withCost, (x) => x.cachedInputTokens)), 8)} ` +
+          `${pad(fmtTok(meanTok(withCost, (x) => x.outputTokens)), 8)}`,
+      );
+    }
+    const priced = results.filter((r) => r.cost?.priced && typeof r.cost.usd === 'number');
+    const total = priced.reduce((a, r) => a + (r.cost!.usd ?? 0), 0);
+    console.log('─'.repeat(74));
+    console.log(
+      `  total: ${fmtUsd(total)} over ${priced.length} priced run(s)` +
+        (priced.length ? ` (mean ${fmtUsd(total / priced.length)}/run)` : ''),
+    );
+    // Surface any model that produced usage but has no rate → its cost is `—`.
+    const unpriced = [
+      ...new Set(
+        results
+          .filter((r) => r.cost?.measured && !r.cost.priced)
+          .map((r) => r.meta.model ?? r.meta.agent),
+      ),
+    ];
+    if (unpriced.length) {
+      console.log(`  ⚠ unpriced model(s): ${unpriced.join(', ')} — add rates to scoring/pricing.ts for a $ estimate.`);
+    }
   }
 
   // --- 2. JUDGE NOTES (the richest signal) ---

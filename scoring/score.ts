@@ -27,6 +27,7 @@ import { SEVERITY_DEDUCTION } from './criteria.js';
 import { efficiencyScore } from './efficiency.js';
 import { tallyLevers } from './levers.js';
 import { runJudge } from './judge.js';
+import { computeCost } from './cost.js';
 
 export const CONFIG_VERSION = 'readiness-v0.2';
 
@@ -209,6 +210,10 @@ export async function scoreRun(input: ScoreInput): Promise<ReadinessResult> {
     judge = { enabled: false, model: judgeRes.model, error: judgeRes.error };
   }
 
+  // --- cost (informational; read from transcript usage, not part of the score) ---
+  const costModel = typeof config.model === 'string' ? config.model : undefined;
+  const cost = computeCost(transcript, config.agent, costModel);
+
   // --- normalize over enabled dimensions ---
   const enabled = dimensions.filter((d) => d.enabled);
   const enabledWeight = enabled.reduce((a, d) => a + d.weight, 0);
@@ -225,6 +230,7 @@ export async function scoreRun(input: ScoreInput): Promise<ReadinessResult> {
     judge,
     functionalPassed,
     probe,
+    cost,
     meta: {
       scenario,
       agent: config.agent,
