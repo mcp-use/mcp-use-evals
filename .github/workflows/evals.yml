@@ -1,0 +1,141 @@
+name: Readiness evals
+
+# Manual trigger only — each run boots Docker sandboxes and calls paid LLM APIs,
+# so we never run this automatically. Pick a single variant (cheap) or "all"
+# (the full 8-variant matrix) from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Variant to run ("all" = full matrix)'
+        type: choice
+        default: all
+        options:
+          - all
+          - blank-cc
+          - blank-codex
+          - scaffold-cc
+          - scaffold-codex
+          - skill-cc
+          - skill-codex
+          - skill+scaffold-cc
+          - skill+scaffold-codex
+      smoke:
+        description: 'Smoke test: 1 scenario per variant (cheap end-to-end check)'
+        type: boolean
+        default: false
+      force:
+        description: 'Ignore run fingerprints and re-run everything'
+        type: boolean
+        default: false
+
+# Queue overlapping dispatches rather than cancelling an in-flight (expensive) run.
+concurrency:
+  group: readiness-evals
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Expand the chosen variant into a matrix the run job fans out over.
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        run: |
+          if [ "${{ inputs.variant }}" = "all" ]; then
+            variants='["blank-cc","blank-codex","scaffold-cc","scaffold-codex","skill-cc","skill-codex","skill+scaffold-cc","skill+scaffold-codex"]'
+          else
+            variants='["${{ inputs.variant }}"]'
+          fi
+          echo "matrix={\"variant\":$variants}" >> "$GITHUB_OUTPUT"
+
+  # One job per variant. Each runs every scenario in the local Docker sandbox.
+  run:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false # a failing variant must not abort the others
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # scorecard + experiments rely on native TS type-stripping
+          cache: npm
+
+      - run: npm ci
+
+      # GitHub-hosted ubuntu runners ship Docker; the harness uses the local
+      # daemon (sandbox: 'docker'), so no Vercel token is needed.
+      - name: Verify Docker
+        run: docker info
+
+      - name: Run evals (${{ matrix.variant }})
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # cc variants + LLM judge
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} # codex variants
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }} # optional gateway routing
+        run: |
+          FLAGS=""
+          [ "${{ inputs.smoke }}" = "true" ] && FLAGS="$FLAGS --smoke"
+          [ "${{ inputs.force }}" = "true" ] && FLAGS="$FLAGS --force"
+          npx agent-eval "${{ matrix.variant }}" $FLAGS
+
+      - name: Upload results
+        if: always() # keep partial artifacts even when a run fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.variant }}
+          path: results/
+          if-no-files-found: warn
+
+  # Pull every variant's results back together and roll up the scorecard.
+  scorecard:
+    needs: [prepare, run]
+    if: always() # aggregate whatever results exist, even if some variants failed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Download all result artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: results-*
+          path: results
+          merge-multiple: true # reconstruct the results/<variant>/... tree
+
+      - name: Aggregate scorecard
+        run: npm run scorecard | tee scorecard.txt
+
+      - name: Publish scorecard to job summary
+        if: always()
+        run: |
+          {
+            echo '## Readiness scorecard'
+            echo '```'
+            cat scorecard.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload combined results + scorecard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecard
+          path: |
+            results/
+            scorecard.txt
+          if-no-files-found: warn

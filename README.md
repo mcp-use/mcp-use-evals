@@ -91,6 +91,30 @@ npm run scorecard                 # aggregate runs → readiness scorecard
 npx agent-eval playground         # browse runs in the UI
 ```
 
+## Run in CI (GitHub Actions)
+
+`.github/workflows/evals.yml` runs the evals on a GitHub-hosted runner using the
+**local Docker sandbox** (ubuntu runners ship Docker, so no `VERCEL_TOKEN` is needed).
+It's **manual only** (`workflow_dispatch`) — each run boots containers and calls paid
+LLM APIs. From the **Actions → Readiness evals → Run workflow** menu:
+
+- **variant** — pick one variant or `all` (the full 8-variant matrix). `all` fans out
+  one parallel job per variant; a final job downloads every job's `results-*` artifact,
+  runs `npm run scorecard`, and writes the scorecard to the run summary.
+- **smoke** — run just 1 scenario per variant (cheap end-to-end check of keys + sandbox).
+- **force** — ignore run fingerprints and re-run everything.
+
+Required **repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Needed for |
+| -- | -- |
+| `ANTHROPIC_API_KEY` | Claude Code (`*-cc`) variants **and** the LLM judge — set this always |
+| `OPENAI_API_KEY` | Codex (`*-codex`) variants |
+| `AI_GATEWAY_API_KEY` | optional — only if you switch experiments to the gateway agent ids |
+
+Artifacts per run: `results-<variant>` (each variant's `results/`) and `scorecard`
+(the merged tree + `scorecard.txt`).
+
 ## Next
 
 - **MCP-client probe** in `EVAL.ts` (boots the server, `initialize → tools/list → tools/call`,
