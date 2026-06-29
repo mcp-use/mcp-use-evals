@@ -1,9 +1,14 @@
 node_modules/
 dist/
-.env
-.env.local
-results/
-*.log
-.DS_Store
+*.tsbuildinfo
 
-.claude/scheduled_tasks.lock
+.env
+.env.*
+!.env.example
+
+results/
+coverage/
+
+.vercel/
+.turbo/
+.DS_Store

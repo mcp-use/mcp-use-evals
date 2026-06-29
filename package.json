@@ -1,22 +1,44 @@
 {
-  "name": "mcp-use-eve-evals",
-  "version": "0.0.1",
+  "name": "@mcp-use/sdk-evals",
+  "version": "0.0.0",
   "private": true,
+  "description": "Agentic-readiness evals: how well coding agents build MCP servers with the mcp-use SDK (MCP-2072)",
   "type": "module",
-  "description": "Agentic-readiness evals for the mcp-use TypeScript SDK (MCP-2072)",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "scorecard": "node scripts/scorecard.ts",
-    "typecheck": "tsc --noEmit"
+    "eval": "tsx --env-file-if-exists=.env src/run.ts",
+    "trends": "tsx src/trends.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
-    "ai": "^5.0.0",
-    "zod": "^3.25.0"
+    "@ai-sdk/harness": "1.0.0-canary.13",
+    "@ai-sdk/harness-claude-code": "1.0.0-canary.9",
+    "@ai-sdk/harness-codex": "1.0.0-canary.9",
+    "@ai-sdk/openai": "3.0.74",
+    "@ai-sdk/sandbox-vercel": "1.0.0-canary.13",
+    "@anthropic-ai/sdk": ">=0.88.0 <1.0.0",
+    "@langchain/core": "^1.1.0",
+    "ai": "7.0.0-canary.176",
+    "langchain": "^1.2.10",
+    "mcp-use": "^1.32.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@vercel/agent-eval": "^1.1.1",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "@emulators/clerk": "0.6.0",
+    "@emulators/core": "0.6.0",
+    "@emulators/okta": "0.6.0",
+    "@types/node": "^25.3.0",
+    "jose": "6.1.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@ai-sdk/harness>ai": "7.0.0-canary.176"
+    }
   }
 }
