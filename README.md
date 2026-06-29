@@ -30,10 +30,10 @@ When a run includes both docs variants, `report.md` includes a "Docs Comparison"
 
 ## Usage
 
-Requires Vercel Sandbox credentials for agent runs, plus model credentials for the selected AI SDK harness:
+Requires Vercel Sandbox credentials for agent runs, plus direct provider credentials for the selected AI SDK harness:
 
-- `--agent claude` (default) uses `AI_GATEWAY_API_KEY`, `ANTHROPIC_API_KEY`, or `ANTHROPIC_AUTH_TOKEN`.
-- `--agent codex` uses `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY`, or `CODEX_API_KEY`.
+- `--agent claude` (default) uses `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
+- `--agent codex` uses `OPENAI_API_KEY` or `CODEX_API_KEY`.
 - The readiness judge uses `ANTHROPIC_API_KEY`. It is part of default scoring; pass `--skip-judge` only for local smoke tests or golden grader checks.
 
 Export credentials in your shell or put them in `.env` (gitignored; loaded by `pnpm eval`, shell env wins on conflict).

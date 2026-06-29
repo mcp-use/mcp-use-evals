@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderTranscript } from "../src/agent.js";
+import { assertAgentAuth, renderTranscript } from "../src/agent.js";
 
 // Events shaped like the Agent SDK's message stream (SDKMessage union):
 // assistant/user wrap an API message, result carries run totals.
@@ -54,6 +54,68 @@ const EVENTS: Record<string, unknown>[] = [
     duration_ms: 30000,
   },
 ];
+
+const AUTH_ENV_KEYS = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+  "OPENAI_API_KEY",
+  "CODEX_API_KEY",
+] as const;
+
+function withAuthEnv(
+  env: Partial<Record<(typeof AUTH_ENV_KEYS)[number], string>>,
+  run: () => void
+): void {
+  const previous = new Map<string, string | undefined>();
+  for (const key of AUTH_ENV_KEYS) {
+    previous.set(key, process.env[key]);
+    delete process.env[key];
+  }
+  Object.assign(process.env, env);
+  try {
+    run();
+  } finally {
+    for (const key of AUTH_ENV_KEYS) {
+      const value = previous.get(key);
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+describe("assertAgentAuth", () => {
+  it("requires direct Anthropic credentials for claude runs", () => {
+    withAuthEnv({}, () => {
+      expect(() => assertAgentAuth("claude")).toThrow(
+        "claude runs require ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN"
+      );
+    });
+
+    withAuthEnv({ ANTHROPIC_API_KEY: "sk-ant-test" }, () => {
+      expect(() => assertAgentAuth("claude")).not.toThrow();
+    });
+
+    withAuthEnv({ ANTHROPIC_AUTH_TOKEN: "token-test" }, () => {
+      expect(() => assertAgentAuth("claude")).not.toThrow();
+    });
+  });
+
+  it("requires direct OpenAI credentials for codex runs", () => {
+    withAuthEnv({}, () => {
+      expect(() => assertAgentAuth("codex")).toThrow(
+        "codex runs require OPENAI_API_KEY or CODEX_API_KEY"
+      );
+    });
+
+    withAuthEnv({ OPENAI_API_KEY: "sk-openai-test" }, () => {
+      expect(() => assertAgentAuth("codex")).not.toThrow();
+    });
+
+    withAuthEnv({ CODEX_API_KEY: "codex-test" }, () => {
+      expect(() => assertAgentAuth("codex")).not.toThrow();
+    });
+  });
+});
 
 describe("renderTranscript", () => {
   it("condenses SDK events into text, tool calls, results and run totals", () => {

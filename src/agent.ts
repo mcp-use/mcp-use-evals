@@ -41,23 +41,19 @@ interface RemoteSandboxSession {
 export function assertAgentAuth(runner: AgentRunner): void {
   if (
     runner === "claude" &&
-    !hasAnyEnv(
-      "AI_GATEWAY_API_KEY",
-      "ANTHROPIC_API_KEY",
-      "ANTHROPIC_AUTH_TOKEN"
-    )
+    !hasAnyEnv("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
   ) {
     throw new Error(
-      "claude runs require AI_GATEWAY_API_KEY, ANTHROPIC_API_KEY, or ANTHROPIC_AUTH_TOKEN. " +
+      "claude runs require ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. " +
         "Use `--agent golden` to exercise the graders without an agent."
     );
   }
   if (
     runner === "codex" &&
-    !hasAnyEnv("AI_GATEWAY_API_KEY", "OPENAI_API_KEY", "CODEX_API_KEY")
+    !hasAnyEnv("OPENAI_API_KEY", "CODEX_API_KEY")
   ) {
     throw new Error(
-      "codex runs require AI_GATEWAY_API_KEY, OPENAI_API_KEY, or CODEX_API_KEY. " +
+      "codex runs require OPENAI_API_KEY or CODEX_API_KEY. " +
         "Use `--agent golden` to exercise the graders without an agent."
     );
   }
