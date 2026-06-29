@@ -2,7 +2,7 @@ import { cp, mkdir, mkdtemp, rm, access } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "./proc.js";
-import { SKILL_DIR } from "./tasks.js";
+import { SKILL_DIR, SKILL_NAME } from "./tasks.js";
 import type { Variant } from "./types.js";
 
 export interface Sandbox {
@@ -11,19 +11,25 @@ export interface Sandbox {
   cleanup: () => Promise<void>;
 }
 
+export type SkillTarget = "claude" | "codex";
+
 const SCAFFOLD_TIMEOUT_MS = 10 * 60_000;
 
 /**
  * Prepare a fresh workspace for one trial.
  * - scaffold variants run create-mcp-use-app (starter template, deps installed)
  * - blank variants get a truly empty directory
- * - skill variants get the mcp-builder skill copied into .claude/skills/
+ * - skill variants get the mcp-apps-builder skill copied into the selected agent's
+ *   project skill directory
  *
  * Workspaces live in the OS tmpdir (NOT inside the repo) so the sandbox can't
  * resolve modules from the monorepo's node_modules — a missing dependency must
  * fail, not silently leak from the repo.
  */
-export async function prepareWorkspace(variant: Variant): Promise<Sandbox> {
+export async function prepareWorkspace(
+  variant: Variant,
+  opts: { skillTarget?: SkillTarget } = {}
+): Promise<Sandbox> {
   const root = await mkdtemp(join(tmpdir(), "mcpuse-eval-"));
   const workspace = join(root, "app");
 
@@ -54,11 +60,11 @@ export async function prepareWorkspace(variant: Variant): Promise<Sandbox> {
   }
 
   if (variant.skill) {
-    const dest = join(workspace, ".claude", "skills", "mcp-builder");
+    const dest = join(workspace, skillRoot(opts.skillTarget), SKILL_NAME);
     await mkdir(dest, { recursive: true });
     await cp(SKILL_DIR, dest, {
       recursive: true,
-      filter: (src) => !src.includes(`${join("mcp-builder", "evals")}`),
+      filter: (src) => !src.includes(`${join(SKILL_NAME, "evals")}`),
     });
   }
 
@@ -89,6 +95,7 @@ export async function snapshotWorkspace(
     "dist",
     ".mcp-use",
     ".claude",
+    ".codex",
     ".env",
     ".mcp-use-eval-env.sh",
   ]);
@@ -99,6 +106,12 @@ export async function snapshotWorkspace(
       return !parts.some((p) => EXCLUDE.has(p));
     },
   });
+}
+
+export function skillRoot(target: SkillTarget = "claude"): string {
+  return target === "codex"
+    ? join(".codex", "skills")
+    : join(".claude", "skills");
 }
 
 function tail(s: string, n = 2000): string {

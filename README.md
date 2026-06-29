@@ -21,7 +21,7 @@ Readiness starts at 100, subtracts deterministic and judge penalties, clamps to 
 
 A trial runs under a variant = `skill|noskill` × `scaffold|blank`, with two extra blank-workspace docs variants for documentation experiments:
 
-- **skill** — `skills/mcp-builder` copied into the sandbox's `.claude/skills/`
+- **skill** — `skills/mcp-apps-builder` copied into the sandbox's project skill directory (`.claude/skills/` for Claude, `.codex/skills/` for Codex), and the prompt points the agent to the copied skill. Set `MCP_USE_SKILL_DIR` to read the skill from a separate checkout.
 - **scaffold** — workspace pre-scaffolded with `create-mcp-use-app` (starter template); **blank** = empty dir, tests discovery from nothing
 - **blank+docs-old** — empty workspace plus a prompt link to the current production TypeScript docs: <https://docs.mcp-use.com/typescript/getting-started/welcome>
 - **blank+docs-new** — empty workspace plus a prompt link to the preview TypeScript docs at <http://localhost:3000/typescript/getting-started/welcome>. Set `MCP_USE_EVAL_NEW_DOCS_URL` to override it.

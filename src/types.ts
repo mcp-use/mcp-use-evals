@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export interface Variant {
-  /** mcp-builder skill content available to the agent */
+  /** mcp-apps-builder skill content available to the agent */
   skill: boolean;
   /** workspace pre-scaffolded with create-mcp-use-app (vs truly blank dir) */
   scaffold: boolean;

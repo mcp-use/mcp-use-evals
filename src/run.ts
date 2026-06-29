@@ -12,8 +12,14 @@ import {
 } from "./graders/readiness.js";
 import { startOAuthBackend } from "./oauth-backends.js";
 import { consoleSummary, renderReport } from "./report.js";
-import { applyGolden, prepareWorkspace, snapshotWorkspace } from "./sandbox.js";
-import { listTaskIds, loadTask, RESULTS_DIR } from "./tasks.js";
+import {
+  applyGolden,
+  prepareWorkspace,
+  skillRoot,
+  snapshotWorkspace,
+  type SkillTarget,
+} from "./sandbox.js";
+import { listTaskIds, loadTask, RESULTS_DIR, SKILL_NAME } from "./tasks.js";
 import {
   ALL_VARIANTS,
   parseVariant,
@@ -188,7 +194,8 @@ async function runTrial(opts: {
 }): Promise<TrialResult> {
   const { task, variant } = opts;
   const vid = variantId(variant);
-  const agentPrompt = promptForVariant(task.prompt, variant);
+  const skillTarget = skillTargetForAgent(opts.agentRunner);
+  const agentPrompt = promptForVariant(task.prompt, variant, skillTarget);
   const trialDir = join(
     opts.runDir,
     "trials",
@@ -213,9 +220,11 @@ async function runTrial(opts: {
     error: null,
   };
 
-  const sandbox = await prepareWorkspace(variant).catch((err) => {
-    return { error: String(err) } as const;
-  });
+  const sandbox = await prepareWorkspace(variant, { skillTarget }).catch(
+    (err) => {
+      return { error: String(err) } as const;
+    }
+  );
   if ("error" in sandbox) {
     return {
       ...base,
@@ -350,25 +359,44 @@ function agentEnvFromKeys(keys: string[] | undefined): Record<string, string> {
   return env;
 }
 
-function promptForVariant(prompt: string, variant: Variant): string {
-  if (!variant.docs) return prompt;
+function promptForVariant(
+  prompt: string,
+  variant: Variant,
+  skillTarget: SkillTarget
+): string {
+  const prefix: string[] = [];
 
-  const docsLabel =
-    variant.docs === "old"
-      ? "production mcp-use TypeScript docs"
-      : "preview mcp-use TypeScript docs";
-  const docsUrl = variant.docs === "old" ? OLD_DOCS_URL : NEW_DOCS_URL;
+  if (variant.skill) {
+    const skillPath = `${skillRoot(skillTarget)}/${SKILL_NAME}/SKILL.md`;
+    prefix.push(
+      `A project skill for building mcp-use servers is available at ${skillPath}.`,
+      "Use that skill as the canonical implementation guide for mcp-use imports, server setup, transports, tools, resources, auth, and client verification details."
+    );
+  }
 
-  return [
-    `Use the ${docsLabel} as the canonical reference while completing this task: ${docsUrl}`,
-    "Prefer that documentation for mcp-use imports, server setup, transports, tools, resources, auth, and client verification details.",
-    "",
-    prompt,
-  ].join("\n");
+  if (variant.docs) {
+    const docsLabel =
+      variant.docs === "old"
+        ? "production mcp-use TypeScript docs"
+        : "preview mcp-use TypeScript docs";
+    const docsUrl = variant.docs === "old" ? OLD_DOCS_URL : NEW_DOCS_URL;
+
+    prefix.push(
+      `Use the ${docsLabel} as the canonical reference while completing this task: ${docsUrl}`,
+      "Prefer that documentation for mcp-use imports, server setup, transports, tools, resources, auth, and client verification details."
+    );
+  }
+
+  if (prefix.length === 0) return prompt;
+  return [...prefix, "", prompt].join("\n");
 }
 
 function hashPrompt(prompt: string): string {
   return createHash("sha256").update(prompt).digest("hex").slice(0, 12);
+}
+
+function skillTargetForAgent(agentRunner: AgentRunner | "golden"): SkillTarget {
+  return agentRunner === "codex" ? "codex" : "claude";
 }
 
 function agentPhaseOAuthEnv(

@@ -8,15 +8,11 @@ import { TaskConfigSchema, type LoadedTask } from "./types.js";
 const EVALS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const TASKS_DIR = join(EVALS_ROOT, "tasks");
 export const RESULTS_DIR = join(EVALS_ROOT, "results");
-/** repo-root skills/mcp-builder — the content injected for skill-on variants */
-export const SKILL_DIR = join(
-  EVALS_ROOT,
-  "..",
-  "..",
-  "..",
-  "skills",
-  "mcp-builder"
-);
+export const SKILL_NAME = "mcp-apps-builder";
+/** mcp-apps-builder skill content injected for skill-on variants. */
+export const SKILL_DIR =
+  process.env.MCP_USE_SKILL_DIR ??
+  join(EVALS_ROOT, "..", "..", "..", "skills", SKILL_NAME);
 
 export async function listTaskIds(): Promise<string[]> {
   const entries = await readdir(TASKS_DIR, { withFileTypes: true });
