@@ -5,6 +5,7 @@ import { HarnessAgent, type HarnessAgentAdapter } from "@ai-sdk/harness/agent";
 import { createClaudeCode } from "@ai-sdk/harness-claude-code";
 import { createCodex } from "@ai-sdk/harness-codex";
 import { createVercelSandbox } from "@ai-sdk/sandbox-vercel";
+import { createDockerSandbox } from "./docker-sandbox.js";
 import { run } from "./proc.js";
 import type { AgentRunInfo } from "./types.js";
 
@@ -60,8 +61,8 @@ export function assertAgentAuth(runner: AgentRunner): void {
 }
 
 /**
- * Run a coding agent in a Vercel AI SDK harness. The prepared local workspace
- * is copied into the network sandbox before the turn, then synced back so the
+ * Run a coding agent in an AI SDK harness. The prepared local workspace is
+ * copied into the network sandbox before the turn, then synced back so the
  * existing local graders can inspect the agent-authored result.
  */
 export async function runHarnessAgent(opts: {
@@ -100,11 +101,7 @@ export async function runHarnessAgent(opts: {
     ) as unknown as HarnessAgentAdapter;
     const agent = new HarnessAgent({
       harness,
-      sandbox: createVercelSandbox({
-        runtime: "node24",
-        ports: [BRIDGE_PORT],
-        timeout: timeoutMs + 60_000,
-      }),
+      sandbox: createSandboxProvider(timeoutMs),
       permissionMode: "allow-all",
       onSandboxSession: async ({ session, sessionWorkDir, abortSignal }) => {
         remoteSession = session as unknown as RemoteSandboxSession;
@@ -212,6 +209,26 @@ export async function runHarnessAgent(opts: {
     rawJsonl: events.map((e) => JSON.stringify(e)).join("\n"),
     transcriptMd: renderTranscript(events),
   };
+}
+
+function createSandboxProvider(timeoutMs: number) {
+  const sandbox = process.env.MCP_USE_EVAL_SANDBOX ?? "vercel";
+  if (sandbox === "docker") {
+    return createDockerSandbox({
+      image: process.env.MCP_USE_EVAL_DOCKER_IMAGE,
+      ports: [BRIDGE_PORT],
+    });
+  }
+  if (sandbox === "vercel") {
+    return createVercelSandbox({
+      runtime: "node24",
+      ports: [BRIDGE_PORT],
+      timeout: timeoutMs + 60_000,
+    });
+  }
+  throw new Error(
+    `unknown MCP_USE_EVAL_SANDBOX "${sandbox}" (expected "vercel" or "docker")`
+  );
 }
 
 function numberField(

@@ -30,7 +30,9 @@ When a run includes both docs variants, `report.md` includes a "Docs Comparison"
 
 ## Usage
 
-Requires Vercel Sandbox credentials for agent runs, plus direct provider credentials for the selected AI SDK harness:
+Agent runs use a network sandbox. Set `MCP_USE_EVAL_SANDBOX=docker` to run the agent in a local Docker container (the recommended CI path; requires Docker). Without that env var, the harness uses Vercel Sandbox. Docker runs use `node:24-bookworm` by default; set `MCP_USE_EVAL_DOCKER_IMAGE` to override it.
+
+Agent runs also require direct provider credentials for the selected AI SDK harness:
 
 - `--agent claude` (default) uses `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
 - `--agent codex` uses `OPENAI_API_KEY` or `CODEX_API_KEY`.
@@ -41,6 +43,9 @@ Export credentials in your shell or put them in `.env` (gitignored; loaded by `p
 ```bash
 # from this repo
 pnpm install
+
+# use Docker instead of Vercel Sandbox for agent workspaces
+export MCP_USE_EVAL_SANDBOX=docker
 
 # smoke-test the graders without an agent (copies the task's golden solution)
 pnpm eval --agent golden --skip-judge
@@ -93,7 +98,7 @@ Results land in `results/<runId>/` (gitignored), where the run id leads with wha
 
 ## Known limitations
 
-- Agent runs use the Vercel AI SDK v7 harness canary (`@ai-sdk/harness`) with selectable `claude` and `codex` runners. The prepared local workspace is uploaded to a Vercel Sandbox before the turn and synced back afterward for the existing local graders.
+- Agent runs use the AI SDK v7 harness canary (`@ai-sdk/harness`) with selectable `claude` and `codex` runners. The prepared local workspace is uploaded to the selected network sandbox (`MCP_USE_EVAL_SANDBOX=docker` or `vercel`) before the turn and synced back afterward for the existing local graders.
 - OAuth task env vars are staged into `.env` and `.mcp-use-eval-env.sh` in the agent workspace. The prompt tells the agent to source the shell file before commands that need those values.
 - Everything the harness spawns (agent, graders, the server under test) gets a sanitized environment (`sanitizedEnv()` in `src/proc.ts`): plain `/bin/bash` instead of the user's login shell, no `npm_*`/`PNPM_*` script-context vars, no monorepo `node_modules/.bin` on `PATH`, no inherited `NODE_ENV`. Without this, the user's shell rc and the `pnpm eval` context pollute every Bash result the agent sees (and the judge reads).
 - Trials run sequentially (servers bind real ports; agent runs are the bottleneck anyway).

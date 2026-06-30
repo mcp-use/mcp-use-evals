@@ -16,6 +16,7 @@
     "@ai-sdk/harness-claude-code": "1.0.0-canary.9",
     "@ai-sdk/harness-codex": "1.0.0-canary.9",
     "@ai-sdk/openai": "3.0.74",
+    "@ai-sdk/provider-utils": "5.0.0-canary.48",
     "@ai-sdk/sandbox-vercel": "1.0.0-canary.13",
     "@anthropic-ai/sdk": ">=0.88.0 <1.0.0",
     "@langchain/core": "^1.1.0",
