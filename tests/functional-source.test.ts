@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { requiredImportProblems } from "../src/graders/functional.js";
+import {
+  requiredImportProblems,
+  sourceAssertionProblems,
+} from "../src/graders/functional.js";
 
 describe("requiredImportProblems", () => {
   it("passes when required module sources are imported", () => {
@@ -66,6 +69,34 @@ import {
     ).toEqual([
       'import from "mcp-use/server" missing named export(s): MCPServer (found index.ts:1)',
       'missing import from "mcp-use/react"',
+    ]);
+  });
+});
+
+describe("sourceAssertionProblems", () => {
+  const files = new Map([
+    [
+      "src/server.ts",
+      'const server = MCPServer.fromOpenAPI({ spec });\nserver.use("mcp:tools/call", handler);',
+    ],
+  ]);
+
+  it("accepts required regexes and absent forbidden regexes", () => {
+    expect(
+      sourceAssertionProblems(
+        files,
+        ["MCPServer\\.fromOpenAPI", "server\\.use"],
+        ["ctx\\.elicit\\("]
+      )
+    ).toEqual([]);
+  });
+
+  it("reports missing required and present forbidden patterns", () => {
+    expect(
+      sourceAssertionProblems(files, ["inputRequired\\("], ["fromOpenAPI"])
+    ).toEqual([
+      "required source pattern not found: /inputRequired\\(/",
+      "forbidden source pattern found in src/server.ts: /fromOpenAPI/",
     ]);
   });
 });

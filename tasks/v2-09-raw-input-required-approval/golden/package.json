@@ -1,12 +1,9 @@
 {
-  "name": "golden-v2-clerk-protected-server",
+  "name": "golden-raw-input-required-approval",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "mcp-use": "2.0.0-beta.66",
-    "zod": "^4.0.0"
-  },
+  "dependencies": { "mcp-use": "2.0.4", "zod": "^4.0.0" },
   "devDependencies": {
     "@types/node": "^25.3.0",
     "tsx": "^4.21.0",

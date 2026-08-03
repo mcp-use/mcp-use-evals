@@ -40,13 +40,13 @@ separate, explicitly named experiments; do not blend them into the baseline tren
 | **Condition** | The controlled setup for an attempt. Initially this is always `noskill+blank`: no mcp-apps-builder skill and an empty workspace. Internally, the condition is stored as a legacy variant id. |
 | **Trial** | One independent Codex attempt at one task under one condition, in a fresh sandbox. It ends in one `TrialGrade`: pass, fail, or invalid infrastructure result. |
 | **Cell** | One task × condition pairing, containing its repeated trials. With three trials, `v2-02-stateful-ticket-queue × noskill+blank` is one three-trial cell. |
-| **Evaluation batch** (or **run**) | A group of cells executed together. For the baseline, one batch is all six tasks under `noskill+blank`, with three fresh trials per task. CI may shard this into per-task jobs; the report should still treat it as one batch. |
+| **Evaluation batch** (or **run**) | A group of cells executed together. For the baseline, one batch is every checked-in task under `noskill+blank`, with three fresh trials per task. CI may shard this into per-task jobs; the report should still treat it as one batch. |
 
 Run one baseline batch on **Monday, Wednesday, and Friday**:
 
 ```text
-6 tasks × 3 fresh trials = 18 trials per batch
-3 batches per week       = 54 trials per week
+9 tasks × 3 fresh trials = 27 trials per batch
+3 batches per week       = 81 trials per week
 ```
 
 The headline **pass rate** is `passing valid scored trials ÷ valid scored trials`. For example, `41/54
@@ -88,7 +88,7 @@ condition is `noskill+blank`. Use `--condition`; `--variant` remains a deprecate
 ```bash
 pnpm install
 
-# baseline batch: Codex, six tasks, blank workspace, no skill, 3 fresh trials each
+# baseline batch: Codex, every task, blank workspace, no skill, 3 fresh trials each
 pnpm eval --agent codex --condition noskill+blank --trials 3
 
 # quick local smoke test of one task (one trial by default)
@@ -245,9 +245,10 @@ eval-results/
 ## Adding a task
 
 1. `tasks/<nn-name>/prompt.md` — pin the _observable contract_ (exact tool names, behavior, entry file, PORT handling) and leave implementation free, so the deterministic grader never fails a legitimate solution.
-2. `tasks/<nn-name>/task.json` — expected tools, optional expected resources, fixture calls (`contains` / `not-contains` / `number-equals` expectations; calls run in order on one session, so sequenced calls can assert stateful behavior), optional `resourceReads`, and valid variants. For open-ended app/deploy tasks where exact strings are too brittle, use `"deterministicReadiness": { "mode": "source-imports", "imports": [{ "source": "mcp-use/server" }] }` and keep `expectedTools`/`calls` empty — the grade is then `typecheck` + `imports` only, and reported outside the headline pass rate. For tasks that need external credentials during the agent phase, add `agentEnvKeys` with environment variable names only; the harness writes present values to `.env` / `.mcp-use-eval-env.sh` and excludes those files from synced snapshots. For OAuth tasks, add `"oauth": { "backend": "clerk" | "okta" }` — the harness runs a local IdP (a [vercel-labs/emulate](https://github.com/vercel-labs/emulate) backend, `src/oauth-backends.ts`) live during the agent phase, then grades against a **fresh** instance on a different port: it injects the IdP env vars when starting the server, probes for 401s on missing/wrong tokens, obtains a token via a headless authorization-code flow, and authenticates the tools/calls checks with it. Clerk tasks may also set `oauth.frontendApiUrl`; that real Clerk Frontend API URL is exposed only to the agent phase as `MCP_USE_OAUTH_CLERK_FRONTEND_API_URL`, while grading still uses the deterministic local issuer. `whoami`-style call expectations must use the seed constants exported from `src/oauth-backends.ts` (a test enforces this).
-3. `tasks/<nn-name>/golden/` — a known-good solution; `pnpm verify-tasks --task <nn-name>` must score `contractPass: true` before you trust agent runs against it.
-4. New SDK feature agents should adopt? Add a check to the ladder in `src/graders/functional.ts` (deterministic, unweighted — everything scored lives there) or watch for it turning up in judge memos first and promote it once it's a recurring, well-understood pattern.
+2. `tasks/<nn-name>/task.json` — expected tools, optional exact tool names and view URIs, resources and MIME types, ordered calls (`contains` / `not-contains` / `number-equals`, plus optional `isError`), pre/post-call resource reads, raw `inputRequiredCalls`, source provenance patterns, and optional build/start commands. Calls run in order on one session, so sequenced calls can assert stateful behavior. For open-ended app/deploy tasks where exact strings are too brittle, use `"deterministicReadiness": { "mode": "source-imports", "imports": [{ "source": "mcp-use/server" }] }` and keep `expectedTools`/`calls` empty — the grade is then `typecheck` + `imports` only, and reported outside the headline pass rate. For tasks that need external credentials during the agent phase, add `agentEnvKeys` with environment variable names only; the harness writes present values to `.env` / `.mcp-use-eval-env.sh` and excludes those files from synced snapshots. For OAuth tasks, add `"oauth": { "backend": "clerk" | "okta" }` — the harness runs a local IdP (a [vercel-labs/emulate](https://github.com/vercel-labs/emulate) backend, `src/oauth-backends.ts`) live during the agent phase, then grades against a **fresh** instance on a different port: it injects the IdP env vars when starting the server, probes for 401s on missing/wrong tokens, obtains a token via a headless authorization-code flow, and authenticates the tools/calls checks with it. Clerk tasks may also set `oauth.frontendApiUrl`; that real Clerk Frontend API URL is exposed only to the agent phase as `MCP_USE_OAUTH_CLERK_FRONTEND_API_URL`, while grading still uses the deterministic local issuer. `whoami`-style call expectations must use the seed constants exported from `src/oauth-backends.ts` (a test enforces this).
+3. Optional `tasks/<nn-name>/starter/` — an existing project copied into the agent workspace before the run. Use this for debugging and migration tasks; omit it for greenfield tasks.
+4. `tasks/<nn-name>/golden/` — a known-good solution; `pnpm verify-tasks --task <nn-name>` must score `contractPass: true` before you trust agent runs against it.
+5. New SDK feature agents should adopt? Add a check to the ladder in `src/graders/functional.ts` (deterministic, unweighted — everything scored lives there) or watch for it turning up in judge memos first and promote it once it's a recurring, well-understood pattern.
 
 ### Current tasks
 
@@ -256,9 +257,12 @@ eval-results/
 | `v2-01-basic-tool-server`          | Single typed tool, streamable HTTP, PORT handling — the SDK happy path                                                   |
 | `v2-02-stateful-ticket-queue`      | Four CRUD tools over shared in-memory state, sequenced lifecycle calls, "not found" error contract, count reporting      |
 | `v2-03-docs-lookup-server`         | Read-only lookup server: an index resource, per-slug parameterized resource reads, and a search tool over seeded content |
-| `v2-04-oauth-clerk`                | Clerk-protected server via the SDK's dedicated Clerk integration, identity from the auth context, `whoami` + `add` tools |
-| `v2-05-oauth-custom-idp`           | Generic OIDC IdP via the SDK's custom OAuth support + JWKS verification (issuer/audience claim checks), env-driven config |
 | `v2-06-project-board-composition` | Tools plus live resources over shared state — a resource read must reflect a prior tool call's effect                    |
+| `v2-07-debug-inventory-server` | Repair an existing, behaviorally broken inventory server from a task-owned starter fixture |
+| `v2-08-openapi-order-service` | Generate an exact order-service tool surface from a bundled OpenAPI document and local upstream |
+| `v2-09-raw-input-required-approval` | Multi-round deployment approval using only raw `input_required` helpers |
+| `v2-10-multi-view-incident-console` | Build, start, list, read, and call two independently bound MCP Apps views |
+| `v2-11-middleware-protected-audit` | Protocol middleware authorization, error results, and a post-call audit resource |
 
 ## Known limitations
 

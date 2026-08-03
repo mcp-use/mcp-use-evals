@@ -1,0 +1,54 @@
+{
+  "title": "Two-view MCP Apps incident console",
+  "entryCandidates": ["src/server.ts", "src/index.ts"],
+  "buildCommand": ["npx", "mcp-use", "build", "--inline"],
+  "startCommand": ["npx", "mcp-use", "start", "--port", "{port}", "--no-inspector"],
+  "exactToolNames": ["list_incidents", "get_incident"],
+  "expectedTools": [
+    {
+      "name": "list_incidents",
+      "viewUri": "ui://views/incident-list.html"
+    },
+    {
+      "name": "get_incident",
+      "requiredProps": ["id"],
+      "viewUri": "ui://views/incident-detail.html"
+    }
+  ],
+  "expectedResources": [
+    {
+      "uri": "ui://views/incident-list.html",
+      "name": "incident-list",
+      "mimeType": "text/html;profile=mcp-app"
+    },
+    {
+      "uri": "ui://views/incident-detail.html",
+      "name": "incident-detail",
+      "mimeType": "text/html;profile=mcp-app"
+    }
+  ],
+  "resourceReads": [
+    {
+      "uri": "ui://views/incident-list.html",
+      "expect": { "type": "contains", "value": "Unable to load incidents." }
+    },
+    {
+      "uri": "ui://views/incident-detail.html",
+      "expect": { "type": "contains", "value": "Unable to load incident." }
+    }
+  ],
+  "calls": [
+    {
+      "tool": "list_incidents",
+      "args": {},
+      "expect": { "type": "contains", "value": "INC-101" },
+      "viewUri": "ui://views/incident-list.html"
+    },
+    {
+      "tool": "get_incident",
+      "args": { "id": "INC-102" },
+      "expect": { "type": "contains", "value": "Priya Shah" },
+      "viewUri": "ui://views/incident-detail.html"
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -11,7 +13,7 @@ import { TrendRunSchema } from "./types.js";
  * No penalties, no blended scores — same rule as the rest of the pipeline.
  */
 
-const DEFAULT_SYNTHESIS_MODEL = "claude-opus-5";
+const DEFAULT_SYNTHESIS_MODEL = "gpt-5.6-sol";
 /** Webhook payload cap; Slack silently drops much larger messages. */
 const SLACK_TEXT_CAP = 39_000;
 /** Total memo payload cap for the model prompt; oldest memos drop first. */
@@ -810,6 +812,15 @@ function buildUserPrompt(statsBlock: string, memos: MemoBundle): string {
 }
 
 async function callSynthesisModel(model: string, userPrompt: string): Promise<string> {
+  if (model.startsWith("gpt")) {
+    const response = await generateText({
+      model: openai.responses(model),
+      system: SYSTEM_PROMPT,
+      prompt: userPrompt,
+    });
+    return response.text.trim();
+  }
+
   const client = new Anthropic();
   const response = await client.messages.create({
     model,
@@ -897,10 +908,15 @@ async function main(): Promise<void> {
   const model = values.model ?? process.env.SYNTHESIS_MODEL ?? DEFAULT_SYNTHESIS_MODEL;
   const resultsDir = resolve(process.cwd(), values["results-dir"]!);
 
-  if (!dryRun && !process.env.ANTHROPIC_API_KEY) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is required to call the synthesis model. Pass --dry-run to build the prompt and stats without calling it."
-    );
+  if (!dryRun) {
+    const requiredKey = model.startsWith("gpt")
+      ? "OPENAI_API_KEY"
+      : "ANTHROPIC_API_KEY";
+    if (!process.env[requiredKey]) {
+      throw new Error(
+        `${requiredKey} is required to call synthesis model "${model}". Pass --dry-run to build the prompt and stats without calling it.`
+      );
+    }
   }
   if (slackRequested && !dryRun && !process.env.SLACK_WEBHOOK_URL) {
     throw new Error(

@@ -1,13 +1,9 @@
 {
-  "name": "golden-v2-custom-idp-server",
+  "name": "golden-middleware-protected-audit",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "mcp-use": "2.0.0-beta.66",
-    "jose": "^6.1.0",
-    "zod": "^4.0.0"
-  },
+  "dependencies": { "mcp-use": "2.0.4", "zod": "^4.0.0" },
   "devDependencies": {
     "@types/node": "^25.3.0",
     "tsx": "^4.21.0",

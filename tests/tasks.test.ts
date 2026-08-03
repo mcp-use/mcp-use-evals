@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { CLERK_SEED, OKTA_SEED } from "../src/oauth-backends.js";
 import { listTaskIds, loadTask } from "../src/tasks.js";
 import { TaskConfigSchema, parseVariant, variantId } from "../src/types.js";
 
@@ -59,6 +58,58 @@ describe("TaskConfigSchema", () => {
     expect(TaskConfigSchema.safeParse(config).success).toBe(true);
   });
 
+  it("accepts advanced runtime task contracts", () => {
+    const config = {
+      ...validConfig(),
+      exactToolNames: ["add"],
+      requiredSourcePatterns: ["MCPServer\\.fromOpenAPI"],
+      forbiddenSourcePatterns: ["ctx\\.elicit\\("],
+      buildCommand: ["npx", "mcp-use", "build", "--inline"],
+      startCommand: ["npx", "mcp-use", "start", "--port", "{port}"],
+      expectedTools: [
+        {
+          name: "add",
+          requiredProps: ["a", "b"],
+          viewUri: "ui://views/add.html",
+        },
+      ],
+      expectedResources: [
+        {
+          uri: "ui://views/add.html",
+          mimeType: "text/html;profile=mcp-app",
+        },
+      ],
+      calls: [
+        {
+          tool: "add",
+          args: { a: 2, b: 3 },
+          expect: { type: "number-equals", value: 5 },
+          isError: false,
+          viewUri: "ui://views/add.html",
+        },
+      ],
+      postCallResourceReads: [
+        {
+          uri: "audit://events",
+          expect: { type: "contains", value: "allowed" },
+        },
+      ],
+      inputRequiredCalls: [
+        {
+          tool: "deploy",
+          args: { environment: "production" },
+          key: "approval",
+          message: "Approve?",
+          requiredSchemaProps: ["approve"],
+          response: { action: "accept", content: { approve: true } },
+          expect: { type: "contains", value: "deployed" },
+          isError: false,
+        },
+      ],
+    };
+    expect(TaskConfigSchema.safeParse(config).success).toBe(true);
+  });
+
   it("accepts optional agent environment key pass-through", () => {
     const config = {
       ...validConfig(),
@@ -103,6 +154,11 @@ describe("TaskConfigSchema", () => {
     expect(TaskConfigSchema.safeParse(config).success).toBe(false);
   });
 
+  it("rejects invalid source regexes when loading the task", () => {
+    const config = { ...validConfig(), requiredSourcePatterns: ["fromOpenAPI("] };
+    expect(TaskConfigSchema.safeParse(config).success).toBe(false);
+  });
+
   it("rejects an expectation whose value type does not match its type", () => {
     const config = validConfig();
     (config.calls as Array<{ expect: unknown }>)[0].expect = {
@@ -132,17 +188,6 @@ describe("TaskConfigSchema", () => {
   it("rejects an empty entryCandidates list", () => {
     const config = { ...validConfig(), entryCandidates: [] };
     expect(TaskConfigSchema.safeParse(config).success).toBe(false);
-  });
-});
-
-describe("oauth task seeds", () => {
-  // task.json call expectations are literals; they must match the identities
-  // the backends actually seed, or the calls check can never pass.
-  it("whoami expectations match the seeded backend identities", async () => {
-    const clerk = await loadTask("v2-04-oauth-clerk");
-    expect(JSON.stringify(clerk.config.calls)).toContain(CLERK_SEED.sub);
-    const okta = await loadTask("v2-05-oauth-custom-idp");
-    expect(JSON.stringify(okta.config.calls)).toContain(OKTA_SEED.sub);
   });
 });
 

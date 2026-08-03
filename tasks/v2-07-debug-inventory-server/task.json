@@ -1,0 +1,23 @@
+{
+  "title": "Debug and repair inventory MCP server",
+  "entryCandidates": ["src/server.ts"],
+  "expectedTools": [
+    { "name": "list_inventory" },
+    { "name": "get_stock", "requiredProps": ["sku"] },
+    { "name": "reserve_stock", "requiredProps": ["sku", "quantity"] },
+    { "name": "restock", "requiredProps": ["sku", "quantity"] }
+  ],
+  "calls": [
+    { "tool": "list_inventory", "args": {}, "expect": { "type": "contains", "value": "coffee-mug" } },
+    { "tool": "list_inventory", "args": {}, "expect": { "type": "contains", "value": "desk-lamp" } },
+    { "tool": "get_stock", "args": { "sku": "coffee-mug" }, "expect": { "type": "number-equals", "value": 8 } },
+    { "tool": "reserve_stock", "args": { "sku": "coffee-mug", "quantity": 3 }, "expect": { "type": "contains", "value": "Reserved 3" } },
+    { "tool": "get_stock", "args": { "sku": "coffee-mug" }, "expect": { "type": "number-equals", "value": 5 } },
+    { "tool": "reserve_stock", "args": { "sku": "coffee-mug", "quantity": 6 }, "expect": { "type": "contains", "value": "insufficient stock" } },
+    { "tool": "get_stock", "args": { "sku": "coffee-mug" }, "expect": { "type": "number-equals", "value": 5 } },
+    { "tool": "restock", "args": { "sku": "desk-lamp", "quantity": 4 }, "expect": { "type": "contains", "value": "Restocked 4" } },
+    { "tool": "get_stock", "args": { "sku": "desk-lamp" }, "expect": { "type": "number-equals", "value": 6 } },
+    { "tool": "get_stock", "args": { "sku": "ghost" }, "expect": { "type": "contains", "value": "not found" } },
+    { "tool": "reserve_stock", "args": { "sku": "ghost", "quantity": 1 }, "expect": { "type": "contains", "value": "not found" } }
+  ]
+}

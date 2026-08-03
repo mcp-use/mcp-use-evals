@@ -1,0 +1,39 @@
+{
+  "title": "Raw input_required deployment approval",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "exactToolNames": ["request_deploy"],
+  "expectedTools": [
+    { "name": "request_deploy", "requiredProps": ["environment"] }
+  ],
+  "requiredSourcePatterns": [
+    "\\binputRequired\\s*\\(",
+    "\\b(?:inputResponse|acceptedContent)\\s*\\("
+  ],
+  "forbiddenSourcePatterns": ["\\bctx\\s*\\.\\s*elicit\\s*\\("],
+  "inputRequiredCalls": [
+    {
+      "tool": "request_deploy",
+      "args": { "environment": "production" },
+      "key": "deployment-approval",
+      "message": "Approve production deployment?",
+      "requiredSchemaProps": ["approve"],
+      "response": {
+        "action": "accept",
+        "content": { "approve": true, "note": "ship it" }
+      },
+      "expect": { "type": "contains", "value": "ship it" },
+      "isError": false
+    },
+    {
+      "tool": "request_deploy",
+      "args": { "environment": "production" },
+      "key": "deployment-approval",
+      "message": "Approve production deployment?",
+      "requiredSchemaProps": ["approve"],
+      "response": { "action": "decline" },
+      "expect": { "type": "contains", "value": "decline" },
+      "isError": true
+    }
+  ],
+  "calls": []
+}

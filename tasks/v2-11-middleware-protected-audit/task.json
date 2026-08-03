@@ -1,0 +1,34 @@
+{
+  "title": "Middleware-protected deletion with audit trail",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "exactToolNames": ["read_record", "delete_record"],
+  "requiredSourcePatterns": ["\\.use\\s*\\(\\s*[\"']mcp:tools/call[\"']"],
+  "expectedTools": [
+    { "name": "read_record", "requiredProps": ["id"] },
+    { "name": "delete_record", "requiredProps": ["id", "approvalCode"] }
+  ],
+  "expectedResources": [{ "uri": "audit://events", "name": "audit-events", "mimeType": "text/plain" }],
+  "calls": [
+    {
+      "tool": "read_record",
+      "args": { "id": "R-1" },
+      "isError": false,
+      "expect": { "type": "contains", "value": "Record R-1" }
+    },
+    {
+      "tool": "delete_record",
+      "args": { "id": "R-1", "approvalCode": "WRONG" },
+      "isError": true,
+      "expect": { "type": "contains", "value": "approval required" }
+    },
+    {
+      "tool": "delete_record",
+      "args": { "id": "R-1", "approvalCode": "APPROVE-DELETE" },
+      "isError": false,
+      "expect": { "type": "contains", "value": "deleted R-1" }
+    }
+  ],
+  "postCallResourceReads": [
+    { "uri": "audit://events", "expect": { "type": "contains", "value": "1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed" } }
+  ]
+}

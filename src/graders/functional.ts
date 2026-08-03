@@ -1,6 +1,11 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { createServer, connect } from "node:net";
+import { tmpdir } from "node:os";
 import { extname, join, relative } from "node:path";
+import {
+  Client as OfficialMcpClient,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import { MCPClient } from "mcp-use";
 import { startOAuthBackend, type OAuthBackend } from "../oauth-backends.js";
 import { run, sanitizedEnv, spawnDaemon } from "../proc.js";
@@ -62,7 +67,7 @@ export async function gradeWorkspace(opts: {
     };
   }
 
-  const checks = await gradeContract(opts.workspace, config);
+  const checks = await gradeContract(opts.workspace, config, sources);
   return {
     contractPass: checks.every((c) => c.pass),
     checks,
@@ -84,7 +89,8 @@ export async function gradeWorkspace(opts: {
  */
 async function gradeContract(
   workspace: string,
-  task: TaskConfig
+  task: TaskConfig,
+  sources: Map<string, string>
 ): Promise<GradeCheck[]> {
   const checks: GradeCheck[] = [];
   const fail = (id: string, detail: string) =>
@@ -94,11 +100,21 @@ async function gradeContract(
 
   const hasResourceChecks =
     (task.expectedResources?.length ?? 0) > 0 ||
-    (task.resourceReads?.length ?? 0) > 0;
+    (task.resourceReads?.length ?? 0) > 0 ||
+    (task.postCallResourceReads?.length ?? 0) > 0;
 
   // Full id ladder after "install", in execution order. Used to fill in
   // "blocked by <stage>" checks when an earlier stage stops the ladder.
-  const plannedIds: string[] = ["typecheck", "entry", "start"];
+  const plannedIds: string[] = ["typecheck"];
+  if (
+    (task.requiredSourcePatterns?.length ?? 0) > 0 ||
+    (task.forbiddenSourcePatterns?.length ?? 0) > 0
+  ) {
+    plannedIds.push("source");
+  }
+  plannedIds.push("entry");
+  if (task.buildCommand) plannedIds.push("build");
+  plannedIds.push("start");
   if (task.oauth) plannedIds.push("auth");
   plannedIds.push("handshake", "tools");
   if (task.expectedResources?.length) plannedIds.push("resources");
@@ -107,6 +123,18 @@ async function gradeContract(
   }
   for (const [call, n] of withCounts(task.calls, (c) => c.tool)) {
     plannedIds.push(`call:${call.tool}:${n}`);
+  }
+  for (const [read, n] of withCounts(
+    task.postCallResourceReads ?? [],
+    (r) => r.uri
+  )) {
+    plannedIds.push(`post-call-resource-read:${read.uri}:${n}`);
+  }
+  for (const [call, n] of withCounts(
+    task.inputRequiredCalls ?? [],
+    (c) => c.tool
+  )) {
+    plannedIds.push(`input-required:${call.tool}:${n}`);
   }
 
   const blockAllPlanned = (reason: string) => {
@@ -125,11 +153,16 @@ async function gradeContract(
     blockAllPlanned("install");
     return checks;
   }
+
   if (!(await exists(join(workspace, "node_modules")))) {
     const install = await run(
       "npm",
       ["install", "--no-audit", "--no-fund", "--loglevel=error"],
-      { cwd: workspace, timeoutMs: 5 * 60_000 }
+      {
+        cwd: workspace,
+        timeoutMs: 5 * 60_000,
+        env: graderNpmEnv(),
+      }
     );
     if (install.code !== 0) {
       fail("install", `npm install failed: ${tail(install.stderr)}`);
@@ -158,6 +191,17 @@ async function gradeContract(
       );
   }
 
+  // ── source assertions (do not block runtime checks) ──
+  if (plannedIds.includes("source")) {
+    const problems = sourceAssertionProblems(
+      sources,
+      task.requiredSourcePatterns ?? [],
+      task.forbiddenSourcePatterns ?? []
+    );
+    if (problems.length === 0) pass("source");
+    else fail("source", problems.join("; "));
+  }
+
   // ── entry ──
   const entry = await findEntry(workspace, task.entryCandidates);
   if (!entry) {
@@ -170,12 +214,37 @@ async function gradeContract(
   }
   pass("entry", entry);
 
+  // ── optional project build ──
+  if (task.buildCommand) {
+    const [command, ...args] = interpolateCommand(task.buildCommand, {
+      entry,
+      port: "0",
+    });
+    const build = await run(command, args, {
+      cwd: workspace,
+      timeoutMs: 5 * 60_000,
+    });
+    if (build.code !== 0) {
+      fail(
+        "build",
+        `${task.buildCommand.join(" ")} failed:\n${tail(build.stdout + build.stderr)}`
+      );
+      blockAfter("build", "build");
+      return checks;
+    }
+    pass("build");
+  }
+
   // ── start ──
   const backend: OAuthBackend | null = task.oauth
     ? await startOAuthBackend(task.oauth.backend, await freePort())
     : null;
   const port = await freePort();
-  const server = spawnDaemon("npx", ["-y", "tsx", entry], {
+  const launch = task.startCommand
+    ? interpolateCommand(task.startCommand, { entry, port: String(port) })
+    : ["npx", "-y", "tsx", entry];
+  const [launchCommand, ...launchArgs] = launch;
+  const server = spawnDaemon(launchCommand, launchArgs, {
     cwd: workspace,
     env: {
       ...sanitizedEnv(),
@@ -290,6 +359,31 @@ async function gradeContract(
             `tool "${expected.name}" schema missing property "${p}"`
           );
       }
+      if (expected.viewUri) {
+        const meta = asRecord(tool._meta);
+        const ui = asRecord(meta.ui);
+        if (
+          ui.resourceUri !== expected.viewUri ||
+          meta["ui/resourceUri"] !== expected.viewUri
+        ) {
+          toolProblems.push(
+            `tool "${expected.name}" did not advertise view URI "${expected.viewUri}" in nested and legacy metadata`
+          );
+        }
+      }
+    }
+    if (task.exactToolNames) {
+      const got = tools
+        .map((tool) => String(tool.name))
+        .sort((a, b) => a.localeCompare(b));
+      const wanted = [...task.exactToolNames].sort((a, b) =>
+        a.localeCompare(b)
+      );
+      if (JSON.stringify(got) !== JSON.stringify(wanted)) {
+        toolProblems.push(
+          `exact tool names were [${got.join(", ")}] (expected [${wanted.join(", ")}])`
+        );
+      }
     }
     if (toolProblems.length === 0) pass("tools");
     else fail("tools", toolProblems.join("; "));
@@ -317,6 +411,14 @@ async function gradeContract(
             if (expected.name && resource.name !== expected.name) {
               resourceProblems.push(
                 `resource "${expected.uri}" name was "${String(resource.name)}" (expected "${expected.name}")`
+              );
+            }
+            if (
+              expected.mimeType &&
+              resource.mimeType !== expected.mimeType
+            ) {
+              resourceProblems.push(
+                `resource "${expected.uri}" mimeType was "${String(resource.mimeType)}" (expected "${expected.mimeType}")`
               );
             }
           }
@@ -365,14 +467,141 @@ async function gradeContract(
           call.args
         )) as Record<string, unknown>;
         const text = flattenCallResult(result);
-        if (matchExpectation(text, call.expect)) pass(id);
+        const expectationPass = matchExpectation(text, call.expect);
+        const errorPass =
+          call.isError === undefined ||
+          (result.isError === true) === call.isError;
+        const resultMeta = asRecord(result._meta);
+        const resultUi = asRecord(resultMeta.ui);
+        const viewPass =
+          call.viewUri === undefined ||
+          (resultUi.resourceUri === call.viewUri &&
+            resultMeta["ui/resourceUri"] === call.viewUri);
+        if (expectationPass && errorPass && viewPass) pass(id);
         else
           fail(
             id,
-            `${call.tool}(${JSON.stringify(call.args)}) -> "${truncate(text, 120)}" did not match ${JSON.stringify(call.expect)}`
+            `${call.tool}(${JSON.stringify(call.args)}) -> "${truncate(text, 120)}" did not match ${JSON.stringify(call.expect)}${errorPass ? "" : `; isError was ${String(result.isError)} (expected ${String(call.isError)})`}${viewPass ? "" : `; result did not advertise view URI ${JSON.stringify(call.viewUri)}`}`
           );
       } catch (err) {
         fail(id, `${call.tool}(${JSON.stringify(call.args)}) threw: ${truncate(String(err), 200)}`);
+      }
+    }
+
+    // ── resource reads after state-changing calls ──
+    for (const [read, n] of withCounts(
+      task.postCallResourceReads ?? [],
+      (r) => r.uri
+    )) {
+      const id = `post-call-resource-read:${read.uri}:${n}`;
+      try {
+        const result = (await session.readResource(read.uri)) as Record<
+          string,
+          unknown
+        >;
+        const text = flattenResourceResult(result);
+        if (matchExpectation(text, read.expect)) pass(id);
+        else
+          fail(
+            id,
+            `readResource(${read.uri}) after calls -> "${truncate(text, 120)}" did not match ${JSON.stringify(read.expect)}`
+          );
+      } catch (err) {
+        fail(
+          id,
+          `resources/read(${read.uri}) after calls failed: ${truncate(String(err), 300)}`
+        );
+      }
+    }
+
+    // ── raw input_required round trips ──
+    if ((task.inputRequiredCalls?.length ?? 0) > 0) {
+      const officialClient = new OfficialMcpClient(
+        { name: "mcp-use-evals-input-required", version: "1.0.0" },
+        {
+          capabilities: { elicitation: { form: {}, url: {} } },
+          versionNegotiation: { mode: { pin: "2026-07-28" } },
+          inputRequired: { autoFulfill: false },
+        }
+      );
+      try {
+        await officialClient.connect(
+          new StreamableHTTPClientTransport(
+            new URL(`http://localhost:${activePort}/mcp`)
+          )
+        );
+        for (const [call, n] of withCounts(
+          task.inputRequiredCalls ?? [],
+          (c) => c.tool
+        )) {
+          const id = `input-required:${call.tool}:${n}`;
+          try {
+            const initial = (await officialClient.callTool(
+              { name: call.tool, arguments: call.args },
+              { allowInputRequired: true }
+            )) as Record<string, unknown>;
+            const inputRequests = asRecord(initial.inputRequests);
+            const inputRequest = asRecord(inputRequests[call.key]);
+            const inputRequestParams = asRecord(inputRequest.params);
+            const schema = asRecord(inputRequestParams.requestedSchema);
+            const properties = asRecord(schema.properties);
+            const requestProblems: string[] = [];
+            if (Object.keys(inputRequests).length === 0)
+              requestProblems.push("initial result was not input_required");
+            if (inputRequestParams.message !== call.message)
+              requestProblems.push(
+                `message was ${JSON.stringify(inputRequestParams.message)} (expected ${JSON.stringify(call.message)})`
+              );
+            for (const prop of call.requiredSchemaProps ?? []) {
+              if (!(prop in properties))
+                requestProblems.push(
+                  `requested schema missing property "${prop}"`
+                );
+            }
+
+            const retried = (await officialClient.callTool(
+              {
+                name: call.tool,
+                arguments: call.args,
+                inputResponses: { [call.key]: call.response },
+                ...(typeof initial.requestState === "string"
+                  ? { requestState: initial.requestState }
+                  : {}),
+              } as never,
+              { allowInputRequired: true }
+            )) as Record<string, unknown>;
+            const finalText = flattenCallResult(retried);
+            if (!matchExpectation(finalText, call.expect)) {
+              requestProblems.push(
+                `final result "${truncate(finalText, 120)}" did not match ${JSON.stringify(call.expect)}`
+              );
+            }
+            if (
+              call.isError !== undefined &&
+              (retried.isError === true) !== call.isError
+            ) {
+              requestProblems.push(
+                `final isError was ${String(retried.isError)} (expected ${String(call.isError)})`
+              );
+            }
+            if (requestProblems.length === 0) pass(id);
+            else fail(id, requestProblems.join("; "));
+          } catch (err) {
+            fail(id, `input_required flow failed: ${truncate(String(err), 300)}`);
+          }
+        }
+      } catch (err) {
+        for (const [call, n] of withCounts(
+          task.inputRequiredCalls ?? [],
+          (c) => c.tool
+        )) {
+          fail(
+            `input-required:${call.tool}:${n}`,
+            `official v2 client could not connect: ${truncate(String(err), 300)}`
+          );
+        }
+      } finally {
+        await officialClient.close().catch(() => {});
       }
     }
 
@@ -405,7 +634,11 @@ async function gradeSourceImports(
       const install = await run(
         "npm",
         ["install", "--no-audit", "--no-fund", "--loglevel=error"],
-        { cwd: workspace, timeoutMs: 5 * 60_000 }
+        {
+          cwd: workspace,
+          timeoutMs: 5 * 60_000,
+          env: graderNpmEnv(),
+        }
       );
       if (install.code !== 0) {
         fail("typecheck", `npm install failed: ${tail(install.stderr)}`);
@@ -455,13 +688,20 @@ function firstFailureCode(checks: GradeCheck[]): FailureCode | null {
 function failureCodeFor(id: string): FailureCode {
   if (id === "install") return "contract.install";
   if (id === "typecheck") return "contract.typecheck";
+  if (id === "source") return "contract.source";
   if (id === "entry") return "contract.entry";
+  if (id === "build") return "contract.build";
   if (id === "start") return "contract.start";
   if (id === "handshake") return "contract.handshake";
   if (id === "tools") return "contract.tools";
-  if (id === "resources" || id.startsWith("resource-read:"))
+  if (
+    id === "resources" ||
+    id.startsWith("resource-read:") ||
+    id.startsWith("post-call-resource-read:")
+  )
     return "contract.resources";
-  if (id.startsWith("call:")) return "contract.calls";
+  if (id.startsWith("call:") || id.startsWith("input-required:"))
+    return "contract.calls";
   if (id === "auth") return "contract.auth";
   if (id === "imports") return "contract.imports";
   throw new Error(`unmapped grade check id "${id}"`);
@@ -479,6 +719,62 @@ function withCounts<T>(
     counts.set(key, n);
     return [item, n];
   });
+}
+
+/** Validate task-owned source provenance checks without constraining file layout. */
+export function sourceAssertionProblems(
+  files: Map<string, string>,
+  required: string[],
+  forbidden: string[]
+): string[] {
+  const problems: string[] = [];
+  const entries = [...files.entries()];
+  for (const pattern of required) {
+    const regex = compileSourcePattern(pattern);
+    if (!entries.some(([, content]) => regex.test(content))) {
+      problems.push(`required source pattern not found: /${pattern}/`);
+    }
+  }
+  for (const pattern of forbidden) {
+    const regex = compileSourcePattern(pattern);
+    const match = entries.find(([, content]) => regex.test(content));
+    if (match) {
+      problems.push(`forbidden source pattern found in ${match[0]}: /${pattern}/`);
+    }
+  }
+  return problems;
+}
+
+function compileSourcePattern(pattern: string): RegExp {
+  try {
+    return new RegExp(pattern, "m");
+  } catch (err) {
+    throw new Error(`invalid task source pattern ${JSON.stringify(pattern)}: ${String(err)}`);
+  }
+}
+
+function interpolateCommand(
+  command: string[],
+  values: { entry: string; port: string }
+): string[] {
+  return command.map((part) =>
+    part.replaceAll("{entry}", values.entry).replaceAll("{port}", values.port)
+  );
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function graderNpmEnv(): NodeJS.ProcessEnv {
+  return {
+    ...sanitizedEnv(),
+    npm_config_cache:
+      process.env.MCP_USE_EVAL_NPM_CACHE ??
+      join(tmpdir(), "mcp-use-evals-npm-cache"),
+  };
 }
 
 /**

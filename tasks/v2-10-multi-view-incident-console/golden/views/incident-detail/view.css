@@ -1,0 +1,1 @@
+main { font-family: system-ui, sans-serif; padding: 16px; } dl { display: grid; grid-template-columns: 90px 1fr; gap: 8px; } dt { font-weight: 700; }

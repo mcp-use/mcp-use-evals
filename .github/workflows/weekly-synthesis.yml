@@ -2,8 +2,8 @@ name: Weekly synthesis
 
 on:
   schedule:
-    # Monday 13:00 UTC (ahead of the Mon eval run's 14:00 cron)
-    - cron: "0 13 * * 1"
+    # Sunday 13:00 UTC (after the week's final Friday eval batch)
+    - cron: "0 13 * * 0"
   workflow_dispatch:
     inputs:
       days:
@@ -24,7 +24,7 @@ jobs:
         with:
           path: main
 
-      # The Monday 13:00 UTC synthesis cron fires an hour before the first
+      # The Sunday 13:00 UTC synthesis cron may fire before the first
       # Mon/Wed/Fri 14:00 UTC evals cron could ever create the eval-results
       # branch, so `actions/checkout@v4 ref: eval-results` would hard-fail on
       # a fresh repo (checkout errors out on a missing ref, before
@@ -68,12 +68,13 @@ jobs:
       - name: Run synthesis
         working-directory: main
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           pnpm synthesize \
             --days "${{ github.event.inputs.days || '7' }}" \
             --results-dir ../eval-results/runs \
+            --model gpt-5.6-sol \
             --slack
 
       - name: Upload synthesis report

@@ -28,7 +28,7 @@ const SCAFFOLD_TIMEOUT_MS = 10 * 60_000;
  */
 export async function prepareWorkspace(
   variant: Variant,
-  opts: { skillTarget?: SkillTarget } = {}
+  opts: { skillTarget?: SkillTarget; taskDir?: string } = {}
 ): Promise<Sandbox> {
   const root = await mkdtemp(join(tmpdir(), "mcpuse-eval-"));
   const workspace = join(root, "app");
@@ -59,6 +59,13 @@ export async function prepareWorkspace(
     await mkdir(workspace, { recursive: true });
   }
 
+  if (opts.taskDir) {
+    const starter = join(opts.taskDir, "starter");
+    if (await exists(starter)) {
+      await cp(starter, workspace, { recursive: true });
+    }
+  }
+
   if (variant.skill) {
     const dest = join(workspace, skillRoot(opts.skillTarget), SKILL_NAME);
     await mkdir(dest, { recursive: true });
@@ -72,6 +79,13 @@ export async function prepareWorkspace(
     workspace,
     cleanup: () => rm(root, { recursive: true, force: true }),
   };
+}
+
+async function exists(path: string): Promise<boolean> {
+  return access(path).then(
+    () => true,
+    () => false
+  );
 }
 
 /** Copy a task's golden solution over the workspace (grader-calibration mode). */

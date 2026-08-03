@@ -1,0 +1,33 @@
+{
+  "title": "OpenAPI-backed self-contained order service",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "expectedTools": [
+    { "name": "createOrder", "requiredProps": ["body"] },
+    { "name": "getOrder", "requiredProps": ["id", "include"] },
+    { "name": "cancelOrder", "requiredProps": ["id"] }
+  ],
+  "exactToolNames": ["createOrder", "getOrder", "cancelOrder"],
+  "requiredSourcePatterns": ["fromOpenAPI\\s*\\("],
+  "calls": [
+    {
+      "tool": "createOrder",
+      "args": { "body": { "sku": "green-tea", "quantity": 2 } },
+      "expect": { "type": "contains", "value": "ord-1001" }
+    },
+    {
+      "tool": "getOrder",
+      "args": { "id": "ord-1001", "include": "events" },
+      "expect": { "type": "contains", "value": "green-tea" }
+    },
+    {
+      "tool": "cancelOrder",
+      "args": { "id": "ord-1001" },
+      "expect": { "type": "contains", "value": "cancelled" }
+    },
+    {
+      "tool": "getOrder",
+      "args": { "id": "ord-1001" },
+      "expect": { "type": "contains", "value": "not found" }
+    }
+  ]
+}

@@ -71,9 +71,12 @@ jobs:
           - v2-01-basic-tool-server
           - v2-02-stateful-ticket-queue
           - v2-03-docs-lookup-server
-          - v2-04-oauth-clerk
-          - v2-05-oauth-custom-idp
           - v2-06-project-board-composition
+          - v2-07-debug-inventory-server
+          - v2-08-openapi-order-service
+          - v2-09-raw-input-required-approval
+          - v2-10-multi-view-incident-console
+          - v2-11-middleware-protected-audit
     steps:
       - uses: actions/checkout@v4
 

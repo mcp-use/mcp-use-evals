@@ -241,7 +241,10 @@ async function runTrial(opts: {
     error: null,
   };
 
-  const sandbox = await prepareWorkspace(variant, { skillTarget }).catch(
+  const sandbox = await prepareWorkspace(variant, {
+    skillTarget,
+    taskDir: task.dir,
+  }).catch(
     (err) => {
       return { error: String(err) } as const;
     }

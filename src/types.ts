@@ -50,6 +50,8 @@ export const ExpectedToolSchema = z.strictObject({
   name: z.string(),
   /** property names that must appear in the tool's input schema */
   requiredProps: z.array(z.string()).optional(),
+  /** MCP Apps resource URI advertised by both nested and legacy tool metadata. */
+  viewUri: z.string().optional(),
 });
 export type ExpectedTool = z.infer<typeof ExpectedToolSchema>;
 
@@ -66,12 +68,17 @@ export const ToolCallCheckSchema = z.strictObject({
   tool: z.string(),
   args: z.record(z.string(), z.unknown()),
   expect: ExpectationSchema,
+  /** Optional assertion for the MCP result's error flag. */
+  isError: z.boolean().optional(),
+  /** Optional MCP Apps resource URI expected on a completed tool result. */
+  viewUri: z.string().optional(),
 });
 export type ToolCallCheck = z.infer<typeof ToolCallCheckSchema>;
 
 export const ExpectedResourceSchema = z.strictObject({
   uri: z.string(),
   name: z.string().optional(),
+  mimeType: z.string().optional(),
 });
 export type ExpectedResource = z.infer<typeof ExpectedResourceSchema>;
 
@@ -80,6 +87,38 @@ export const ResourceReadCheckSchema = z.strictObject({
   expect: ExpectationSchema,
 });
 export type ResourceReadCheck = z.infer<typeof ResourceReadCheckSchema>;
+
+const InputRequiredResponseSchema = z.strictObject({
+  action: z.enum(["accept", "decline", "cancel"]),
+  content: z.record(z.string(), z.unknown()).optional(),
+});
+
+/** A deterministic two-round raw input_required tool flow. */
+export const InputRequiredCallCheckSchema = z.strictObject({
+  tool: z.string(),
+  args: z.record(z.string(), z.unknown()),
+  key: z.string(),
+  message: z.string(),
+  requiredSchemaProps: z.array(z.string()).optional(),
+  response: InputRequiredResponseSchema,
+  expect: ExpectationSchema,
+  isError: z.boolean().optional(),
+});
+export type InputRequiredCallCheck = z.infer<
+  typeof InputRequiredCallCheckSchema
+>;
+
+const SourcePatternSchema = z.string().min(1).refine(
+  (pattern) => {
+    try {
+      new RegExp(pattern, "m");
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { error: "expected a valid JavaScript regular expression" }
+);
 
 /**
  * OAuth contract for tasks that require authentication. The grader starts a
@@ -136,10 +175,24 @@ export const TaskConfigSchema = z.strictObject({
   /** entry files the grader will try, in order */
   entryCandidates: z.array(z.string()).min(1),
   expectedTools: z.array(ExpectedToolSchema),
+  /** When set, tools/list must contain exactly these names. */
+  exactToolNames: z.array(z.string()).optional(),
   calls: z.array(ToolCallCheckSchema),
   /** optional resource listing/read checks for tasks that exercise MCP resources */
   expectedResources: z.array(ExpectedResourceSchema).optional(),
   resourceReads: z.array(ResourceReadCheckSchema).optional(),
+  /** Resource reads performed after the ordered tool calls. */
+  postCallResourceReads: z.array(ResourceReadCheckSchema).optional(),
+  /** Raw two-round input_required flows performed with the official v2 client. */
+  inputRequiredCalls: z.array(InputRequiredCallCheckSchema).optional(),
+  /** Regexes that must match at least one submitted source file. */
+  requiredSourcePatterns: z.array(SourcePatternSchema).optional(),
+  /** Regexes that must not match any submitted source file. */
+  forbiddenSourcePatterns: z.array(SourcePatternSchema).optional(),
+  /** Optional command run after typecheck and entry discovery. */
+  buildCommand: z.array(z.string()).min(1).optional(),
+  /** Optional server command replacing the default `npx tsx <entry>`. */
+  startCommand: z.array(z.string()).min(1).optional(),
   /**
    * Environment variable names to expose to the agent phase via .env and
    * .mcp-use-eval-env.sh. Use for opt-in external credentials; never store the
@@ -174,7 +227,7 @@ export interface LoadedTask {
 // LLM judge's memo affects no number anywhere.
 
 /** Bump when grading semantics change; recorded in every run manifest. */
-export const GRADER_VERSION = "2.0.0";
+export const GRADER_VERSION = "2.1.0";
 
 /**
  * First failing stage of a trial. `contract.*` = the agent's server failed
@@ -184,7 +237,9 @@ export const GRADER_VERSION = "2.0.0";
 export type FailureCode =
   | "contract.install"
   | "contract.typecheck"
+  | "contract.source"
   | "contract.entry"
+  | "contract.build"
   | "contract.start"
   | "contract.handshake"
   | "contract.tools"
