@@ -1,0 +1,72 @@
+{
+  "title": "Read-only documentation lookup server",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "expectedTools": [{ "name": "search_docs", "requiredProps": ["query"] }],
+  "expectedResources": [{ "uri": "docs://index" }],
+  "resourceReads": [
+    {
+      "uri": "docs://index",
+      "expect": { "type": "contains", "value": "Getting Started" }
+    },
+    {
+      "uri": "docs://index",
+      "expect": { "type": "contains", "value": "Authentication" }
+    },
+    {
+      "uri": "docs://index",
+      "expect": { "type": "contains", "value": "Deployment" }
+    },
+    {
+      "uri": "docs://getting-started",
+      "expect": {
+        "type": "contains",
+        "value": "Install the CLI and run init to scaffold a new project."
+      }
+    },
+    {
+      "uri": "docs://authentication",
+      "expect": {
+        "type": "contains",
+        "value": "Requests must include a bearer token in the Authorization header."
+      }
+    },
+    {
+      "uri": "docs://deployment",
+      "expect": {
+        "type": "contains",
+        "value": "Deploy the server behind a reverse proxy that terminates TLS."
+      }
+    },
+    {
+      "uri": "docs://not-a-real-page",
+      "expect": { "type": "contains", "value": "not found" }
+    }
+  ],
+  "calls": [
+    {
+      "tool": "search_docs",
+      "args": { "query": "reverse proxy" },
+      "expect": { "type": "contains", "value": "deployment" }
+    },
+    {
+      "tool": "search_docs",
+      "args": { "query": "bearer token" },
+      "expect": { "type": "contains", "value": "authentication" }
+    },
+    {
+      "tool": "search_docs",
+      "args": { "query": "quantum" },
+      "expect": { "type": "not-contains", "value": "getting-started" }
+    },
+    {
+      "tool": "search_docs",
+      "args": { "query": "quantum" },
+      "expect": { "type": "not-contains", "value": "authentication" }
+    },
+    {
+      "tool": "search_docs",
+      "args": { "query": "quantum" },
+      "expect": { "type": "not-contains", "value": "deployment" }
+    }
+  ]
+}

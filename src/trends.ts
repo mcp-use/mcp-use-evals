@@ -3,11 +3,85 @@ import { join } from "node:path";
 import { RESULTS_DIR } from "./tasks.js";
 import { TrendRunSchema, type TrendRun } from "./types.js";
 
-/** Cross-run trend tables for the single readiness score and its penalty rates. */
+/** One results/<dir>/run.json read off disk (or null if it doesn't exist). */
+export interface RawRunFile {
+  dir: string;
+  raw: string | null;
+}
+
+/**
+ * Parse each raw run.json into a TrendRun, skipping — with a one-line warning
+ * — anything that isn't valid JSON or doesn't match the v2 shape. Pre-v2 run
+ * dirs (which wrote `readiness` instead of `grade`) simply fail the schema
+ * and are skipped the same way.
+ */
+export function collectRuns(files: RawRunFile[]): TrendRun[] {
+  const runs: TrendRun[] = [];
+  for (const { dir, raw } of files) {
+    if (raw === null) continue; // no run.json — incomplete or foreign dir, skip quietly
+    let json: unknown;
+    try {
+      json = JSON.parse(raw);
+    } catch {
+      console.warn(`⚠️  skipping ${dir}: run.json is not valid JSON`);
+      continue;
+    }
+    const parsed = TrendRunSchema.safeParse(json);
+    if (!parsed.success) {
+      console.warn(`⚠️  skipping ${dir}: run.json is not a valid v2 run result`);
+      continue;
+    }
+    runs.push(parsed.data);
+  }
+  return runs.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+}
+
+function passFraction(trials: TrendRun["trials"]): { passed: number; total: number } {
+  const scored = trials.filter(
+    (t) => t.valid !== false && t.grade.scoredForPassRate !== false
+  );
+  return {
+    passed: scored.filter((t) => t.grade.contractPass).length,
+    total: scored.length,
+  };
+}
+
+/**
+ * Markdown trend table: one row per run — date, agent, pass rate (fraction),
+ * invalid-trial count — plus one column per condition seen across the window.
+ * No penalty-rate table: penalties don't exist in v2.
+ */
+export function renderTrendsTable(runs: TrendRun[]): string {
+  if (runs.length === 0) return "No completed runs found.";
+
+  const variants = new Set<string>();
+  for (const run of runs) for (const t of run.trials) variants.add(t.variant);
+  const variantCols = [...variants].sort();
+
+  const header = ["Run date", "Agent", "Pass rate", "Invalid", ...variantCols];
+  const rows: string[][] = [header, header.map(() => "---")];
+  for (const run of runs) {
+    const { passed, total } = passFraction(run.trials);
+    const invalid = run.trials.filter((t) => t.valid === false).length;
+    const variantCells = variantCols.map((variant) => {
+      const cell = passFraction(run.trials.filter((t) => t.variant === variant));
+      return cell.total === 0 ? "-" : `${cell.passed}/${cell.total}`;
+    });
+    rows.push([
+      run.startedAt.slice(0, 10),
+      run.agentRunner ?? "-",
+      `${passed}/${total}`,
+      String(invalid),
+      ...variantCells,
+    ]);
+  }
+  return rows.map((r) => `| ${r.join(" | ")} |`).join("\n");
+}
+
 async function main(): Promise<void> {
-  let runDirs: string[];
+  let dirNames: string[];
   try {
-    runDirs = (await readdir(RESULTS_DIR, { withFileTypes: true }))
+    dirNames = (await readdir(RESULTS_DIR, { withFileTypes: true }))
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
   } catch {
@@ -15,95 +89,27 @@ async function main(): Promise<void> {
     return;
   }
 
-  const runs: TrendRun[] = [];
-  for (const dir of runDirs) {
-    let raw: string;
-    try {
-      raw = await readFile(join(RESULTS_DIR, dir, "run.json"), "utf8");
-    } catch {
-      continue; // no run.json — incomplete or foreign dir, skip quietly
-    }
-    const parsed = TrendRunSchema.safeParse(tryJson(raw));
-    if (!parsed.success) {
-      console.warn(`⚠️  skipping ${dir}: run.json is not a valid run result`);
-      continue;
-    }
-    runs.push(parsed.data);
-  }
-  // Run ids lead with the task name, so chronological order comes from startedAt.
-  runs.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
-  if (runs.length === 0) {
-    console.log("No completed runs found.");
-    return;
-  }
-
-  const runLabels = runs.map((r) => r.startedAt.slice(0, 16).replace("T", " "));
-
-  const rows = new Set<string>();
-  for (const run of runs)
-    for (const t of run.trials) rows.add(`${t.task} · ${t.variant}`);
-
-  const readinessTable: string[][] = [["task · variant", ...runLabels]];
-  for (const row of [...rows].sort()) {
-    const [task, variant] = row.split(" · ");
-    const cells = runs.map((run) => {
-      const scores = run.trials
-        .filter((t) => t.task === task && t.variant === variant)
-        .map((t) => t.readiness?.score)
-        .filter((score): score is number => typeof score === "number");
-      if (scores.length === 0) return "—";
-      return String(mean(scores));
-    });
-    readinessTable.push([row, ...cells]);
-  }
-  console.log("Mean readiness");
-  printTable(readinessTable);
-
-  // Penalty trends: per deterministic readiness detector, the share of trials
-  // it fired in. Judge criteria penalties are included; unscored judge
-  // discovery findings are deliberately excluded.
-  const detectors = new Set<string>();
-  for (const run of runs)
-    for (const t of run.trials)
-      for (const p of t.readiness?.penalties ?? []) detectors.add(p.detector);
-  if (detectors.size > 0) {
-    const penaltyTable: string[][] = [["detector", ...runLabels]];
-    for (const detector of [...detectors].sort()) {
-      const cells = runs.map((run) => {
-        const hit = run.trials.filter((t) =>
-          (t.readiness?.penalties ?? []).some((p) => p.detector === detector)
-        ).length;
-        return `${hit}/${run.trials.length}`;
-      });
-      penaltyTable.push([detector, ...cells]);
-    }
-    console.log("\nReadiness penalty rate (trials hit / trials)");
-    printTable(penaltyTable);
-  }
-}
-
-function tryJson(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
-}
-
-function printTable(table: string[][]): void {
-  const widths = table[0].map((_, i) =>
-    Math.max(...table.map((r) => r[i].length))
+  const files: RawRunFile[] = await Promise.all(
+    dirNames.map(async (dir) => {
+      try {
+        return { dir, raw: await readFile(join(RESULTS_DIR, dir, "run.json"), "utf8") };
+      } catch {
+        return { dir, raw: null };
+      }
+    })
   );
-  for (const row of table) {
-    console.log(row.map((c, i) => c.padEnd(widths[i])).join("  "));
-  }
+
+  console.log(renderTrendsTable(collectRuns(files)));
 }
 
-function mean(xs: number[]): number {
-  return Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
+// Only run the CLI when this file is the entry point (e.g. `tsx src/trends.ts`),
+// so importing the pure helpers above for tests never touches the filesystem.
+const isEntryPoint =
+  process.argv[1] !== undefined &&
+  import.meta.url === `file://${process.argv[1]}`;
+if (isEntryPoint) {
+  main().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});

@@ -5,8 +5,6 @@ export interface Variant {
   skill: boolean;
   /** workspace pre-scaffolded with create-mcp-use-app (vs truly blank dir) */
   scaffold: boolean;
-  /** canonical docs link injected into the agent prompt */
-  docs?: "old" | "new";
 }
 
 export const ALL_VARIANTS: Variant[] = [
@@ -14,30 +12,20 @@ export const ALL_VARIANTS: Variant[] = [
   { skill: false, scaffold: true },
   { skill: true, scaffold: false },
   { skill: true, scaffold: true },
-  { skill: false, scaffold: false, docs: "old" },
-  { skill: false, scaffold: false, docs: "new" },
 ];
 
 export function variantId(v: Variant): string {
-  if (v.docs) return `blank+docs-${v.docs}`;
   return `${v.skill ? "skill" : "noskill"}+${v.scaffold ? "scaffold" : "blank"}`;
 }
 
 export function parseVariant(id: string): Variant {
-  if (id === "blank+docs-old") {
-    return { skill: false, scaffold: false, docs: "old" };
-  }
-  if (id === "blank+docs-new") {
-    return { skill: false, scaffold: false, docs: "new" };
-  }
-
   const [skill, start] = id.split("+");
   if (
     (skill !== "skill" && skill !== "noskill") ||
     (start !== "scaffold" && start !== "blank")
   ) {
     throw new Error(
-      `Invalid variant "${id}" (expected e.g. "skill+scaffold", "noskill+blank", "blank+docs-old", or "blank+docs-new")`
+      `Invalid variant "${id}" (expected e.g. "skill+scaffold" or "noskill+blank")`
     );
   }
   return { skill: skill === "skill", scaffold: start === "scaffold" };
@@ -54,7 +42,7 @@ const VariantIdSchema = z.string().refine(
   },
   {
     error:
-      'expected a variant id like "skill+scaffold", "noskill+blank", "blank+docs-old", or "blank+docs-new"',
+      'expected a variant id like "skill+scaffold" or "noskill+blank"',
   }
 );
 
@@ -115,13 +103,6 @@ export const TaskOAuthSchema = z.strictObject({
 });
 export type TaskOAuth = z.infer<typeof TaskOAuthSchema>;
 
-export const ReadinessBudgetsSchema = z.strictObject({
-  turns: z.number().positive().optional(),
-  costUsd: z.number().positive().optional(),
-  durationMs: z.number().positive().optional(),
-});
-export type ReadinessBudgets = z.infer<typeof ReadinessBudgetsSchema>;
-
 export const RequiredImportSchema = z.strictObject({
   /** module specifier that must be imported somewhere in source, e.g. mcp-use/server */
   source: z.string().min(1),
@@ -154,8 +135,6 @@ export const TaskConfigSchema = z.strictObject({
   title: z.string(),
   /** entry files the grader will try, in order */
   entryCandidates: z.array(z.string()).min(1),
-  /** when true, the missing-zod-schema readiness detector applies */
-  requiresZodSchema: z.boolean(),
   expectedTools: z.array(ExpectedToolSchema),
   calls: z.array(ToolCallCheckSchema),
   /** optional resource listing/read checks for tasks that exercise MCP resources */
@@ -167,12 +146,14 @@ export const TaskConfigSchema = z.strictObject({
    * values in task.json.
    */
   agentEnvKeys: z.array(z.string()).optional(),
-  /** OAuth contract; presence adds the "auth" readiness check */
+  /** OAuth contract; presence adds the "auth" grade check */
   oauth: TaskOAuthSchema.optional(),
-  /** optional deterministic readiness contract; omitted = runtime checks */
+  /**
+   * Optional static-grading contract; omitted = runtime checks. Tasks using
+   * "source-imports" are graded on typecheck + imports only and are excluded
+   * from the headline pass rate (grade.scoredForPassRate = false).
+   */
   deterministicReadiness: DeterministicReadinessSchema.optional(),
-  /** expected effort envelope for deterministic readiness scoring */
-  readinessBudgets: ReadinessBudgetsSchema.optional(),
   /** variant ids this task supports; omitted = all */
   variants: z.array(VariantIdSchema).optional(),
 });
@@ -187,56 +168,68 @@ export interface LoadedTask {
   dir: string;
 }
 
-export interface ReadinessCheck {
+// ─── Grading v2 ─────────────────────────────────────────────────────────────
+// One deterministic grade per trial. No penalties, no weights, no blended
+// 0-100 score. Correctness (grade) and performance (perf) never mix, and the
+// LLM judge's memo affects no number anywhere.
+
+/** Bump when grading semantics change; recorded in every run manifest. */
+export const GRADER_VERSION = "2.0.0";
+
+/**
+ * First failing stage of a trial. `contract.*` = the agent's server failed
+ * its contract (counts against the pass rate). `infra.*` = the harness or
+ * grader broke (trial is invalid and excluded from every denominator).
+ */
+export type FailureCode =
+  | "contract.install"
+  | "contract.typecheck"
+  | "contract.entry"
+  | "contract.start"
+  | "contract.handshake"
+  | "contract.tools"
+  | "contract.resources"
+  | "contract.calls"
+  | "contract.auth"
+  | "contract.imports"
+  | "infra.sandbox"
+  | "infra.agent"
+  | "infra.grader";
+
+/** Which SDK the agent actually built on. A recorded fact — worth zero points. */
+export type SdkPath = "mcp-use" | "official-sdk" | "hand-rolled" | "unknown";
+
+export interface GradeCheck {
+  /** e.g. "install", "typecheck", "start", "tools", "call:add:1", "auth" */
   id: string;
-  weight: number;
-  passed: boolean;
-  detail?: string;
+  pass: boolean;
+  /** all required checks must pass for contractPass */
+  required: boolean;
+  detail: string | null;
 }
 
-export type Lever = "docs" | "skill" | "sdk" | "template" | "process";
-
-export interface Finding {
-  detector: string;
-  file?: string;
-  line?: number;
-  evidence: string;
-  lever: Lever;
-  suggestion?: string;
+export interface TrialGrade {
+  /** every required check passed and the trial completed without harness error */
+  contractPass: boolean;
+  checks: GradeCheck[];
+  /** first failing stage; null when the contract passed */
+  failureCode: FailureCode | null;
+  sdkPath: SdkPath;
+  /**
+   * false for static tasks (source-imports mode): they are reported
+   * separately and never counted in the headline pass rate.
+   */
+  scoredForPassRate: boolean;
 }
 
-export interface ReadinessPenalty {
-  detector: string;
-  points: number;
-  lever: Lever;
-  evidence: string;
-  file?: string;
-  line?: number;
-  source: "deterministic" | "judge";
-}
-
-export interface ReadinessJudgeCriterion {
-  id: string;
-  verdict: "yes" | "no" | "unknown";
-  points: number;
-  detector: string;
-  lever: Lever;
-  evidence: string;
-}
-
-export interface ReadinessJudge {
-  model: string;
-  criteria: ReadinessJudgeCriterion[];
-  findings: Finding[];
-}
-
-export interface ReadinessGrade {
-  score: number;
-  functionalScore: number;
-  functionalSuccess: boolean;
-  checks: ReadinessCheck[];
-  penalties: ReadinessPenalty[];
-  judge: ReadinessJudge | null;
+/** Performance is reported beside correctness, never subtracted from it. */
+export interface TrialPerf {
+  durationMs: number | null;
+  turns: number | null;
+  tokensIn: number | null;
+  tokensOut: number | null;
+  toolCalls: number | null;
+  costUsd: number | null;
 }
 
 export interface AgentRunInfo {
@@ -255,21 +248,36 @@ export interface TrialResult {
   agentRunner: string;
   agentModel: string;
   sdkVersion: string | null;
-  readiness: ReadinessGrade;
-  durationMs: number | null;
-  turns: number | null;
-  costUsd: number | null;
+  /** false = infra failure (sandbox/agent/grader) — excluded from all denominators */
+  valid: boolean;
+  grade: TrialGrade;
+  perf: TrialPerf;
+  /** relative path to the judge's prose memo, when the judge ran */
+  memoPath: string | null;
   transcriptPath: string | null;
   timestamp: string;
   error: string | null;
 }
 
+/** Everything that shapes a number, versioned so trends stay trustworthy. */
+export interface RunManifest {
+  graderVersion: string;
+  sandbox: string;
+  /** promptHash per task id in this run */
+  taskPromptHashes: Record<string, string>;
+  /** sha256 of the skill's SKILL.md when a skill variant ran, else null */
+  skillHash: string | null;
+}
+
 export interface RunResult {
   runId: string;
+  /** Groups sharded per-task runs into one logical evaluation batch. */
+  batchId: string;
   startedAt: string;
   agentRunner: string;
   agentModel: string;
   judgeModel: string;
+  manifest: RunManifest;
   trials: TrialResult[];
 }
 
@@ -277,19 +285,22 @@ export interface RunResult {
  * Lenient view of a run.json for the cross-run trends script: only the fields
  * trends actually reads, with unknown keys passed through. Deliberately NOT
  * the strict RunResult shape — trends is longitudinal, so incomplete/foreign
- * files should be skipped with a warning instead of crashing the table.
+ * files (including pre-v2 runs) should be skipped with a warning instead of
+ * crashing the table.
  */
 export const TrendRunSchema = z.looseObject({
+  runId: z.string().optional(),
+  batchId: z.string().optional(),
   startedAt: z.string(),
+  agentRunner: z.string().optional(),
   trials: z.array(
     z.looseObject({
       task: z.string(),
       variant: z.string(),
-      readiness: z.looseObject({
-        score: z.number(),
-        penalties: z
-          .array(z.looseObject({ detector: z.string() }))
-          .optional(),
+      valid: z.boolean().optional(),
+      grade: z.looseObject({
+        contractPass: z.boolean(),
+        scoredForPassRate: z.boolean().optional(),
       }),
     })
   ),

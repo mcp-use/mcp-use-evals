@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { afterEach, describe, expect, it } from "vitest";
-import { freePort } from "../src/graders/readiness.js";
+import { freePort } from "../src/graders/functional.js";
 import {
   CLERK_SEED,
   OKTA_SEED,

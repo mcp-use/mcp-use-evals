@@ -1,0 +1,199 @@
+name: "mcp-use SDK agentic evals"
+description: >
+  Runs the mcp-use SDK agentic-readiness evals against the published npm
+  package: a coding agent builds an MCP server from a task prompt, a
+  deterministic grader checks the result against the task's contract, and a
+  compact pass-rate summary is emitted as a step summary and as outputs. No
+  0-100 blended score, no PR comments, no artifact upload — callers own that.
+branding:
+  icon: "check-circle"
+  color: "purple"
+
+inputs:
+  anthropic-api-key:
+    description: "ANTHROPIC_API_KEY. Required only for the Claude agent or an Anthropic judge model."
+    required: false
+    default: ""
+  openai-api-key:
+    description: >
+      OPENAI_API_KEY. Required for --agent codex, and required by default for the LLM memo judge (the
+      pinned default judge model is a gpt* model) unless skip-judge is true or judge-model is set to an
+      Anthropic model id.
+    required: false
+    default: ""
+  agent:
+    description: "Agent runner: claude | codex."
+    required: false
+    default: "codex"
+  tasks:
+    description: "Comma-separated task ids to run. Empty = all tasks."
+    required: false
+    default: ""
+  conditions:
+    description: "Preferred: comma-separated condition ids (e.g. \"skill+blank,noskill+blank\")."
+    required: false
+    default: ""
+  variants:
+    description: "Deprecated alias for conditions."
+    required: false
+    default: ""
+  trials:
+    description: "Trials per task x condition cell."
+    required: false
+    default: "3"
+  model:
+    description: >
+      Agent model id passed to the selected AI SDK harness. Empty = pinned default (claude ->
+      claude-sonnet-5, codex -> gpt-5.6-terra) — models are pinned rather than left at the harness's own
+      default so trend data stays comparable across runs.
+    required: false
+    default: ""
+  judge-model:
+    description: "Judge model id. Empty = the pinned default in src/graders/judge.ts."
+    required: false
+    default: ""
+  skip-judge:
+    description: "Skip the unscored LLM memo judge."
+    required: false
+    default: "false"
+  timeout-min:
+    description: "Per-trial agent timeout in minutes."
+    required: false
+    default: "20"
+  sandbox:
+    description: "Agent workspace network sandbox: docker | vercel."
+    required: false
+    default: "docker"
+  skill-dir:
+    description: >
+      Absolute path to a checkout of the mcp-apps-builder skill, used for skill+* conditions. Empty = the
+      default sibling-directory resolution in src/tasks.ts, which only works inside the mcp-use monorepo.
+      Required (via a checkout step in your workflow) if you request any skill+* condition from outside that
+      monorepo — otherwise every skill+* trial fails as invalid infra.sandbox.
+    required: false
+    default: ""
+  batch-id:
+    description: "Optional shared id for grouping sharded task runs into one evaluation batch."
+    required: false
+    default: ""
+
+outputs:
+  run-dir:
+    description: "Absolute path to the results/<runId> directory produced by this run."
+    value: ${{ steps.summarize.outputs.run-dir }}
+  report:
+    description: "Absolute path to run-dir/report.md."
+    value: ${{ steps.summarize.outputs.report }}
+  pass-rate:
+    description: "Pass rate as a number 0-100 (passed / valid scored trials)."
+    value: ${{ steps.summarize.outputs.pass-rate }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "24"
+
+    - name: Enable corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Install pnpm
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: corepack prepare --activate "$(node -p "require('./package.json').packageManager")"
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: pnpm install --frozen-lockfile
+
+    - name: Run evals
+      id: eval
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        MCP_USE_EVAL_SANDBOX: ${{ inputs.sandbox }}
+        MCP_USE_SKILL_DIR: ${{ inputs.skill-dir }}
+        IN_AGENT: ${{ inputs.agent }}
+        IN_TRIALS: ${{ inputs.trials }}
+        IN_TIMEOUT_MIN: ${{ inputs.timeout-min }}
+        IN_TASKS: ${{ inputs.tasks }}
+        IN_CONDITIONS: ${{ inputs.conditions }}
+        IN_VARIANTS: ${{ inputs.variants }}
+        IN_BATCH_ID: ${{ inputs.batch-id }}
+        IN_MODEL: ${{ inputs.model }}
+        IN_JUDGE_MODEL: ${{ inputs.judge-model }}
+        IN_SKIP_JUDGE: ${{ inputs.skip-judge }}
+      run: |
+        set -euo pipefail
+
+        # Inputs come in through env (not interpolated into this script) so a
+        # workflow_dispatch value with spaces or quotes can't break the
+        # script or inject into it.
+        [ -z "$MCP_USE_SKILL_DIR" ] && unset MCP_USE_SKILL_DIR
+
+        ARGS=(--agent "$IN_AGENT" --trials "$IN_TRIALS" --timeout-min "$IN_TIMEOUT_MIN")
+
+        IFS=',' read -ra TASKS <<< "$IN_TASKS"
+        for t in "${TASKS[@]}"; do
+          t="${t#"${t%%[![:space:]]*}"}"
+          t="${t%"${t##*[![:space:]]}"}"
+          [ -n "$t" ] && ARGS+=(--task "$t")
+        done
+
+        if [ -n "$IN_CONDITIONS" ] && [ -n "$IN_VARIANTS" ]; then
+          echo "Use either the conditions input or the deprecated variants input, not both." >&2
+          exit 2
+        fi
+        CONDITIONS="${IN_CONDITIONS:-${IN_VARIANTS:-noskill+blank}}"
+        IFS=',' read -ra CONDITION_LIST <<< "$CONDITIONS"
+        for v in "${CONDITION_LIST[@]}"; do
+          v="${v#"${v%%[![:space:]]*}"}"
+          v="${v%"${v##*[![:space:]]}"}"
+          [ -n "$v" ] && ARGS+=(--condition "$v")
+        done
+
+        [ -n "$IN_MODEL" ] && ARGS+=(--model "$IN_MODEL")
+        [ -n "$IN_JUDGE_MODEL" ] && ARGS+=(--judge-model "$IN_JUDGE_MODEL")
+        [ -n "$IN_BATCH_ID" ] && ARGS+=(--batch-id "$IN_BATCH_ID")
+        [ "$IN_SKIP_JUDGE" = "true" ] && ARGS+=(--skip-judge)
+
+        echo "Running: pnpm eval ${ARGS[*]}"
+        pnpm eval "${ARGS[@]}"
+
+    - name: Summarize results
+      id: summarize
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+
+        RUN_DIR=$(ls -td results/*/ | head -1 | sed 's:/$::')
+        ABS_RUN_DIR="$(pwd)/$RUN_DIR"
+        echo "run-dir=$ABS_RUN_DIR" >> "$GITHUB_OUTPUT"
+        echo "report=$ABS_RUN_DIR/report.md" >> "$GITHUB_OUTPUT"
+
+        PASS_RATE=$(node --input-type=module -e "
+          import { readFileSync } from 'node:fs';
+          const run = JSON.parse(readFileSync('$RUN_DIR/run.json', 'utf8'));
+          const scored = run.trials.filter((t) => t.valid && t.grade.scoredForPassRate);
+          const passed = scored.filter((t) => t.grade.contractPass);
+          const rate = scored.length ? (passed.length / scored.length) * 100 : 0;
+          console.log(rate.toFixed(1));
+        ")
+        echo "pass-rate=$PASS_RATE" >> "$GITHUB_OUTPUT"
+        echo "Pass rate: $PASS_RATE% ($RUN_DIR)"
+
+    - name: Publish step summary
+      shell: bash
+      run: |
+        {
+          echo "## mcp-use SDK evals — ${{ inputs.agent }}"
+          echo
+          cat "${{ steps.summarize.outputs.report }}"
+        } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,215 @@
+name: Evals
+
+on:
+  schedule:
+    # Mon/Wed/Fri 14:00 UTC
+    - cron: "0 14 * * 1,3,5"
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: "Comma-separated task ids (blank = all)"
+        required: false
+        type: string
+      conditions:
+        description: >
+          Comma-separated condition ids. skill+* conditions require a checkout of the mcp-apps-builder skill
+          and a skill-dir wired to the action, which this workflow does not (yet) provide — requesting one
+          fails the gate step fast instead of silently burning agent budget on invalid infra.sandbox trials.
+        required: false
+        type: string
+        default: "noskill+blank"
+      trials:
+        description: "Trials per task x condition"
+        required: false
+        type: string
+        default: "3"
+
+permissions:
+  contents: write
+
+jobs:
+  # Gates the whole workflow: every task's known-good `golden/` solution must
+  # pass the grader before we spend agent+judge budget on it.
+  verify:
+    name: verify-tasks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install pnpm
+        run: corepack prepare --activate "$(node -p "require('./package.json').packageManager")"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify every task's golden solution passes the grader
+        run: pnpm verify-tasks
+
+  eval:
+    name: eval (Codex · ${{ matrix.task }})
+    needs: verify
+    runs-on: ubuntu-latest
+    # Explicit ceiling well under GitHub-hosted runners' hard 6h job limit.
+    # Sharding the matrix per-task (see below) keeps each leg's worst case
+    # (2 conditions x 3 trials, 20min agent timeout each, plus install/grade
+    # overhead) comfortably inside this window.
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        # Sharded per-task (rather than one job running every task) so a
+        # single leg can't approach GitHub's 6h job execution limit — see
+        # timeout-minutes above. Keep in sync with tasks/*.
+        task:
+          - v2-01-basic-tool-server
+          - v2-02-stateful-ticket-queue
+          - v2-03-docs-lookup-server
+          - v2-04-oauth-clerk
+          - v2-05-oauth-custom-idp
+          - v2-06-project-board-composition
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide whether to run this matrix leg
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping Codex leg: OPENAI_API_KEY secret is not set"
+            exit 0
+          fi
+
+          DISPATCH_TASKS="${{ github.event.inputs.tasks }}"
+          if [ -n "$DISPATCH_TASKS" ]; then
+            MATCH=false
+            IFS=',' read -ra WANTED <<< "$DISPATCH_TASKS"
+            for t in "${WANTED[@]}"; do
+              t="${t#"${t%%[![:space:]]*}"}"
+              t="${t%"${t##*[![:space:]]}"}"
+              [ "$t" = "${{ matrix.task }}" ] && MATCH=true
+            done
+            if [ "$MATCH" != "true" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::Skipping task ${{ matrix.task }}: not in requested tasks=$DISPATCH_TASKS"
+              exit 0
+            fi
+          fi
+
+          # skill+* conditions need a checkout of the mcp-apps-builder skill and
+          # a skill-dir passed to the action; this workflow provides neither.
+          # Fail fast instead of silently burning agent budget on trials that
+          # are guaranteed to come back invalid (infra.sandbox).
+          CONDITIONS="${{ github.event.inputs.conditions || 'noskill+blank' }}"
+          IFS=',' read -ra VLIST <<< "$CONDITIONS"
+          for v in "${VLIST[@]}"; do
+            case "$v" in
+              skill+*)
+                echo "::error::Requested conditions ($CONDITIONS) include a skill+* condition, but this workflow has no mcp-apps-builder skill checked out (no skill-dir input wired to the action). Every skill+* trial would fail as invalid infra.sandbox. Vendor the skill and pass skill-dir, or drop the skill+* condition."
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Run evals
+        id: run
+        if: steps.gate.outputs.skip != 'true'
+        uses: ./
+        # Step-level backstop so a stuck leg fails before the job timeout,
+        # leaving the (always()-guarded) upload/publish steps below a chance
+        # to run for whatever this leg already produced.
+        timeout-minutes: 150
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          agent: codex
+          tasks: ${{ matrix.task }}
+          conditions: ${{ github.event.inputs.conditions || 'noskill+blank' }}
+          trials: ${{ github.event.inputs.trials || '3' }}
+          batch-id: ${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload run artifact
+        if: always() && steps.gate.outputs.skip != 'true' && steps.run.outputs.run-dir != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-codex-${{ matrix.task }}-${{ github.run_id }}
+          path: |
+            ${{ steps.run.outputs.run-dir }}
+            !${{ steps.run.outputs.run-dir }}/**/workspace/**
+          retention-days: 30
+
+      - name: Publish compact results to eval-results branch
+        if: always() && steps.gate.outputs.skip != 'true' && steps.run.outputs.run-dir != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_DIR: ${{ steps.run.outputs.run-dir }}
+        run: |
+          set -euo pipefail
+
+          RUN_ID="$(basename "$RUN_DIR")"
+          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          WORK="$(mktemp -d)"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git clone --depth 1 --branch eval-results "$REMOTE" "$WORK" 2>/dev/null; then
+            echo "eval-results branch exists"
+          else
+            echo "eval-results branch missing; creating an orphan branch"
+            git clone --depth 1 "$REMOTE" "$WORK"
+            (cd "$WORK" && git checkout --orphan eval-results && git rm -rf . >/dev/null 2>&1 || true)
+          fi
+
+          DEST="$WORK/runs/$RUN_ID"
+          mkdir -p "$DEST"
+          cp "$RUN_DIR/run.json" "$DEST/"
+          cp "$RUN_DIR/report.md" "$DEST/"
+
+          # Preserve trials/<task--condition--trial>/memo.md layout under DEST.
+          if [ -d "$RUN_DIR/trials" ]; then
+            (cd "$RUN_DIR" && find trials -name memo.md) | while read -r f; do
+              mkdir -p "$DEST/$(dirname "$f")"
+              cp "$RUN_DIR/$f" "$DEST/$f"
+            done
+          fi
+
+          cd "$WORK"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to publish for $RUN_ID"
+            exit 0
+          fi
+          git commit -m "Publish eval results: $RUN_ID"
+
+          # Rebase and retry if another concurrent leg's push landed in
+          # between (with the matrix now sharded per-task, many legs may
+          # race to publish at once). Rebase onto FETCH_HEAD, not
+          # origin/eval-results: when the branch didn't exist yet above, the
+          # orphan-creation clone above is a --depth 1 clone of the *default*
+          # branch, whose configured fetch refspec never creates a local
+          # origin/eval-results ref, even after fetching it by name — only
+          # FETCH_HEAD is guaranteed to be updated by `git fetch origin
+          # eval-results` in both the orphan and pre-existing-branch cases.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:eval-results; then
+              exit 0
+            fi
+            echo "push failed (attempt $attempt); rebasing onto latest eval-results"
+            git fetch origin eval-results
+            if ! git rebase FETCH_HEAD; then
+              echo "rebase conflict against latest eval-results; aborting and retrying"
+              git rebase --abort
+            fi
+            sleep 5
+          done
+          echo "::error::Failed to push results to eval-results branch after retries"
+          exit 1

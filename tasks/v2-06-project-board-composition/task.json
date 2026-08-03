@@ -1,0 +1,47 @@
+{
+  "title": "Composed project board (tools + live resources)",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "expectedTools": [
+    { "name": "create_issue", "requiredProps": ["title"] },
+    { "name": "assign_issue", "requiredProps": ["id", "assignee"] },
+    { "name": "resolve_issue", "requiredProps": ["id"] }
+  ],
+  "expectedResources": [{ "uri": "board://summary" }],
+  "resourceReads": [
+    {
+      "uri": "board://summary",
+      "expect": { "type": "number-equals", "value": 0 }
+    },
+    {
+      "uri": "issue://ghost",
+      "expect": { "type": "contains", "value": "not found" }
+    }
+  ],
+  "calls": [
+    {
+      "tool": "create_issue",
+      "args": { "title": "Fix login bug" },
+      "expect": { "type": "number-equals", "value": 1 }
+    },
+    {
+      "tool": "assign_issue",
+      "args": { "id": "1", "assignee": "Priya Shah" },
+      "expect": { "type": "contains", "value": "Priya Shah" }
+    },
+    {
+      "tool": "assign_issue",
+      "args": { "id": "ghost", "assignee": "Nobody" },
+      "expect": { "type": "contains", "value": "not found" }
+    },
+    {
+      "tool": "resolve_issue",
+      "args": { "id": "1" },
+      "expect": { "type": "contains", "value": "resolved" }
+    },
+    {
+      "tool": "resolve_issue",
+      "args": { "id": "ghost" },
+      "expect": { "type": "contains", "value": "not found" }
+    }
+  ]
+}

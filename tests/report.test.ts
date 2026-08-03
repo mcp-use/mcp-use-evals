@@ -1,12 +1,44 @@
-import { describe, expect, it } from "vitest";
-import {
-  collectJudgeFindings,
-  collectReadinessPenalties,
-  renderReport,
-} from "../src/report.js";
-import type { RunResult, TrialResult } from "../src/types.js";
+import { readFileSync } from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { consoleSummary, renderReport } from "../src/report.js";
+import type { RunResult, TrialGrade, TrialPerf, TrialResult } from "../src/types.js";
 
-function trial(overrides: Partial<TrialResult>): TrialResult {
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return { ...actual, readFileSync: vi.fn(actual.readFileSync) };
+});
+
+const readFileSyncMock = vi.mocked(readFileSync);
+
+function grade(overrides: Partial<TrialGrade> = {}): TrialGrade {
+  return {
+    contractPass: true,
+    checks: [
+      { id: "install", pass: true, required: true, detail: null },
+      { id: "start", pass: true, required: true, detail: null },
+      { id: "tools", pass: true, required: true, detail: null },
+      { id: "calls", pass: true, required: true, detail: null },
+    ],
+    failureCode: null,
+    sdkPath: "mcp-use",
+    scoredForPassRate: true,
+    ...overrides,
+  };
+}
+
+function perf(overrides: Partial<TrialPerf> = {}): TrialPerf {
+  return {
+    durationMs: 60_000,
+    turns: 10,
+    tokensIn: 1000,
+    tokensOut: 500,
+    toolCalls: 4,
+    costUsd: 0.42,
+    ...overrides,
+  };
+}
+
+function trial(overrides: Partial<TrialResult> = {}): TrialResult {
   return {
     task: "01-basic-tool-server",
     variant: "noskill+blank",
@@ -15,22 +47,10 @@ function trial(overrides: Partial<TrialResult>): TrialResult {
     agentRunner: "claude",
     agentModel: "default",
     sdkVersion: "1.2.3",
-    readiness: {
-      score: 100,
-      functionalScore: 100,
-      functionalSuccess: true,
-      checks: [
-        { id: "compiles", weight: 20, passed: true },
-        { id: "starts", weight: 20, passed: true },
-        { id: "tools", weight: 30, passed: true },
-        { id: "calls", weight: 30, passed: true },
-      ],
-      penalties: [],
-      judge: null,
-    },
-    durationMs: 60000,
-    turns: 10,
-    costUsd: 0.42,
+    valid: true,
+    grade: grade(),
+    perf: perf(),
+    memoPath: null,
     transcriptPath: "trials/x/transcript.md",
     timestamp: "2026-06-11T00:00:00Z",
     error: null,
@@ -38,255 +58,208 @@ function trial(overrides: Partial<TrialResult>): TrialResult {
   };
 }
 
-const FAILED = trial({
-  variant: "skill+scaffold",
-  readiness: {
-    score: 40,
-    functionalScore: 40,
-    functionalSuccess: false,
-    checks: [
-      { id: "compiles", weight: 20, passed: true },
-      { id: "starts", weight: 20, passed: true },
-      {
-        id: "tools",
-        weight: 30,
-        passed: false,
-        detail: 'tool "add" not listed',
-      },
-      { id: "calls", weight: 30, passed: false, detail: "server not running" },
-    ],
-    penalties: [
-      {
-        detector: "hand-rolled-content-block",
-        points: 8,
-        file: "index.ts",
-        line: 4,
-        evidence: "content: [{",
-        lever: "skill",
-        source: "deterministic",
-      },
-    ],
-    judge: null,
-  },
-});
+function run(trials: TrialResult[]): RunResult {
+  return {
+    runId: "01-basic-tool-server--noskill+blank--2026-06-11T00-00-00",
+    batchId: "local-2026-06-11",
+    startedAt: "2026-06-11T00:00:00.000Z",
+    agentRunner: "claude",
+    agentModel: "default",
+    judgeModel: "gpt-5.5",
+    manifest: {
+      graderVersion: "2.0.0",
+      sandbox: "docker",
+      taskPromptHashes: { "01-basic-tool-server": "abc123" },
+      skillHash: null,
+    },
+    trials,
+  };
+}
 
-const RUN: RunResult = {
-  runId: "2026-06-11T00-00-00",
-  startedAt: "2026-06-11T00:00:00.000Z",
-  agentRunner: "claude",
-  agentModel: "default",
-  judgeModel: "gpt-5.5",
-  trials: [trial({}), FAILED],
-};
-
-describe("renderReport", () => {
-  const report = renderReport(RUN);
-
-  it("includes a summary row per task×variant with readiness and penalty counts", () => {
-    expect(report).toContain(
-      "| 01-basic-tool-server | noskill+blank | 1/1 ✅ | 100 | 0/1 trials | $0.42 | 10 |"
-    );
-    expect(report).toContain(
-      "| 01-basic-tool-server | skill+scaffold | 0/1 ❌ | 40 | 1/1 trials | $0.42 | 10 |"
-    );
-  });
-
-  it("lists readiness penalty names per trial in the detail table", () => {
-    expect(report).toContain(
-      "| Variant | Trial | compiles | imports | starts | auth | tools | resources | calls |"
-    );
-    expect(report).toMatch(
-      /\| skill\+scaffold \| 1 \|.*\| 40 \| `hand-rolled-content-block` \|/
-    );
-  });
-
-  it("renders the variant matrix with readiness deltas when multiple variants ran", () => {
-    expect(report).toContain("## Variant Matrix (Mean Readiness)");
-    expect(report).toContain("| no skill | 100 |");
-    expect(report).toContain("Skill readiness uplift: -60");
-  });
-
-  it("renders docs variants in the variant matrix", () => {
-    const docsReport = renderReport({
-      ...RUN,
-      trials: [
-        trial({}),
-        trial({
-          variant: "blank+docs-old",
-          readiness: { ...trial({}).readiness, score: 85 },
-        }),
-        trial({
-          variant: "blank+docs-new",
-          readiness: { ...trial({}).readiness, score: 95 },
-        }),
-      ],
-    });
-    expect(docsReport).toContain("|  | blank | scaffold | docs old | docs new |");
-    expect(docsReport).toContain("| no skill | 100 | - | 85 | 95 |");
-    expect(docsReport).toContain("New docs uplift vs old docs: +10");
-  });
-
-  it("renders a docs comparison scorecard", () => {
-    const oldPenaltyTrial = trial({
-      variant: "blank+docs-old",
-      readiness: {
-        ...trial({}).readiness,
-        score: 80,
-        penalties: [
-          {
-            detector: "raw-sdk-import",
-            points: 25,
-            evidence: "imported from sdk/server",
-            lever: "docs",
-            source: "deterministic",
-          },
-        ],
-      },
-    });
-    const docsReport = renderReport({
-      ...RUN,
-      trials: [
-        trial({}),
-        oldPenaltyTrial,
-        trial({
-          variant: "blank+docs-new",
-          readiness: { ...trial({}).readiness, score: 90 },
-        }),
-      ],
-    });
-
-    expect(docsReport).toContain("## Docs Comparison");
-    expect(docsReport).toContain(
-      "| Task | Blank | Old docs | New docs | New vs old | New vs blank | Functional delta | Top changed penalties |"
-    );
-    expect(docsReport).toContain(
-      "| 01-basic-tool-server | 100 | 80 | 90 | +10 | -10 | +0pp | `raw-sdk-import` -1 |"
-    );
-  });
-
-  it("aggregates readiness penalties with counts, lever, and source", () => {
-    expect(report).toContain("## Top Readiness Penalties");
-    expect(report).toContain("`hand-rolled-content-block`");
-    expect(report).toContain("8 pts");
-    expect(report).toContain("lever: skill");
-    expect(report).toContain("source: deterministic");
-  });
-
-  it("includes per-check failure details", () => {
-    expect(report).toContain('tool "add" not listed');
-  });
-
-  it("renders judge discovery findings outside readiness penalties", () => {
-    const withJudge = renderReport({
-      ...RUN,
-      trials: [
-        trial({
-          readiness: {
-            score: 100,
-            functionalScore: 100,
-            functionalSuccess: true,
-            checks: [],
-            penalties: [],
-            judge: {
-              model: "m",
-              criteria: [],
-              findings: [
-                {
-                  detector: "judge:struggled",
-                  evidence: "retried 4 times",
-                  lever: "process",
-                },
-              ],
-            },
-          },
-        }),
-      ],
-    });
-    expect(withJudge).toContain("## Judge Discovery Findings");
-    expect(withJudge).toContain("`judge:struggled`");
-    expect(withJudge).toContain("None detected - no readiness penalties fired.");
+beforeEach(() => {
+  readFileSyncMock.mockReset();
+  readFileSyncMock.mockImplementation(() => {
+    throw new Error("ENOENT");
   });
 });
 
-describe("collectReadinessPenalties", () => {
-  it("counts trials, not raw hits, sorts by frequency, and keeps judge penalties scored", () => {
-    const t1 = trial({
-      readiness: {
-        score: 75,
-        functionalScore: 100,
-        functionalSuccess: true,
-        checks: [],
-        penalties: [
-          {
-            detector: "raw-sdk-import",
-            points: 25,
-            file: "a.ts",
-            line: 1,
-            evidence: "x",
-            lever: "docs",
-            source: "deterministic",
-          },
-          {
-            detector: "raw-sdk-import",
-            points: 25,
-            file: "b.ts",
-            line: 1,
-            evidence: "y",
-            lever: "docs",
-            source: "deterministic",
-          },
-        ],
-        judge: null,
-      },
-    });
-    const t2 = trial({
-      trial: 2,
-      readiness: {
-        score: 67,
-        functionalScore: 100,
-        functionalSuccess: true,
-        checks: [],
-        penalties: [
-          {
-            detector: "raw-sdk-import",
-            points: 25,
-            file: "c.ts",
-            line: 9,
-            evidence: "z",
-            lever: "docs",
-            source: "deterministic",
-          },
-          {
-            detector: "judge:unclear-tool-descriptions",
-            points: 8,
-            evidence: "description is vague",
-            lever: "docs",
-            source: "judge",
-          },
-        ],
-        judge: {
-          model: "m",
-          criteria: [],
-          findings: [
-            {
-              detector: "judge:struggled",
-              evidence: "retried 4 times",
-              lever: "process",
-            },
-          ],
-        },
-      },
-    });
-    const penalties = collectReadinessPenalties([t1, t2]);
-    expect(penalties[0]).toMatchObject({
-      detector: "raw-sdk-import",
-      count: 2,
-    });
-    expect(
-      penalties.find((p) => p.detector === "judge:unclear-tool-descriptions")
-    ).toMatchObject({ count: 1, source: "judge" });
-    expect(collectJudgeFindings([t1, t2])).toMatchObject([
-      { detector: "judge:struggled", count: 1 },
+describe("renderReport — pass rate headline", () => {
+  it("identifies the logical evaluation batch that contains this sharded run", () => {
+    const report = renderReport(run([trial()]));
+    expect(report).toContain("batch `local-2026-06-11`");
+  });
+
+  it("prints the pass-rate fraction, excluding invalid and static trials from the denominator", () => {
+    const r = run([
+      trial({ trial: 1, grade: grade({ contractPass: true }) }),
+      trial({ trial: 2, grade: grade({ contractPass: false, failureCode: "contract.tools" }) }),
+      trial({
+        trial: 3,
+        valid: false,
+        grade: { contractPass: false, checks: [], failureCode: "infra.sandbox", sdkPath: "unknown", scoredForPassRate: true },
+      }),
+      trial({
+        trial: 4,
+        variant: "noskill+blank",
+        task: "05-app-deploy",
+        grade: grade({ scoredForPassRate: false }),
+      }),
     ]);
+    const report = renderReport(r);
+    // 2 valid+scored trials (1 pass, 1 fail); trial 3 is invalid, trial 4 is static.
+    expect(report).toContain("Pass rate: 50% (1/2 valid scored trials)");
+  });
+});
+
+describe("renderReport — matrix", () => {
+  it("separates static (scoredForPassRate: false) tasks into their own table", () => {
+    const r = run([
+      trial({ trial: 1 }),
+      trial({ trial: 2, task: "05-app-deploy", grade: grade({ scoredForPassRate: false }) }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## Matrix");
+    expect(report).toContain("| 01-basic-tool-server | noskill+blank | 1/1 |");
+    expect(report).toContain("### Static adoption tasks (not in pass rate)");
+    expect(report).toContain("| 05-app-deploy | noskill+blank | 1/1 |");
+  });
+});
+
+describe("renderReport — pass^k", () => {
+  it("is omitted when any scored cell has fewer than 2 trials", () => {
+    const r = run([trial({ trial: 1 })]);
+    expect(renderReport(r)).not.toContain("## pass^k");
+  });
+
+  it("computes the all-k-trials-pass fraction across task×condition cells", () => {
+    const r = run([
+      trial({ trial: 1, variant: "noskill+blank" }),
+      trial({ trial: 2, variant: "noskill+blank" }),
+      trial({ trial: 1, variant: "skill+blank", grade: grade({ contractPass: false, failureCode: "contract.calls" }) }),
+      trial({ trial: 2, variant: "skill+blank" }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## pass^k");
+    // noskill+blank cell all-pass; skill+blank cell has one failure -> 1/2 cells all-pass.
+    expect(report).toContain("pass^2: 50% (1/2 task×condition cells all-pass, min 2 trials/cell)");
+  });
+});
+
+describe("renderReport — deltas", () => {
+  it("omits the Deltas section when no paired variants ran", () => {
+    const r = run([trial({ trial: 1 })]);
+    expect(renderReport(r)).not.toContain("## Deltas");
+  });
+
+  it("prints a paired skill vs noskill delta with trial counts", () => {
+    const r = run([
+      trial({ trial: 1, variant: "noskill+blank", grade: grade({ contractPass: true }) }),
+      trial({ trial: 2, variant: "noskill+blank", grade: grade({ contractPass: false, failureCode: "contract.tools" }) }),
+      trial({ trial: 1, variant: "skill+blank", grade: grade({ contractPass: true }) }),
+      trial({ trial: 2, variant: "skill+blank", grade: grade({ contractPass: true }) }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## Deltas");
+    expect(report).toContain("**skill+blank vs noskill+blank**: +50pp (2/2 vs 1/2)");
+  });
+
+});
+
+describe("renderReport — performance", () => {
+  it("computes medians over passing trials only, and cost across all trials", () => {
+    const r = run([
+      trial({ trial: 1, perf: perf({ durationMs: 60_000, turns: 10, toolCalls: 4, costUsd: 0.4 }) }),
+      trial({ trial: 2, perf: perf({ durationMs: 120_000, turns: 20, toolCalls: 8, costUsd: 0.6 }) }),
+      trial({
+        trial: 3,
+        grade: grade({ contractPass: false, failureCode: "contract.calls" }),
+        perf: perf({ durationMs: 999_000, turns: 999, toolCalls: 999, costUsd: 5 }),
+      }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## Performance (passing trials)");
+    expect(report).toContain("Median duration: 1m30s"); // median of 60s/120s over the 2 passing trials
+    expect(report).toContain("Median turns: 15");
+    expect(report).toContain("Median tool calls: 6");
+    // total cost sums ALL trials (0.4 + 0.6 + 5 = 6), cost per success divides by passes (2)
+    expect(report).toContain("Total cost: $6.00");
+    expect(report).toContain("Cost per success: $3.00");
+  });
+
+  it("reports no passing trials plainly", () => {
+    const r = run([trial({ grade: grade({ contractPass: false, failureCode: "contract.start" }) })]);
+    expect(renderReport(r)).toContain("No passing trials.");
+  });
+});
+
+describe("renderReport — failure breakdown and sdk path", () => {
+  it("counts contract.* failures and infra.* invalid trials separately", () => {
+    const r = run([
+      trial({ trial: 1, grade: grade({ contractPass: false, failureCode: "contract.tools" }) }),
+      trial({ trial: 2, grade: grade({ contractPass: false, failureCode: "contract.tools" }) }),
+      trial({
+        trial: 3,
+        valid: false,
+        grade: { contractPass: false, checks: [], failureCode: "infra.agent", sdkPath: "unknown", scoredForPassRate: true },
+      }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## Failure breakdown");
+    expect(report).toContain("`contract.tools`: 2");
+    expect(report).toContain("Invalid trials: 1");
+    expect(report).toContain("`infra.agent`: 1");
+  });
+
+  it("counts trials by sdkPath as a plain fact", () => {
+    const r = run([
+      trial({ trial: 1, grade: grade({ sdkPath: "mcp-use" }) }),
+      trial({ trial: 2, grade: grade({ sdkPath: "hand-rolled" }) }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## SDK path");
+    expect(report).toContain("`mcp-use`: 1");
+    expect(report).toContain("`hand-rolled`: 1");
+  });
+});
+
+describe("renderReport — memos", () => {
+  it("always lists failed trials with a memo, quoting the memo's first line", () => {
+    readFileSyncMock.mockImplementation(() => "Struggled to find the right import.\nmore detail here");
+    const r = run([
+      trial({
+        trial: 1,
+        grade: grade({ contractPass: false, failureCode: "contract.tools" }),
+        memoPath: "trials/foo--noskill+blank--t1/memo.md",
+      }),
+    ]);
+    const report = renderReport(r);
+    expect(report).toContain("## Memos");
+    expect(report).toContain("trials/foo--noskill+blank--t1/memo.md");
+    expect(report).toContain("Struggled to find the right import.");
+  });
+
+  it("excludes passing trials whose memo is exactly 'Nothing notable.'", () => {
+    readFileSyncMock.mockImplementation(() => "Nothing notable.");
+    const r = run([trial({ trial: 1, memoPath: "trials/x/memo.md" })]);
+    expect(renderReport(r)).toContain("No notable memos.");
+  });
+
+  it("includes passing trials whose memo found something worth reading", () => {
+    readFileSyncMock.mockImplementation(() => "Papercut: error message did not mention the missing env var.");
+    const r = run([trial({ trial: 1, memoPath: "trials/x/memo.md" })]);
+    const report = renderReport(r);
+    expect(report).toContain("Papercut: error message did not mention the missing env var.");
+  });
+});
+
+describe("consoleSummary", () => {
+  it("prints the pass rate and per task×condition breakdown", () => {
+    const r = run([
+      trial({ trial: 1 }),
+      trial({ trial: 2, grade: grade({ contractPass: false, failureCode: "contract.tools" }) }),
+    ]);
+    const summary = consoleSummary(r);
+    expect(summary).toContain("Pass rate: 50% (1/2 valid scored trials)");
+    expect(summary).toContain("01-basic-tool-server · noskill+blank: 1/2");
   });
 });

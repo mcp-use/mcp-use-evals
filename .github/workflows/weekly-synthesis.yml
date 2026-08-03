@@ -1,0 +1,115 @@
+name: Weekly synthesis
+
+on:
+  schedule:
+    # Monday 13:00 UTC (ahead of the Mon eval run's 14:00 cron)
+    - cron: "0 13 * * 1"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Window size in days"
+        required: false
+        type: string
+        default: "7"
+
+permissions:
+  contents: write
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      # The Monday 13:00 UTC synthesis cron fires an hour before the first
+      # Mon/Wed/Fri 14:00 UTC evals cron could ever create the eval-results
+      # branch, so `actions/checkout@v4 ref: eval-results` would hard-fail on
+      # a fresh repo (checkout errors out on a missing ref, before
+      # src/synthesis.ts's own graceful "results dir does not exist" handling
+      # ever gets a chance to run). Check existence first and skip the
+      # checkout (and the later publish step) when it's not there yet —
+      # synthesis still runs against an empty results set.
+      - name: Check whether eval-results branch exists
+        id: check
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" eval-results >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::eval-results branch does not exist yet (no evals run has published results). Skipping eval-results checkout and publish this run; synthesis will run against an empty results set."
+          fi
+
+      - name: Checkout eval-results
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: eval-results
+          path: eval-results
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install pnpm
+        working-directory: main
+        run: corepack prepare --activate "$(node -p "require('./package.json').packageManager")"
+
+      - name: Install dependencies
+        working-directory: main
+        run: pnpm install --frozen-lockfile
+
+      - name: Run synthesis
+        working-directory: main
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          pnpm synthesize \
+            --days "${{ github.event.inputs.days || '7' }}" \
+            --results-dir ../eval-results/runs \
+            --slack
+
+      - name: Upload synthesis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-synthesis-${{ github.run_id }}
+          path: main/results/synthesis/*.md
+
+      - name: Publish synthesis report to eval-results branch
+        if: steps.check.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p eval-results/synthesis
+          cp main/results/synthesis/*.md eval-results/synthesis/
+
+          cd eval-results
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add synthesis/
+          if git diff --cached --quiet; then
+            echo "No new synthesis report to publish"
+            exit 0
+          fi
+          git commit -m "Publish weekly synthesis report"
+
+          for attempt in 1 2 3; do
+            if git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:eval-results; then
+              exit 0
+            fi
+            echo "push failed (attempt $attempt); rebasing onto latest eval-results"
+            git fetch "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" eval-results
+            git rebase FETCH_HEAD
+            sleep 5
+          done
+          echo "::error::Failed to push synthesis report to eval-results branch after retries"
+          exit 1

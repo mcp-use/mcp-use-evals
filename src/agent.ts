@@ -16,6 +16,33 @@ const REMOTE_RESULT_TAR = "/tmp/mcp-use-eval-result.tgz";
 
 export type AgentRunner = "claude" | "codex";
 
+/**
+ * Agent models are pinned (not "harness default") so trend data stays
+ * comparable across runs — see README's "Scoring rules" section. `--model`
+ * / `--reasoning-effort` (run.ts) still override these per invocation.
+ */
+export const DEFAULT_CLAUDE_MODEL = "claude-sonnet-5";
+export const DEFAULT_CODEX_MODEL = "gpt-5.6-terra";
+export const DEFAULT_CODEX_REASONING_EFFORT = "high" as const;
+
+/** What runHarnessAgent will actually use once CLI overrides are applied. */
+export function resolveAgentDefaults(
+  runner: AgentRunner,
+  model: string | undefined,
+  reasoningEffort: "low" | "medium" | "high" | undefined
+): {
+  model: string;
+  reasoningEffort: "low" | "medium" | "high" | undefined;
+} {
+  if (runner === "codex") {
+    return {
+      model: model ?? DEFAULT_CODEX_MODEL,
+      reasoningEffort: reasoningEffort ?? DEFAULT_CODEX_REASONING_EFFORT,
+    };
+  }
+  return { model: model ?? DEFAULT_CLAUDE_MODEL, reasoningEffort: undefined };
+}
+
 interface RemoteSandboxSession {
   run(opts: {
     command: string;
@@ -46,7 +73,7 @@ export function assertAgentAuth(runner: AgentRunner): void {
   ) {
     throw new Error(
       "claude runs require ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. " +
-        "Use `--agent golden` to exercise the graders without an agent."
+        "Use `pnpm verify-tasks` to exercise the graders without an agent."
     );
   }
   if (
@@ -55,7 +82,7 @@ export function assertAgentAuth(runner: AgentRunner): void {
   ) {
     throw new Error(
       "codex runs require OPENAI_API_KEY or CODEX_API_KEY. " +
-        "Use `--agent golden` to exercise the graders without an agent."
+        "Use `pnpm verify-tasks` to exercise the graders without an agent."
     );
   }
 }
@@ -84,19 +111,28 @@ export async function runHarnessAgent(opts: {
   let remoteSession: RemoteSandboxSession | undefined;
   let remoteWorkDir: string | undefined;
   let syncedWorkspace = false;
+  // The harness stream's own usage blocks never carry cost, but the
+  // claude-code adapter's `finish` event does (providerMetadata) — pull it
+  // out as events arrive rather than hardcoding null.
+  let costUsd: number | null = null;
   let session:
     | Awaited<ReturnType<InstanceType<typeof HarnessAgent>["createSession"]>>
     | undefined;
   try {
+    const resolved = resolveAgentDefaults(
+      opts.runner,
+      opts.model,
+      opts.reasoningEffort
+    );
     const harness = (
       opts.runner === "codex"
         ? createCodex({
-            model: opts.model,
-            reasoningEffort: opts.reasoningEffort,
+            model: resolved.model,
+            reasoningEffort: resolved.reasoningEffort,
           })
         : createClaudeCode({
-            model: opts.model,
-            thinking: "on",
+            model: resolved.model,
+            thinking: { type: "enabled" },
           })
     ) as unknown as HarnessAgentAdapter;
     const agent = new HarnessAgent({
@@ -134,7 +170,18 @@ export async function runHarnessAgent(opts: {
       abortSignal: abort.signal,
     });
     for await (const part of result.stream) {
-      events.push(part as unknown as Record<string, unknown>);
+      const event = part as unknown as Record<string, unknown>;
+      events.push(event);
+      if (event.type === "finish") {
+        const claudeCodeMeta = (
+          event.providerMetadata as
+            | Record<string, { costUsd?: unknown }>
+            | undefined
+        )?.["claude-code"];
+        if (typeof claudeCodeMeta?.costUsd === "number") {
+          costUsd = claudeCodeMeta.costUsd;
+        }
+      }
     }
 
     const [usage, steps] = await Promise.all([
@@ -205,7 +252,7 @@ export async function runHarnessAgent(opts: {
   return {
     durationMs: numberField(result, "duration_ms"),
     turns: numberField(result, "num_turns"),
-    costUsd: null,
+    costUsd,
     rawJsonl: events.map((e) => JSON.stringify(e)).join("\n"),
     transcriptMd: renderTranscript(events),
   };

@@ -1,0 +1,21 @@
+{
+  "title": "Custom company OIDC IdP server",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "oauth": { "backend": "okta" },
+  "expectedTools": [
+    { "name": "whoami" },
+    { "name": "add", "requiredProps": ["a", "b"] }
+  ],
+  "calls": [
+    {
+      "tool": "whoami",
+      "args": {},
+      "expect": { "type": "contains", "value": "00ueval2f81aa01" }
+    },
+    {
+      "tool": "add",
+      "args": { "a": 20, "b": 22 },
+      "expect": { "type": "number-equals", "value": 42 }
+    }
+  ]
+}

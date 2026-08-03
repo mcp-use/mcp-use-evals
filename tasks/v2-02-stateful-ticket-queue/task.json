@@ -1,0 +1,67 @@
+{
+  "title": "Stateful in-memory ticket queue",
+  "entryCandidates": ["src/server.ts", "index.ts", "server.ts", "src/index.ts"],
+  "expectedTools": [
+    { "name": "create_ticket", "requiredProps": ["title"] },
+    { "name": "list_tickets" },
+    { "name": "claim_ticket", "requiredProps": ["id"] },
+    { "name": "close_ticket", "requiredProps": ["id"] }
+  ],
+  "calls": [
+    {
+      "tool": "create_ticket",
+      "args": { "title": "Fix login bug" },
+      "expect": { "type": "number-equals", "value": 1 }
+    },
+    {
+      "tool": "create_ticket",
+      "args": { "title": "Update onboarding docs" },
+      "expect": { "type": "number-equals", "value": 2 }
+    },
+    {
+      "tool": "list_tickets",
+      "args": {},
+      "expect": { "type": "contains", "value": "Fix login bug" }
+    },
+    {
+      "tool": "list_tickets",
+      "args": {},
+      "expect": { "type": "contains", "value": "Update onboarding docs" }
+    },
+    {
+      "tool": "list_tickets",
+      "args": {},
+      "expect": { "type": "number-equals", "value": 2 }
+    },
+    {
+      "tool": "claim_ticket",
+      "args": { "id": "1" },
+      "expect": { "type": "number-equals", "value": 1 }
+    },
+    {
+      "tool": "claim_ticket",
+      "args": { "id": "ghost" },
+      "expect": { "type": "contains", "value": "not found" }
+    },
+    {
+      "tool": "close_ticket",
+      "args": { "id": "1" },
+      "expect": { "type": "number-equals", "value": 1 }
+    },
+    {
+      "tool": "close_ticket",
+      "args": { "id": "ghost" },
+      "expect": { "type": "contains", "value": "not found" }
+    },
+    {
+      "tool": "list_tickets",
+      "args": {},
+      "expect": { "type": "not-contains", "value": "Fix login bug" }
+    },
+    {
+      "tool": "list_tickets",
+      "args": {},
+      "expect": { "type": "number-equals", "value": 1 }
+    }
+  ]
+}

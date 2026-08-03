@@ -7,7 +7,6 @@ function validConfig(): Record<string, unknown> {
   return {
     title: "Test task",
     entryCandidates: ["src/server.ts"],
-    requiresZodSchema: true,
     expectedTools: [{ name: "add", requiredProps: ["a", "b"] }],
     calls: [
       {
@@ -31,22 +30,19 @@ describe("TaskConfigSchema", () => {
         backend: "clerk",
         frontendApiUrl: "https://example.clerk.accounts.dev",
       },
-      variants: ["skill+scaffold", "noskill+blank", "blank+docs-old"],
+      variants: ["skill+scaffold", "noskill+blank"],
     };
     expect(TaskConfigSchema.safeParse(config).success).toBe(true);
   });
 
-  it("round-trips docs variants", () => {
-    expect(variantId(parseVariant("blank+docs-old"))).toBe("blank+docs-old");
-    expect(variantId(parseVariant("blank+docs-new"))).toBe("blank+docs-new");
+  it("round-trips supported variants", () => {
+    expect(variantId(parseVariant("noskill+blank"))).toBe("noskill+blank");
+    expect(variantId(parseVariant("skill+scaffold"))).toBe("skill+scaffold");
   });
 
-  it("accepts optional readiness budgets", () => {
-    const config = {
-      ...validConfig(),
-      readinessBudgets: { turns: 20, costUsd: 0.75, durationMs: 150000 },
-    };
-    expect(TaskConfigSchema.safeParse(config).success).toBe(true);
+  it("rejects removed docs experiment variants", () => {
+    expect(() => parseVariant("blank+docs-old")).toThrow('Invalid variant "blank+docs-old"');
+    expect(() => parseVariant("blank+docs-new")).toThrow('Invalid variant "blank+docs-new"');
   });
 
   it("accepts optional resource list and read checks", () => {
@@ -83,21 +79,6 @@ describe("TaskConfigSchema", () => {
       },
     };
     expect(TaskConfigSchema.safeParse(config).success).toBe(true);
-  });
-
-  it("rejects non-positive readiness budgets", () => {
-    expect(
-      TaskConfigSchema.safeParse({
-        ...validConfig(),
-        readinessBudgets: { turns: 0 },
-      }).success
-    ).toBe(false);
-    expect(
-      TaskConfigSchema.safeParse({
-        ...validConfig(),
-        readinessBudgets: { costUsd: -1 },
-      }).success
-    ).toBe(false);
   });
 
   it("rejects an unknown oauth backend", () => {
@@ -158,9 +139,9 @@ describe("oauth task seeds", () => {
   // task.json call expectations are literals; they must match the identities
   // the backends actually seed, or the calls check can never pass.
   it("whoami expectations match the seeded backend identities", async () => {
-    const clerk = await loadTask("03-oauth-clerk");
+    const clerk = await loadTask("v2-04-oauth-clerk");
     expect(JSON.stringify(clerk.config.calls)).toContain(CLERK_SEED.sub);
-    const okta = await loadTask("04-oauth-custom-idp");
+    const okta = await loadTask("v2-05-oauth-custom-idp");
     expect(JSON.stringify(okta.config.calls)).toContain(OKTA_SEED.sub);
   });
 });

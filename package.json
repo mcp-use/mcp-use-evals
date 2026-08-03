@@ -7,20 +7,23 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "eval": "tsx --env-file-if-exists=.env src/run.ts",
+    "verify-tasks": "tsx --env-file-if-exists=.env src/verify-tasks.ts",
+    "synthesize": "tsx --env-file-if-exists=.env src/synthesis.ts",
     "trends": "tsx src/trends.ts",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ai-sdk/harness": "1.0.0-canary.13",
-    "@ai-sdk/harness-claude-code": "1.0.0-canary.9",
-    "@ai-sdk/harness-codex": "1.0.0-canary.9",
-    "@ai-sdk/openai": "3.0.74",
-    "@ai-sdk/provider-utils": "5.0.0-canary.48",
-    "@ai-sdk/sandbox-vercel": "1.0.0-canary.13",
+    "@ai-sdk/harness": "1.0.48",
+    "@ai-sdk/harness-claude-code": "1.0.49",
+    "@ai-sdk/harness-codex": "1.0.50",
+    "@ai-sdk/openai": "4.0.24",
+    "@ai-sdk/provider-utils": "5.0.15",
+    "@ai-sdk/sandbox-vercel": "1.0.48",
     "@anthropic-ai/sdk": ">=0.88.0 <1.0.0",
     "@langchain/core": "^1.1.0",
-    "ai": "7.0.0-canary.176",
+    "ai": "7.0.42",
     "langchain": "^1.2.10",
     "mcp-use": "^1.32.1",
     "react": "^19.2.0",
@@ -39,7 +42,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@ai-sdk/harness>ai": "7.0.0-canary.176"
+      "@ai-sdk/harness>ai": "7.0.42"
     }
   }
 }

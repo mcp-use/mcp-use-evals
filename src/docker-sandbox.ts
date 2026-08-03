@@ -60,10 +60,14 @@ class DockerSandboxProvider implements HarnessV1SandboxProvider {
       "--name",
       name,
       ...ports.flatMap((port) => ["--publish", `127.0.0.1::${port}`]),
+      "--env",
+      "COREPACK_ENABLE_DOWNLOAD_PROMPT=0",
+      "--env",
+      "IS_SANDBOX=1",
       image,
       "bash",
       "-lc",
-      `mkdir -p ${shQuote(DEFAULT_WORKDIR)} && cd ${shQuote(DEFAULT_WORKDIR)} && sleep infinity`,
+      `corepack enable >/dev/null 2>&1; corepack prepare pnpm@latest --activate >/dev/null 2>&1; export PATH="$HOME/.local/share/pnpm/bin:$PATH"; pnpm config set --global dangerously-allow-all-builds true >/dev/null 2>&1; mkdir -p ${shQuote(DEFAULT_WORKDIR)} && cd ${shQuote(DEFAULT_WORKDIR)} && sleep infinity`,
     ];
     await docker(args, options?.abortSignal);
 
