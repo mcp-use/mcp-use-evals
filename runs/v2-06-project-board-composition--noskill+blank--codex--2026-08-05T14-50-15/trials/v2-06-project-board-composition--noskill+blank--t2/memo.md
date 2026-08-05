@@ -1,0 +1,7 @@
+The main friction was API discovery: the agent first queried npm metadata with `npm view mcp-use version description repository.url` and then inspected installed declarations via `sed -n '1,300p' node_modules/mcp-use/dist/server.d.ts` and `resources.d.ts`/`tools.d.ts`, rather than using a skill file or fetched documentation URL. This did lead directly to the needed API shape, including the declaration example `await server.listen(3000)` and the agent’s conclusion that the SDK “`supports a fixed resource plus a URI template directly`.”
+
+Verification lost time on hand-written SSE parsing. Two lifecycle attempts failed with `SyntaxError: Unexpected token 'e', "event: mes"... is not valid JSON`; the first tried `body.startsWith("event: message\\ndata: ")`, and the second tried `body.split(/\\r?\\n/).find(...)`. The third attempt succeeded only after switching to `const start = body.indexOf("data: ");`.
+
+The first successful lifecycle omitted checking the board immediately after creation: its output went from `Created issue 1: Document the MCP API` directly to `resources/read ... "issue://1"`. The agent therefore ran a second server and repeated the lifecycle, this time confirming `board after create: Open issues: 1`, adding avoidable verification work.
+
+A minor scaffold/environment papercut appeared when the agent ran `git status --short && sed -n '1,260p' src/server.ts`; because the directory was not a repository, `fatal: not a git repository`, the chained source inspection never ran.

@@ -1,0 +1,7 @@
+The main friction was API discovery: the agent queried npm (`npm view mcp-use version description repository.url peerDependencies dependencies --json`) and then inspected package internals with `sed -n '1,260p' node_modules/mcp-use/dist/index.d.ts`, `server.d.ts`, `resources.d.ts`, and `node-http.d.ts`. No skill file or fetched docs URL appears; it relied on `node_modules/mcp-use/README.md` and declaration files to determine registration and `listen()` shapes.
+
+The first typecheck failed because the TypeScript configuration omitted Node globals: `error TS2591: Cannot find name 'process' ... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json`, after which `npx tsc --noEmit` passed. This is a small scaffold/configuration papercut despite `@types/node` already being installed, as shown by `├── @types/node@26.1.2`.
+
+Process cleanup also took an avoidable detour. The combined verification-and-kill command ended with `exitCode":143`, and a later check showed the server remained orphaned: `466 node node_modules/.bin/tsx src/server.ts` with `PPID 1`. The agent needed an additional `kill 466` call to stop it.
+
+A repository-status check was unhelpful in the blank workspace: `fatal: not a git repository (or any of the parent directories): .git`. Verification otherwise succeeded, but it was manually verbose, using many repeated raw `curl ... POST http://127.0.0.1:3100/mcp` requests rather than a compact client script.

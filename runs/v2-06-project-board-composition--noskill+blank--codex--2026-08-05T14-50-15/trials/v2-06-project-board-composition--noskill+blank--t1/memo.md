@@ -1,0 +1,9 @@
+The agent had substantial API-discovery friction and inspected the installed package rather than relying on external docs: `find node_modules/mcp-use -maxdepth 3 -type f`, followed by reads of `README.md`, `dist/index.d.ts`, `dist/server.d.ts`, `dist/resources.d.ts`, and searches such as `rg -n "listen\\("`. It also had to reverse-engineer the verification client from dependency declarations, searching `@modelcontextprotocol/client` for `"StreamableHTTP"`, `"class Client"`, `"callTool("`, and `"readResource("`.
+
+The first typecheck failed because Node globals were omitted from TypeScript configuration: `error TS2591: Cannot find name 'process' ... add 'node' to the types field in your tsconfig.` The agent corrected `tsconfig.json` and subsequently passed `npx tsc --noEmit`.
+
+Process management caused avoidable churn. The combined command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` left a server running, so a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. Cleanup commands then produced exit code 143 despite successful lifecycle requests: `[result] {"exitCode":143,"output":"Project issue tracker MCP server listening ...` This happened again on port 3101, requiring explicit `kill 615 657 668`.
+
+An SDK papercut appeared when merely running the in-memory server created `./.mcp-use/usage.json`, contradicting the project’s no-files intent closely enough that the agent investigated telemetry via `sed -n '1,200p' .mcp-use/usage.json` and `rg -n "usage.json|MCP_USE|usage" node_modules/mcp-use/dist`. It then added `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` in `src/server.ts` and reran verification to confirm `no state files created`.
+
+The blank environment also was not a Git repository, making the final inspection command noisy: `fatal: not a git repository` and `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.
