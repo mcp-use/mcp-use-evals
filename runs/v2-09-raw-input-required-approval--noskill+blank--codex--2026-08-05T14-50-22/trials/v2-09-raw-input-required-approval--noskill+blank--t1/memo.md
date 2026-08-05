@@ -1,0 +1,9 @@
+The decisive miss was wording on the explicit decline path: `src/server.ts` returns `approvalError("Deployment was not approved.")`, while the accepted response with `approve: false` returns `approvalError("Deployment was declined.")`. The deterministic check expected the explicit decline result to contain `decline`, so this inconsistency caused the failure.
+
+The agent’s verification did not assert decline-message content. `test/approval-flow.test.ts` checks only `assert.equal("isError" in declined && declined.isError, true);` and `assert.equal(isInputRequiredResult(declined), false);`, allowing the wrong text to pass before reporting `Verified accepted approval with note and terminal declined approval.`
+
+API discovery relied heavily on installed-package inspection rather than a skill or fetched documentation: the agent ran `rg -n "inputRequired|inputResponse|acceptedContent..." node_modules/mcp-use`, read `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/context.d.ts`, then searched `node_modules/@modelcontextprotocol/server`. The useful helper documentation was eventually found in generated declaration files, including `Responses are not validated against it — pass the same schema to acceptedContent()`.
+
+There was avoidable TypeScript-test friction after implementation. The first check failed with `Cannot find name 'process'` because Node types were not included, plus union-narrowing errors such as `Property 'inputRequests' does not exist`; the next attempt still failed because `'form.params' is possibly 'undefined'` and `Property 'message' does not exist` on the broad request union. Two edits to `test/approval-flow.test.ts` and one to `tsconfig.json` were needed before `npx tsc --noEmit && npm test` passed.
+
+The final cleanup command also assumed a Git checkout and failed with `warning: Not a git repository`, adding a small scaffold/environment papercut after the functional checks had completed.
