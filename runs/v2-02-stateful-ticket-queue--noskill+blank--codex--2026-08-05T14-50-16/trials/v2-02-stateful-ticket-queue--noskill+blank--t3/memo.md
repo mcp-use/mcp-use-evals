@@ -1,0 +1,7 @@
+SDK discovery took several attempts because both `npm view mcp-use readme | head -200` and the fetched GitHub TypeScript README returned `output:""`. The agent then inspected the published tarball with `npm pack mcp-use --silent` and read `package/README.md`, `package/dist/server.d.ts`, and `package/dist/tools.d.ts`, indicating the package artifacts were the useful API-shape resource.
+
+The verification CLI had a confusing dependency experience: `npx mcp-use client connect` announced `[mcp-use] installing @mcp-use/client…` and `added 1 package`, but immediately failed with `[mcp-use] @mcp-use/client is not installed.` The agent had to explicitly run `npm install --save-dev @mcp-use/client` before the same command worked.
+
+Server-process handling caused avoidable churn. The initial `PORT=3100 npx tsx src/server.ts` remained running, so a later bounded start failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. Cleanup also required two passes: after `kill 438`, the transcript still showed `node node_modules/.bin/tsx src/server.ts` and its child process, requiring `kill 451 462`.
+
+A final repository sanity check was noisy in the blank, non-git workspace: `git diff --check` produced `warning: Not a git repository.` This did not affect the implementation, whose typecheck completed with `exitCode":0` and whose lifecycle calls returned expected messages such as `Ticket 999 not found.`
