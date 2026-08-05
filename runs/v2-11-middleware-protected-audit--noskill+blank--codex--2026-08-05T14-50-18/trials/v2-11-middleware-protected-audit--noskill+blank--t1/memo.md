@@ -1,0 +1,7 @@
+The decisive miss was a response-text capitalization mismatch: `src/server.ts` returns ``text: `record ${id}```, while the deterministic check expected `Record R-1`; the agent’s own verification only confirmed `"text":"record r-1"` and then concluded that “`read_record` succeeded,” so it never tested the grader-sensitive casing.
+
+API discovery relied heavily on the installed package rather than external docs or a skill file: the agent said it would “`confirm the mcp-use middleware/resource APIs against the installed package`” and inspected `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, `resources.d.ts`, and `tools.d.ts`. It also queried npm metadata with `npm view mcp-use@2.0.4`.
+
+There was minor TypeScript configuration friction after installation: the first `npx tsc --noEmit` failed with “`Cannot find name 'process'`” even though `@types/node@26.1.2` was installed, requiring a `tsconfig.json` adjustment before typechecking passed.
+
+Verification lost some time to shell-command issues. The combined call/read command ended with “`Invalid JSON`,” forcing a separate verbose resource request. Cleanup also reported exit code 143 after `pkill -f 'tsx src/server.ts'`, and the final repository check failed because “`Not a git repository`.” These did not prevent functional middleware/audit verification, whose resource output was correctly observed as `1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed`.

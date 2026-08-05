@@ -1,0 +1,7 @@
+The decisive miss was the read response’s capitalization: `src/server.ts` returns ``text: `record ${id}```, while the deterministic check required a value containing `Record R-1`. The agent’s own verification used a different identifier and merely observed `"text":"record record-1"`, then concluded "`read_record` succeeds," so it did not test the grader-sensitive output form.
+
+With no skill available, the agent leaned heavily on installed-package discovery: it searched `node_modules/mcp-use` for `"MCPServer|Streamable|streamable|server\\.use\\("` and inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, `dist/resources.d.ts`, and `dist/middleware/mcp-middleware.d.ts`. It also queried npm metadata via `npm view mcp-use@2.0.4 dependencies peerDependencies engines --json`. This worked, but contributed substantial exploration before implementation.
+
+Verification was otherwise thorough: the live denied call returned `"text":"approval required"`, the approved call returned `"text":"deleted record-1"`, and the resource returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+A minor blank-directory papercut occurred when the final compound check ran `git status --short` and failed with `fatal: not a git repository (or any of the parent directories): .git`, despite the tool-list request itself succeeding. Process cleanup also took two attempts: after `kill 438`, `ps` still showed `451 node node_modules/.bin/tsx src/server.ts`, requiring a later `kill 451`.
