@@ -1,0 +1,7 @@
+The main correctness miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the deterministic check expected `Record R-1`; the agent’s own verification only confirmed `"text":"record record-1"` and did not test the grader’s `R-1` case.
+
+SDK schema compatibility caused a detour. The agent initially installed `zod@3`, then typechecking failed because `Property 'jsonSchema' is missing`; it recovered by running `npm install zod@4 && npx tsc --noEmit`. Node typings also required a configuration correction after `Cannot find name 'process'`, despite `@types/node` already having been installed.
+
+With no scaffold, the agent leaned heavily on package-local documentation and declarations: it opened `node_modules/mcp-use/README.md`, inspected `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, `tools.d.ts`, and middleware declarations, and ran `rg -n 'listen|resource\\(|mcp:tools/call|\\.use\\(' node_modules/mcp-use/dist node_modules/mcp-use/README.md` to discover API shape.
+
+Manual protocol verification had avoidable command friction. The combined curl sequence successfully exercised all three tool calls, but its resource read ended with `HTTP/1.1 400 Bad Request` and `Invalid JSON`, requiring a separate corrected `resources/read` request. A later cleanup/check command also assumed a Git repository and failed with `warning: Not a git repository`, producing a long usage dump. Process cleanup took multiple attempts: after `kill 460`, the agent still ran `kill 473 484 2>/dev/null || true`.
