@@ -1,0 +1,7 @@
+The main wrong turn came from the default npm scaffold remaining CommonJS: `npm init -y` produced `"type": "commonjs"`, and the first typecheck failed with `"The 'import.meta' meta-property is not allowed in files which will build into CommonJS output"` plus `"Cannot find name 'process'"` and `"cannot use 'await' at the top level."` The agent recovered by changing package configuration to `"type": "module"` and adjusting TypeScript settings, after which `npx tsc --noEmit` exited successfully.
+
+For SDK discovery, the agent leaned on the installed package rather than a skill file or fetched docs: it searched `node_modules/mcp-use` with `rg -n "streamable|Streamable|createMCP|MCPServer|resource"` and inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, `dist/resources.d.ts`, and `dist/response-helpers.d.ts`. The README’s quickstart supplied the core registration shape, including `import { MCPServer } from "mcp-use"` and `server.tool(...)`.
+
+There was minor dependency over-installation: the command installed `mcp-use @modelcontextprotocol/sdk zod`, while `src/server.ts` imports only `MCPServer` from `"mcp-use"` and `z` from `"zod"`.
+
+The final housekeeping check unnecessarily assumed Git metadata and ended noisily: `git status --short && git diff ...` returned `fatal: not a git repository (or any of the parent directories): .git`. This did not affect the earlier lifecycle verification, whose responses included `"Created issue 1."`, `"Issue 1 assigned to Ada."`, `"Issue 1 resolved."`, and `"Issue 999 not found."`

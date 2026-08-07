@@ -1,0 +1,9 @@
+The agent relied heavily on installed declaration files rather than a skill or fetched docs, inspecting `node_modules/mcp-use/dist/index.d.ts`, `server.d.ts`, `resources.d.ts`, `tools.d.ts`, and `README.md`, then grepping for `"resource\\(|resourceTemplate|listen\\("`. It also inspected the bundled MCP client API via `rg -n "(callTool|readResource)\\(" node_modules/@modelcontextprotocol/client/dist/index.d.mts`, indicating some discovery friction around both registration and end-to-end testing APIs.
+
+The initial scaffold’s module setting caused the first concrete implementation failure: `package.json` contained `"type": "commonjs"`, and typechecking reported `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent corrected this to `"type": "module"`; the subsequent command printed that setting after `npx tsc --noEmit`.
+
+A verification command also failed for the same module-format family of issue: `npx tsx -e` produced `Top-level await is currently not supported with the "cjs" output format` with 13 errors. The agent retried by wrapping the script in `void (async () => { ... })`, after which the lifecycle output succeeded.
+
+There was a small avoidable tooling detour after the successful typecheck: `git diff -- package.json tsconfig.json src/server.ts` exited with `warning: Not a git repository.` This made the combined command exit `129` even though the transcript states, `The implementation now typechecks cleanly.`
+
+The final server shutdown appeared as a failed tool result solely because it was interrupted: the process returned `exitCode":130` after logging successful requests including `tools/call create_issue`, `tools/call resolve_issue`, and `resources/read issue://999`.
