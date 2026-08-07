@@ -1,0 +1,7 @@
+The main discovery friction was learning the SDK API directly from the installed package: the agent inspected `node_modules/mcp-use/README.md`, then opened `node_modules/mcp-use/dist/index.d.ts`, `server.d.ts`, `resources.d.ts`, `node-http.d.ts`, `tools.d.ts`, and `config.d.ts`; it also searched compiled output with `rg -n "listen\\(" node_modules/mcp-use/dist/server.d.ts node_modules/mcp-use/dist/*.js`. No skill file or external docs URL was used in the visible transcript.
+
+TypeScript configuration required one repair after implementation. The first `npx tsc --noEmit` failed with `Cannot find name 'process'. Do you need to install type definitions for node? ... add 'node' to the types field in your tsconfig.` despite `@types/node` already being installed; the agent then modified `tsconfig.json`, and the second typecheck succeeded.
+
+The blank-directory scaffold introduced a small mismatch that the agent had to overwrite: `npm init -y` generated `"type": "commonjs"` and only the default failing test script, while the implementation uses top-level `await` in `src/server.ts` (`const listener = await server.listen(port);`). The transcript shows a subsequent `package.json` modification, but not its contents.
+
+Final review also spent a tool call assuming Git metadata existed; `git status --short && git diff ...` failed with `fatal: not a git repository (or any of the parent directories): .git`. This did not affect the working server, but it was avoidable in the explicitly blank workspace.
