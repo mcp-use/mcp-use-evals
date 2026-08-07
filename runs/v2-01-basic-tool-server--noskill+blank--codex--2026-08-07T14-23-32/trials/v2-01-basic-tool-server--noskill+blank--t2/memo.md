@@ -1,0 +1,7 @@
+The agent had some API-discovery friction: it first queried npm with `npm view mcp-use readme --json`, then relied on installed-package internals via `sed -n '1,240p' node_modules/mcp-use/README.md`, `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts`, and `rg -n "listen\\(" node_modules/mcp-use/dist/server.d.ts node_modules/mcp-use/dist/*.js`. No mcp-use skill file or fetched docs page appears; the README only pointed toward `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`.
+
+The first typecheck failed despite installing `@types/node`: `error TS2591: Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json`, after which `npx tsc --noEmit` succeeded. This is a small TypeScript configuration papercut rather than an SDK issue.
+
+Verification itself worked: `tools/call` returned `"text":"6.5"`, and malformed input produced `"Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string"`.
+
+Cleanup took several unnecessary turns because `fuser` was unavailable (`/bin/bash: line 1: fuser: command not found`), killing PID 447 left child processes running (`460       1 node node_modules/.bin/tsx src/server.ts`), and an attempted repository check failed with `fatal: not a git repository`. The agent eventually killed PID 460 and confirmed `verification server stopped`.

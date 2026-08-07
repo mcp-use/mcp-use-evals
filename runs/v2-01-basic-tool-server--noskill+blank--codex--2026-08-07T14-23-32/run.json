@@ -1,0 +1,252 @@
+{
+  "runId": "v2-01-basic-tool-server--noskill+blank--codex--2026-08-07T14-23-32",
+  "batchId": "31187187397-1",
+  "startedAt": "2026-08-07T14:23:32.842Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-01-basic-tool-server": "cc0f215b3435"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-01-basic-tool-server",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "cc0f215b3435",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-01-basic-tool-server--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-01-basic-tool-server--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-07T14:23:32.867Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 42321 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:add:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:add:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 85445,
+        "turns": 13,
+        "tokensIn": 359656,
+        "tokensOut": 3724,
+        "toolCalls": 18,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-01-basic-tool-server",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "cc0f215b3435",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-01-basic-tool-server--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-01-basic-tool-server--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-07T14:25:11.285Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 34993 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:add:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:add:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 68113,
+        "turns": 16,
+        "tokensIn": 467730,
+        "tokensOut": 4191,
+        "toolCalls": 20,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-01-basic-tool-server",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "cc0f215b3435",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-01-basic-tool-server--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-01-basic-tool-server--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-07T14:26:31.160Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 33193 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:add:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:add:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 60435,
+        "turns": 15,
+        "tokensIn": 490846,
+        "tokensOut": 3487,
+        "toolCalls": 18,
+        "costUsd": null
+      }
+    }
+  ]
+}
