@@ -1,0 +1,9 @@
+The decisive miss was a response-contract detail in `src/server.ts`: the read handler returns ``text: `record ${id}``` with lowercase `record`, while the grader expected `Record R-1`. The agent even verified only the same lowercase behavior—`"text":"record alpha"`—so its manual check did not catch the capitalization mismatch.
+
+SDK discovery relied heavily on package internals rather than docs: it ran `rg -n "class MCPServer|MCPServer|\\.tool\\(|use\\(|resource" node_modules/mcp-use` and inspected `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`. No skill file or fetched docs URL appears in the transcript.
+
+Dependency compatibility caused an avoidable iteration. The initial `zod@^3.24.2` failed because `Property 'jsonSchema' is missing`, after which the agent checked `npm view zod version` and upgraded to `zod@^4.4.3`. The npm-generated CommonJS scaffold also conflicted with ESM: TypeScript reported `ECMAScript imports and exports cannot be written in a CommonJS file`, requiring `"type": "module"`.
+
+Protocol verification had several wrong turns. The first initialize request combined a modern header with a legacy handshake and received `the request headers and body disagree`; removing the header and using `"protocolVersion":"2025-06-18"` worked. The first audit-resource request returned `Invalid JSON`, and a follow-up diagnostic attempted unavailable tooling—`/bin/bash: line 1: jq: command not found`—before a heredoc request succeeded.
+
+The final validation command also assumed a Git worktree and exited `129` with `Not a git repository`, despite typechecking having completed earlier in the same chained command. Most importantly, the final summary asserted verification of the read path only indirectly—`The three tool calls behaved as intended`—without checking the exact expected read text, allowing the lowercase output defect to survive.

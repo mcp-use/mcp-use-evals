@@ -1,0 +1,9 @@
+The main miss was response-text compatibility: `src/server.ts` returns `text: \`Read record ${id}\`` and `text: \`Deleted record ${id}\``, while the grader expected substrings `Record R-1` and lowercase `deleted R-1`. The agent’s live check merely echoed those same outputs—`"Read record record-1"` and `"Deleted record record-1"`—so verification did not test the grader-sensitive wording or casing.
+
+Discovery relied heavily on installed-package inspection rather than external docs: the agent ran `rg -n "class MCP|MCPServer|Streamable|server\\.use|mcp:tools/call|resource" node_modules/mcp-use` and opened `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, `dist/resources.d.ts`, and `dist/middleware/mcp-middleware.d.ts`. No skill file or fetched docs URL appears in the transcript.
+
+The blank scaffold caused an avoidable module-format detour. `npm init -y` created `"type": "commonjs"`, after which typechecking failed with `"The 'import.meta' meta-property is not allowed in files which will build into CommonJS output"` and `"cannot use 'await' at the top level"`; the agent then modified `package.json`.
+
+Process management also consumed several turns. The first combined command, `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts`, left a server running, and two later starts failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. The agent had to inspect `ps -ef | rg 'tsx|server\\.ts'` and eventually `kill 446 487`.
+
+A final cleanup check also assumed Git in a blank directory: `git diff --check && git status --short` produced `warning: Not a git repository.` The SDK additionally generated `.mcp-use/usage.json`, which the agent explicitly inspected and deleted; its content was `{"schemaVersion":1,"serverId":"f45de4d4-a56d-4c37-8d07-4190f9b54cbd"}`.
