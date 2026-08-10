@@ -1,0 +1,324 @@
+{
+  "runId": "v2-10-multi-view-incident-console--noskill+blank--codex--2026-08-10T14-27-04",
+  "batchId": "31398047277-1",
+  "startedAt": "2026-08-10T14:27:04.754Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-10-multi-view-incident-console": "837b89d340fd"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-10-multi-view-incident-console",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "837b89d340fd",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-10T14:27:04.780Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": false,
+            "required": true,
+            "detail": "no entry file found (tried: src/server.ts, src/index.ts)"
+          },
+          {
+            "id": "build",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "start",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "handshake",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "tools",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resources",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-list.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-detail.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:list_incidents:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:get_incident:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          }
+        ],
+        "failureCode": "contract.entry",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 159934,
+        "turns": 15,
+        "tokensIn": 1141556,
+        "tokensOut": 9164,
+        "toolCalls": 26,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-10-multi-view-incident-console",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "837b89d340fd",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-10T14:30:03.784Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/index.ts"
+          },
+          {
+            "id": "build",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/index.ts, port 35155 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:ui://views/incident-list.html:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:ui://views/incident-detail.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "readResource(ui://views/incident-detail.html) -> \"<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<script>globalThis.__mcpUseViewConfig={\"publicBase\":\"http://localho...\" did not match {\"type\":\"contains\",\"value\":\"Unable to load incident.\"}"
+          },
+          {
+            "id": "call:list_incidents:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_incident:1",
+            "pass": false,
+            "required": true,
+            "detail": "get_incident({\"id\":\"INC-102\"}) -> \"INC-102: Analytics export queue delayed. SEV-2, owned by Jordan Patel; status: Monitoring. {\"id\":\"INC-102\",\"title\":\"Anal...\" did not match {\"type\":\"contains\",\"value\":\"Priya Shah\"}"
+          }
+        ],
+        "failureCode": "contract.resources",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 214140,
+        "turns": 24,
+        "tokensIn": 2514234,
+        "tokensOut": 14293,
+        "toolCalls": 42,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-10-multi-view-incident-console",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "837b89d340fd",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-10T14:33:56.777Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": false,
+            "required": true,
+            "detail": "no entry file found (tried: src/server.ts, src/index.ts)"
+          },
+          {
+            "id": "build",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "start",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "handshake",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "tools",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resources",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-list.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-detail.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:list_incidents:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:get_incident:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          }
+        ],
+        "failureCode": "contract.entry",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 167317,
+        "turns": 14,
+        "tokensIn": 932681,
+        "tokensOut": 10656,
+        "toolCalls": 29,
+        "costUsd": null
+      }
+    }
+  ]
+}
