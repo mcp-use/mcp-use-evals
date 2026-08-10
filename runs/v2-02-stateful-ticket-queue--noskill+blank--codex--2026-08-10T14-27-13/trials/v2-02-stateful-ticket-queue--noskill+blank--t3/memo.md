@@ -1,0 +1,7 @@
+The main friction was SDK API discovery: the agent first queried npm with `npm view mcp-use version description repository.url --json`, then inspected `node_modules/mcp-use/README.md`, declaration files including `dist/server.d.ts` and `dist/node-http.d.ts`, and finally grepped implementation files with `rg -n "listen\\(" ...` before concluding that “`The SDK provides a direct MCPServer.listen() streamable-HTTP entry point`.” No skill file or fetched docs URL appears; discovery relied on the installed package.
+
+Dependency metadata caused one avoidable failed verification. After rewriting `package.json`, `npm ls` reported `@types/node@26.2.0 invalid: "^25.0.0"` and `typescript@7.0.2 invalid: "^5.9.3"`. The agent corrected the declared versions, ran `npm install --package-lock-only`, and then obtained a clean `npx tsc --noEmit && npm ls --depth=0`.
+
+The lifecycle verification was thorough but manually verbose: it issued separate `curl` requests for initialization, tool listing, and each operation, including `claim_ticket` twice and unknown-ID calls returning `Ticket 999 not found.` The background server command ultimately appeared as `exitCode":130` / `"status":"failed"` after successful requests, which is a tooling papercut because intentional process termination was surfaced as failure despite the server log showing every `/mcp` request returned `200`.
+
+A final generic repository check also wasted a turn: `git diff --check && git status --short` failed with `warning: Not a git repository`, so the chained source grep never ran.

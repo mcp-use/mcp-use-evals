@@ -1,0 +1,9 @@
+The agent had substantial API-discovery friction and relied on installed package declarations rather than a skill file or fetched docs: it ran `sed -n '1,240p' node_modules/mcp-use/dist/index.d.ts`, searched `node_modules/mcp-use/dist/server.d.ts` for `listen(`, and later inspected `node_modules/@modelcontextprotocol/client/dist/index.d.mts` for the client transport shape.
+
+Project configuration took two correction cycles. The first typecheck reported both `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` After modifying `package.json`, the next attempt still failed with `Cannot find name 'process'`, requiring a separate `tsconfig.json` change despite `@types/node@26.2.0` already being installed.
+
+The first lifecycle test produced a false negative from the test harness rather than the server: `Error: initial list failed: Open tickets (2): Password reset, Cannot sign in. Total open count: 2`. That response visibly contained the expected tickets and count, so debugging the assertion consumed an extra iteration.
+
+Server-process handling was another papercut. Killing the npm wrapper left child processes running—after `kill 498`, the transcript still showed `node node_modules/.bin/tsx src/server.ts` and its child—and required `kill 539 550`. A later background start immediately led to `[TypeError: fetch failed]` with `connect ECONNREFUSED 127.0.0.1:3100`, while `/tmp/support-ticket-mcp.log` was empty, so the agent reverted to a foreground launch.
+
+The final cleanup also invoked repository tooling in a blank, non-git directory and ended noisily with `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.
