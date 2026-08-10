@@ -1,0 +1,9 @@
+The agent had to discover the SDK API directly from the installed package, querying `require('./node_modules/mcp-use/package.json').exports`, grepping `node_modules/mcp-use/README.md` for `resource|tool`, and opening declarations including `node_modules/mcp-use/dist/server.d.ts` and `resources.d.ts`. This suggests the blank/no-skill run relied on package internals rather than a skill file or fetched docs URL.
+
+TypeScript configuration caused one avoidable iteration: the first `npx tsc --noEmit` failed with `Cannot find name 'process'` and explicitly advised adding `'node' to the types field in your tsconfig`, after which the agent modified `tsconfig.json`.
+
+Inspecting runtime behavior also took a wrong turn because the package’s JavaScript is bundled differently from its declaration-file layout. The attempted lookup of `node_modules/mcp-use/dist/server.js` failed with `No such file or directory`, forcing a follow-up `ls node_modules/mcp-use/dist` and broader grep.
+
+The combined command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` left the server running without an immediately shown result. A second launch then failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`; the agent had to inspect processes showing `npm exec tsx src/server.ts` and child Node processes before continuing against the already-running instance.
+
+Cleanup produced two noisy false failures unrelated to the implementation: stopping the long-running server yielded `exitCode":143`, and `git diff --check` failed because `Not a git repository`. Despite those papercuts, the agent performed thorough direct protocol verification, including `resources/templates/list` and an invalid tool call that returned `Input validation error: ... expected string, received number`.
