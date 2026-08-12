@@ -1,0 +1,9 @@
+The first inspection command bundled repository discovery with `git status`, so it exited unsuccessfully in the non-git workspace: `fatal: not a git repository (or any of the parent directories): .git`. This was minor because the file listing still revealed `tsconfig.json`, `package.json`, and `src/server.ts`.
+
+SDK discovery initially went down a dead end because dependencies were absent: `rg: node_modules/mcp-use: IO error ... No such file or directory`. After `npm install`, the agent relied on installed-package sources rather than a skill file or fetched docs, inspecting `node_modules/mcp-use/dist/config.d.ts`, `node_modules/mcp-use/dist/server.d.ts`, and `node_modules/mcp-use/README.md`. The package search itself produced a large minified hit beginning `node_modules/mcp-use/dist/mcp-proxy-NETCUGUD.js:2:`, adding noise before the targeted declaration/README reads.
+
+The actual repair was direct and localized: `src/server.ts` changed unknown-SKU branches to `return result(\`SKU ${sku} not found\`)`, reservation mutation to `inventory.set(sku, available - quantity)`, and restocking to the shared map with `inventory.set(sku, available + quantity)`.
+
+Manual protocol verification had one avoidable quoting error: the first `tools/list` request returned `Invalid JSON`, after which the corrected retry returned all four typed schemas. The agent otherwise exercised the requested behavior successfully, receiving `Reserved 3 of coffee-mug`, `insufficient stock for desk-lamp`, `Restocked 4 of coffee-mug`, and `SKU missing-sku not found`.
+
+Running the SDK created an extra telemetry/state artifact, `./.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":"39d74b49-4dc8-471e-a811-d01ecfdf3897"}`; the agent explicitly deleted `.mcp-use/usage.json` before finishing.
