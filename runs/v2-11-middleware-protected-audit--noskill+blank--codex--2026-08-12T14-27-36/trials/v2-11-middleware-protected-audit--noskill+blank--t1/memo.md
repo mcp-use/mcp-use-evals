@@ -1,0 +1,7 @@
+The decisive miss was the read response’s capitalization: `src/server.ts` returns ``text: `record ${id}```, and the live check confirmed `"text":"record r1"`, while the grader expected `Record R-1`. The agent’s self-verification only checked that a read completed—`“the read was allowed”`—rather than asserting the exact response text, so this mismatch escaped despite the end-to-end test.
+
+The agent leaned heavily on installed-package inspection rather than external docs, reading `node_modules/mcp-use/README.md`, `dist/index.d.ts`, `dist/server.d.ts`, `dist/node-http.d.ts`, and `dist/middleware/mcp-middleware.d.ts`; this successfully established that `“The installed framework exposes the exact typed mcp:tools/call middleware hook needed here.”`
+
+There was a small scaffold/configuration detour after `npm init -y` created `"type": "commonjs"`. The first typecheck failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`; the agent then inspected `npm ls` and `npx tsc --showConfig` before modifying `package.json` and `tsconfig.json`, after which `npx tsc --noEmit` passed.
+
+The final workspace check also wasted a command because the blank directory was not a Git repository: `warning: Not a git repository`, causing exit code `129` from a chain containing `git diff --check && git status --short`. This did not affect the implementation but was avoidable in a blank-workspace variant.

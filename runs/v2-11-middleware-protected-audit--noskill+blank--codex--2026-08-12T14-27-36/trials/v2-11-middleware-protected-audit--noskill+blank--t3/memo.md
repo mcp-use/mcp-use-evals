@@ -1,0 +1,9 @@
+The substantive miss was output casing: `src/server.ts` returns ``text: `record ${id}```, while the grader expected `Record R-1` and reported `"record R-1" did not match ... "Record R-1"`. The agent’s end-to-end check did not catch this because it tested lowercase input and merely observed `"text":"record r-1"` without asserting the expected capitalization.
+
+API discovery relied heavily on installed declarations rather than a skill file or fetched docs: the agent ran `rg -n "\\.use\\(|mcp:tools/call|streamable|resource\\(" node_modules/mcp-use` and inspected `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, `resources.d.ts`, and `tools.d.ts`. This worked, but required several broad searches and declaration dumps before implementation.
+
+Protocol-version discovery caused a wrong turn during verification. The first initialize request combined `MCP-Protocol-Version: 2026-07-28` with an initialize body and received `400 Bad Request` stating `"the request headers and body disagree"`. The agent then retried without that header using `"protocolVersion":"2025-11-25"`, which returned `200 OK`. That error is informative, but the modern-versus-legacy handshake distinction was not obvious up front.
+
+The middleware behavior itself was validated successfully: the denied call returned `"text":"approval required","isError":true`, and the resource returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`. However, the verification was manual `curl` inspection rather than assertions, which is why the read-response mismatch survived despite the agent concluding ``read_record` succeeds`.
+
+A minor scaffold/environment papercut appeared when the final validation command assumed Git metadata: `git status --short` failed with `fatal: not a git repository`. The agent recovered by rerunning `npx tsc --noEmit` with `git diff --check 2>/dev/null || true`.

@@ -1,0 +1,7 @@
+The key miss was output casing: `src/server.ts` returns ``text: `record ${id}```, while the deterministic check expected `Record R-1`; the agent’s own verification only exercised lowercase input/output, showing `"id":"r-1"` and `"text":"record r-1"`, so it did not catch the contract mismatch.
+
+API discovery relied heavily on installed-package inspection rather than a skill or fetched docs: the agent ran `rg ... node_modules/mcp-use` and inspected `node_modules/mcp-use/README.md`, `dist/tools.d.ts`, `dist/resources.d.ts`, `dist/server.d.ts`, and `dist/middleware/mcp-middleware.d.ts`. This worked, but required several exploratory commands before implementation.
+
+Dependency compatibility caused a concrete detour. The initial typecheck failed because the selected Zod lacked the expected JSON-schema interface: `Property 'jsonSchema' is missing`, after which the agent installed `zod@^4.1.0` and reported that mcp-use “expects Zod’s JSON-schema-capable v4 interface.” Pinning or documenting the compatible Zod major would avoid this papercut.
+
+Verification also had avoidable command-construction noise. The combined call sequence ended with `Invalid JSON`, requiring a separate `resources/read` request, even though the three tool calls had succeeded. The final listing/cleanup command also failed with `warning: Not a git repository` because it unconditionally ran `git diff --check`; the process was then terminated with `exitCode":130`. These did not cause the contract failure, but added friction to an otherwise functioning protocol implementation.
