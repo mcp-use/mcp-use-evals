@@ -1,0 +1,9 @@
+The main time sink was API discovery: the agent first queried npm with `npm view mcp-use readme`, then searched the installed package using `rg -n "streamable|Streamable|createMcp|MCPServer|tool\(" node_modules/mcp-use/...`, and finally inspected several declaration-file ranges such as `sed -n '120,250p' node_modules/mcp-use/dist/server.d.ts`. It leaned on the package’s local README quickstart—`## Quickstart` and `import { MCPServer } from "mcp-use";`—rather than a skill file or fetched docs URL.
+
+Lifecycle-client discovery required another lengthy node_modules investigation: the agent searched `@modelcontextprotocol/client` repeatedly for `"StreamableHTTP|streamable|callTool"`, inspected `index.d.mts`, and only later found the useful example text `const transport = new StreamableHTTPClientTransport(baseUrl); await client.connect(transport);`. This suggests the client package’s bundled declarations were usable but not quickly navigable.
+
+The initial HTTP smoke test was low-information: `curl ... http://127.0.0.1:3100/mcp` returned only `HTTP/1.1 204 No Content`, so it did not validate handshake or tools and was followed by the full MCP client script.
+
+There was a minor dependency-discovery detour: after installing `mcp-use`, the agent checked `require.resolve('zod')` and then explicitly ran `npm install zod`; npm responded `up to date`, indicating Zod was already physically available but still needed declaration as a direct project dependency.
+
+The final repository check fought the blank scaffold: `git diff --check; git diff` failed with `warning: Not a git repository`, producing a long usage dump and exit code 129. The server process also remained running until explicit cleanup; `pgrep` showed three related processes (`npm exec tsx`, `node_modules/.bin/tsx`, and the Node loader), after which the agent ran `kill 504 517 528`.
