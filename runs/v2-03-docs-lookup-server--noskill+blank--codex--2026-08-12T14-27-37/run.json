@@ -1,0 +1,450 @@
+{
+  "runId": "v2-03-docs-lookup-server--noskill+blank--codex--2026-08-12T14-27-37",
+  "batchId": "31606723866-1",
+  "startedAt": "2026-08-12T14:27:37.381Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-03-docs-lookup-server": "a9d87fb4812c"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-03-docs-lookup-server",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "a9d87fb4812c",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.1.1",
+      "memoPath": "trials/v2-03-docs-lookup-server--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-03-docs-lookup-server--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-12T14:27:37.408Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 45121 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://getting-started:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://authentication:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://deployment:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://not-a-real-page:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 145183,
+        "turns": 16,
+        "tokensIn": 799961,
+        "tokensOut": 7008,
+        "toolCalls": 31,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-03-docs-lookup-server",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "a9d87fb4812c",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.1.1",
+      "memoPath": "trials/v2-03-docs-lookup-server--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-03-docs-lookup-server--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-12T14:30:21.304Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 40709 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://getting-started:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://authentication:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://deployment:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://not-a-real-page:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 128165,
+        "turns": 16,
+        "tokensIn": 1001580,
+        "tokensOut": 8662,
+        "toolCalls": 31,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-03-docs-lookup-server",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "a9d87fb4812c",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.1.1",
+      "memoPath": "trials/v2-03-docs-lookup-server--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-03-docs-lookup-server--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-12T14:32:48.058Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 46823 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://getting-started:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://authentication:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://deployment:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://not-a-real-page:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 69728,
+        "turns": 13,
+        "tokensIn": 242505,
+        "tokensOut": 4668,
+        "toolCalls": 16,
+        "costUsd": null
+      }
+    }
+  ]
+}
