@@ -1,0 +1,7 @@
+The agent had SDK discovery friction and inspected the installed package rather than using a skill or fetched docs: it ran `npm view mcp-use version description repository.url --json`, then searched `node_modules/mcp-use/README.md` and declarations with `rg -n "streamable|Streamable|http" ...` and opened `node_modules/mcp-use/dist/server.d.ts`. Those declarations clarified the state model and listener behavior, including `"a fresh SDK McpServer is built ... for every HTTP request"` and `"Serve over HTTP on Node"`.
+
+The first typecheck failed because Node globals were omitted from the TypeScript configuration: `Cannot find name 'process' ... add 'node' to the types field in your tsconfig.` The agent fixed `tsconfig.json`, after which it stated `Typechecking now passes.`
+
+A combined verification command created a misleading non-code failure: `npx tsc --noEmit && git diff --check && git status --short` exited 129 because `Not a git repository.` This was avoidable in the blank workspace and required another final typecheck.
+
+Server cleanup also took extra steps. The initial server process ended with `exitCode":143`, `pgrep` showed both `npm exec tsx src/server.ts` and `node node_modules/.bin/tsx src/server.ts`, and the agent issued two kill/check commands before confirming shutdown with `Failed to connect to 127.0.0.1 port 3456`.
