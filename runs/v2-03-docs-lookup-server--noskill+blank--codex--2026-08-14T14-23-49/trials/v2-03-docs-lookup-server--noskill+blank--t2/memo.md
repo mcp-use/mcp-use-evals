@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than a skill file or fetched docs, reading `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/index.d.ts`, `node_modules/mcp-use/dist/server.d.ts`, and `node_modules/mcp-use/dist/resources.d.ts`; it also grepped for API shape with `rg -n "resourceTemplate|\\.listen|listen\\(|resource\\("`.
+
+The first implementation did not typecheck and required three configuration/type fixes: `Argument of type 'string' is not assignable to parameter of type '"authentication" | "deployment" | "getting-started"'`, `Cannot find name 'process'`, and `The current file is a CommonJS module and cannot use 'await' at the top level.` The CommonJS issue was likely scaffold friction because `npm init -y` generated `"type": "commonjs"` before the agent modified `package.json`.
+
+Server lifecycle during verification was awkward. The first `PORT=3100 npx tsx src/server.ts` remained running, so a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. The agent then found three related processes—`npm exec tsx src/server.ts`, `node node_modules/.bin/tsx src/server.ts`, and `/usr/local/bin/node ... src/server.ts`—before killing them.
+
+The custom SSE verification script also took two attempts because it initially split on the wrong newline representation and threw `Error: No MCP data for resources/list` even though the response visibly contained `data: {"result":...}`. Replacing that split with `body.split(String.fromCharCode(10))` made the checks succeed.
+
+Final cleanup included another avoidable command failure: `git diff -- src/server.ts tsconfig.json package.json` produced `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. Despite these papercuts, the successful verification output showed the intended index, page, missing-page, unique-search, and empty-search results.
