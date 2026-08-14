@@ -1,0 +1,9 @@
+The main friction was SDK API discovery through installed package internals rather than a skill file or external docs: the agent inspected `node_modules/mcp-use/README.md`, then `dist/server.d.ts`, `dist/openapi/types.d.ts`, and searched for `"fromOpenAPI|streamable|listen\\("`. This was productive, but required several exploratory calls before implementation.
+
+One wrong turn came from assuming the older monolithic MCP SDK package shape: `npm ls @modelcontextprotocol/sdk` returned `└── (empty)` with exit code 1. The agent then recovered by enumerating dependencies and finding split packages such as `node_modules/@modelcontextprotocol/client` and `node_modules/@modelcontextprotocol/server`.
+
+The generated request-body argument shape was an SDK-specific detail that had to be learned from live introspection: `tools/list` advertised `"required":["body"]`, and lifecycle calls therefore used `"arguments":{"body":{"sku":"green-tea","quantity":2}}`. The declaration inspection helped establish that `fromOpenAPI` accepts the parsed document and tag filtering, reflected in `MCPServer.fromOpenAPI({ spec: orderOpenApi, ... tags: ["orders"] })` at `src/server.ts`.
+
+After the first successful lifecycle—`Lifecycle verification passed.`—the agent spent additional time investigating anonymous telemetry via `dist/usage.d.ts` and `rg -n 'fetch\\(|https?://|usage'`, modified the source, and reran the entire server and lifecycle until `MCP lifecycle and tool-filter verification passed.` The resulting source sets `process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false";`, but this late investigation and duplicate verification added avoidable work on an already passing implementation.
+
+There was also a minor environment-related dead end when `git status --short` produced `fatal: not a git repository`, after which the agent reran the remaining checks separately.
