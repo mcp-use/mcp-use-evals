@@ -1,0 +1,9 @@
+The decisive miss was the decline message: `src/server.ts` returns `terminalError("Deployment was not approved.")`, while the deterministic check required the final result to contain `decline`. The agent’s verification only asserted terminal shape—`declined.isError !== true || declined.resultType === 'input_required'`—so it never checked the decline text and reported success despite the contract failure.
+
+API discovery consumed several searches through installed packages, including `rg -n "inputRequired|inputResponse|acceptedContent|inputResponses|streamable|listen" node_modules/mcp-use/dist node_modules/mcp-use` and later inspection of `node_modules/@modelcontextprotocol/server/dist/createMcpHandler-CLhGwQTn.d.mts`. The only external documentation resource visible was the package README fetched with `npm view mcp-use@2.0.4 readme --json`; no skill file was used in this `noskill+blank` run.
+
+There was one type-shape wrong turn after implementation: TypeScript rejected `Record<string, unknown> | undefined` because it was “`not assignable to parameter of type 'InputResponses | undefined'`,” requiring a source edit before typechecking passed. This suggests the helper’s expected `InputResponses` shape was not immediately apparent despite the declaration-file investigation.
+
+The HTTP check also prompted an unnecessary protocol-version detour: initialization requested `"protocolVersion":"2026-07-28"` but the server returned `"protocolVersion":"2025-11-25"`, after which the agent inspected package versions and exported protocol constants using `LATEST_PROTOCOL_VERSION` and `SUPPORTED_PROTOCOL_VERSIONS`. That investigation did not affect the final implementation.
+
+A final repository check produced avoidable noise because the blank workspace was not a Git repository: `fatal: not a git repository (or any of the parent directories): .git`.
