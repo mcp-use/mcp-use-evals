@@ -1,0 +1,5 @@
+The main discovery cost was local SDK archaeology: the agent inspected `node_modules/mcp-use/README.md`, then opened `dist/server.d.ts`, `dist/resources.d.ts`, and related declarations, and finally ran `rg -n "listen\\(" ...` to determine registration and listener APIs. No external docs or skill file appear in the transcript; the implementation path came from `node_modules/mcp-use`.
+
+The only coding correction was TypeScript environment setup. Despite installing `@types/node`, the first typecheck failed with `Cannot find name 'process'` and advised adding `'node' to the types field in your tsconfig`; after modifying `tsconfig.json`, `npx tsc --noEmit` passed.
+
+A minor verification papercut was running Git checks in a blank, non-Git workspace: `git diff --check; git status --short` produced `warning: Not a git repository` followed by a long usage dump. The server verification process also ended with `exitCode":130`, although its output showed the complete request sequence and successful responses, including `Open issues: 0`, `Issue 1 assigned to Ada`, `Issue 1 resolved`, and `Issue 404 not found`.
