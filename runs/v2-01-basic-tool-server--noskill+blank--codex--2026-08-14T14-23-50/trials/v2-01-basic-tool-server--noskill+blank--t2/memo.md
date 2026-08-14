@@ -1,0 +1,7 @@
+The agent had discovery friction around the SDK API, first querying npm with `npm view mcp-use version description repository.url dist.tarball --json` and the package README, then inspecting installed declarations via `sed -n '1,320p' node_modules/mcp-use/dist/server.d.ts`. The declarations ultimately supplied the crucial port behavior: `Port precedence is the argument, PORT, config.port, then 3000`.
+
+Verification hit a CLI installation papercut: `npx mcp-use client connect` reported `[mcp-use] installing @mcp-use/client…`, successfully said `added 1 package`, but immediately contradicted that with `@mcp-use/client is not installed.` A retry worked after `npm ls @mcp-use/client` showed it installed, but this left a verification-only runtime dependency in `package.json`: `"@mcp-use/client": "^2.1.4"`.
+
+The first tool invocation also failed because `a=19.5 b=22.5` was parsed as strings; the server logged `expected number, received string`. The agent had to consult `tools call --help`, which explained `key:=<json>`, before succeeding with `'a:=19.5' 'b:=22.5'`. This is a concrete CLI argument-syntax trap for typed numeric inputs.
+
+A final scaffold-assumption check wasted a command because the blank workspace was not a repository: `git diff --check` failed with `Not a git repository.`
