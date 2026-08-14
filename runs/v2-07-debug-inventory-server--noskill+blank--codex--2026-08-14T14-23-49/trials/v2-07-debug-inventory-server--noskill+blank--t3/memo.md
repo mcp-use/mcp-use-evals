@@ -1,0 +1,7 @@
+The main discovery friction was that dependencies were initially absent, so the first SDK inspection failed with `node_modules/mcp-use: No such file or directory`; the agent then ran `npm install` before grepping `node_modules/mcp-use/dist/server.d.ts` for `MCPServer` and `listen(port?: number...)`. It relied on installed package declarations and `node_modules/mcp-use/README.md`, rather than a skill file or fetched docs URL, as shown by `sed -n '1,390p' node_modules/mcp-use/dist/server.d.ts` and `rg ... node_modules/mcp-use/README.md`.
+
+The actual repair was direct once the scaffold was inspected: the original contained `inventory.set(sku, available + quantity)` under the comment `a reservation should decrease stock`, and expected business failures used `throw new Error`; the produced `src/server.ts` changed these to `inventory.set(sku, available - quantity)` and text responses such as `return result(\`insufficient stock for ${sku}\`)`.
+
+Two cleanup papercuts cost extra calls. Attempting `git diff -- src/server.ts` failed because the workspace was `Not a git repository`, producing a long Git usage dump. Server shutdown also required multiple attempts: after `kill 352`, `pgrep` still showed `386 node node_modules/.bin/tsx src/server.ts`, so the agent issued a second `kill 386`.
+
+Live verification itself was thorough: output included `Reserved 3 of coffee-mug`, `insufficient stock for desk-lamp`, `Restocked 5 of desk-lamp`, and final inventory `coffee-mug: 5` / `desk-lamp: 7`.
