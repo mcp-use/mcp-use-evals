@@ -1,0 +1,9 @@
+The agent had API-discovery friction and relied on package metadata plus installed declarations rather than a skill file: it first queried `npm view mcp-use version description repository.url homepage --json`, then searched `node_modules/mcp-use` with `rg -n "resource\\(|streamable|listen\\(|serve\\("`, and finally inspected `node_modules/mcp-use/dist/resources.d.ts` and `server.d.ts` to determine resource/template and listener signatures.
+
+The first typecheck failed because Node globals were not enabled despite `@types/node` being installed: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json`, after which `npx tsc --noEmit` succeeded.
+
+End-to-end verification hit a confusing CLI dependency papercut. Running `npx mcp-use client connect...` reported `[mcp-use] installing @mcp-use/client…` and even `added 1 package`, but immediately contradicted that with `[mcp-use] @mcp-use/client is not installed.` The agent had to explicitly run `npm install -D @mcp-use/client` before the client worked.
+
+Process cleanup also consumed extra attempts. A combined cleanup/check command failed because `git status --short` ran outside a repository: `fatal: not a git repository`. The first normal termination did not remove the spawned process—`ps` still showed `node node_modules/.bin/tsx src/server.ts`—so the agent ultimately used `kill -9 476`.
+
+The implementation itself avoided scaffold fighting and used module-level state as recommended by the declarations: `src/server.ts` contains `const issues = new Map<string, Issue>();` and registers the dynamic resource with `server.resourceTemplate(...)`.
