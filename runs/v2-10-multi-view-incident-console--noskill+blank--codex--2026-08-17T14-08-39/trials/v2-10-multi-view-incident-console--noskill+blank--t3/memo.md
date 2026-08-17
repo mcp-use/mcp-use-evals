@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the entry at repository root: the produced server is `index.ts` with `export default server;`, while the deterministic check reports `no entry file found (tried: src/server.ts, src/index.ts)`. This was masked because the SDK’s own build accepted it: `[mcp-use] built index.ts + views ... → .mcp-use/build/index.js`, so the agent’s verification did not match the grader’s entry convention.
+
+The agent had SDK-discovery friction and relied heavily on package internals rather than a skill file: it fetched `npm view mcp-use@2.0.4 readme --json`, then searched `node_modules/mcp-use` with `rg -n "view:|MCPServer|inline|views"`, and inspected declarations including `node_modules/mcp-use/dist/tools.d.ts` and `dist/react/hooks/use-tool-context.d.ts`. No mcp-use skill-file use is visible.
+
+The initial Zod version was incompatible with the SDK’s schema expectations: typechecking failed with `Property 'jsonSchema' is missing`, after which `npm install zod@'^4.1.0 && npx tsc --noEmit` succeeded. This suggests the required Zod major/version compatibility was not obvious from initial setup.
+
+Live verification also hit a CLI dependency papercut. Running `npx mcp-use client connect` said `[mcp-use] installing @mcp-use/client…` but immediately afterward reported `@mcp-use/client is not installed`; the agent then manually ran `npm install --save-dev @mcp-use/client`. That installed `@mcp-use/client@2.1.4`, and attempting to align it with the requested SDK version failed with `No match found for version 2.0.4`, so the agent ultimately removed it via `npm uninstall --save-dev @mcp-use/client`.
+
+A minor verification command also failed because it assumed Git metadata: `fatal: not a git repository`, which prevented the chained `rg` checks until they were rerun separately.
