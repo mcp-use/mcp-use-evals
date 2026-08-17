@@ -1,0 +1,7 @@
+The agent relied heavily on installed-package inspection rather than external docs, first running `rg -n "fromOpenAPI|streamable|Streamable|MCPServer" node_modules/mcp-use` and then reading `node_modules/mcp-use/dist/openapi/types.d.ts`, `node_modules/mcp-use/dist/server.d.ts`, and `node_modules/mcp-use/README.md`. It similarly explored the transitive MCP client API through `rg -n "StreamableHTTPClientTransport|class Client" node_modules/@modelcontextprotocol/client/dist`, adding several discovery calls before lifecycle verification.
+
+The first lifecycle test took a wrong turn because `npx tsx -e` compiled as CommonJS while using top-level await: `Top-level await is currently not supported with the "cjs" output format`. The retry wrapped the test in `void (async () => { ... })` and succeeded, producing `"tools": ["cancelOrder", "createOrder", "getOrder"]` and `"missing": "order not found"`.
+
+Final review also included an avoidable repository assumption: `git diff --check && git status --short` failed with `warning: Not a git repository`, which prevented the remainder of that chained command from running and required another command.
+
+The dependency was initially saved with a range despite the exact-pin requirement: `npm pkg get dependencies` showed `"mcp-use": "^2.0.4"`. The agent caught this late, modified `package.json`, and reconfirmed `"mcp-use": "2.0.4"` plus `└── mcp-use@2.0.4`.

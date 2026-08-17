@@ -1,0 +1,9 @@
+The agent initially installed dependencies it did not need—`npm install mcp-use@2.0.4 express zod` plus `@types/express`—then reversed course with `npm uninstall express zod @types/express`, adding avoidable package churn.
+
+API discovery relied heavily on inspecting installed package internals rather than a concise documented example. It searched `node_modules/mcp-use` for `"fromOpenAPI|streamable|Streamable|MCPServer"`, opened `node_modules/mcp-use/dist/server.d.ts` and `node_modules/mcp-use/dist/openapi/types.d.ts`, and even grepped bundled implementation code for `"registerOpenAPITools"`. It similarly explored `node_modules/@modelcontextprotocol/client` for `"StreamableHTTP|class Client"` before constructing the lifecycle client. This worked, but indicates discoverability friction around `fromOpenAPI`, `listen`, and the client transport.
+
+The first lifecycle verification attempt failed because `tsx -e` compiled as CommonJS: `Top-level await is currently not supported with the "cjs" output format`. The agent then wrapped the script in `void (async () => { ... })();`, after which the full verification succeeded.
+
+A final hygiene command also took an avoidable wrong turn because the blank workspace was not a Git repository: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. Since the command chained `git diff --check && git status --short && ...`, it exited with code `129` before the remaining checks, requiring another command.
+
+The SDK-generated request-body shape was an API surprise the agent explicitly surfaced: `The SDK’s OpenAPI generator uses a body input for JSON request bodies`, so creation had to use `arguments: { body: { sku: "green-tea", quantity: 2 } }` rather than placing `sku` and `quantity` directly at the top level.
