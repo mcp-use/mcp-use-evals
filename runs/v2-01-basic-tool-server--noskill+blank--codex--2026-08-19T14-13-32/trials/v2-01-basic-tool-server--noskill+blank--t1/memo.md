@@ -1,0 +1,7 @@
+The agent relied on npm metadata and local package internals rather than a skill file or external docs: it ran `npm view mcp-use version description repository.url dist-tags --json`, then inspected `node_modules/mcp-use/README.md`, `dist/index.d.ts`, `dist/server.d.ts`, and searched with `rg -n "listen\\(" node_modules/mcp-use/...` to discover the API shape.
+
+The main wrong turn was scaffold configuration. `npm init -y` created `"type": "commonjs"`, and the later package edit accidentally retained both `"type": "module"` and `"type": "commonjs"`. This caused `src/server.ts(32,17): error TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent diagnosed it by printing `package.json`, removed the duplicate CommonJS setting, and then `npx tsc --noEmit` passed.
+
+Manual protocol verification hit an HTTP-content-negotiation papercut. The first request supplied only `Content-Type: application/json` and failed with `curl: (22) The requested URL returned error: 406`; the server clarified, `Not Acceptable: Client must accept both application/json and text/event-stream`. Adding `Accept: application/json, text/event-stream` made `tools/list` and `tools/call` succeed.
+
+Server shutdown also took extra work. Killing the initial npm wrapper left child processes visible as `481 node node_modules/.bin/tsx src/server.ts` and `492 ... src/server.ts`, requiring a second cleanup command that explicitly killed both PIDs.
