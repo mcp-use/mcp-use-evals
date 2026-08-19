@@ -1,0 +1,9 @@
+The decisive miss was decline wording: `src/server.ts` returns `"Deployment was not approved."` for `response.action === "decline" || response.action === "cancel"`, while the other rejection branch returns `"Deployment was declined."`; the deterministic check expected the explicit decline result to contain `decline`. The agent’s own live verification exposed the problematic text—`"isError":true ... "Deployment was not approved."`—but it concluded that the flow was correct: “`a single terminal isError result for a decline`.” This suggests verification checked terminality but not the required decline-specific message.
+
+Discovery was expensive and relied heavily on grepping installed declarations and runtime bundles, including `rg ... "inputRequired|inputResponse|acceptedContent"` and inspection of `node_modules/@modelcontextprotocol/server/dist/src-CX2iR2pK.mjs`; no skill file or fetched documentation URL appears in the transcript. Manual HTTP testing also hit undocumented-looking protocol requirements sequentially: first `"the required Mcp-Method header is absent"`, then `"the required Mcp-Name header is absent"`.
+
+The blank scaffold caused initial TypeScript module friction: compilation failed with `"import.meta" ... not allowed in files which will build into CommonJS output`, `"Cannot find name 'process'"`, and `"cannot use 'await' at the top level"`, requiring edits to `package.json` and `tsconfig.json`.
+
+Process management then consumed time: repeated starts failed with `EADDRINUSE: address already in use 127.0.0.1:3100`, and `pgrep` showed multiple surviving `tsx src/server.ts` processes. The final cleanup explicitly killed several PIDs with `kill 454 495 506 751 786 799 810`.
+
+The final repository check also assumed Git despite the blank environment: `git diff --check` failed with `"Not a git repository"`.
