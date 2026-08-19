@@ -1,0 +1,9 @@
+The agent relied heavily on package-local discovery rather than a skill or fetched docs: it ran `sed -n '1,240p' node_modules/mcp-use/README.md`, inspected `node_modules/mcp-use/dist/server.d.ts`, and searched for `listen(` and `StreamableHTTPClientTransport` across declaration files. This worked, but required several exploratory calls because the initial `npm view mcp-use readme` produced only package metadata.
+
+A scaffold-editing mistake caused the first typecheck failure: `package.json` temporarily contained both `"type": "module"` and a later `"type": "commonjs"`, leading to `error TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent removed the duplicate CommonJS setting, after which `npx tsc --noEmit` passed.
+
+HTTP verification also took a detour. A bare `curl ... http://127.0.0.1:3100/mcp` returned an empty response, after which the agent searched bundled internals with `rg -n "async listen|listen\\(port"` and `rg -n "server.listen|createServer\\("`. A second server-start attempt then produced `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`, confirming the original background process was already running.
+
+The first SDK-client lifecycle script failed because `tsx -e` emitted CommonJS: `Top-level await is currently not supported with the "cjs" output format`. Wrapping the script in `void (async () => { ... })()` resolved it, and the subsequent output showed the full lifecycle, including `"Ticket 999 not found"` and `"Open tickets (1): Cannot log in"`.
+
+Cleanup was slightly awkward: the agent enumerated three wrapper/process IDs via `pgrep -af 'tsx src/server.ts|node.*server.ts'` and killed all three, yielding an `exitCode":143`. Its final inspection also assumed Git in a blank directory and failed with `warning: Not a git repository.`
