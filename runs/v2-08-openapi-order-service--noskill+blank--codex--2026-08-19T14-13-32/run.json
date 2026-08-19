@@ -1,0 +1,239 @@
+{
+  "runId": "v2-08-openapi-order-service--noskill+blank--codex--2026-08-19T14-13-32",
+  "batchId": "32262528378-1",
+  "startedAt": "2026-08-19T14:13:32.643Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-08-openapi-order-service": "617f085a2931"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-08-openapi-order-service",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "617f085a2931",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": null,
+      "memoPath": null,
+      "transcriptPath": "trials/v2-08-openapi-order-service--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-19T14:13:32.666Z",
+      "error": "agent run reported success but consumed zero input/output tokens — no model turn occurred",
+      "valid": false,
+      "grade": {
+        "contractPass": false,
+        "checks": [],
+        "failureCode": "infra.agent",
+        "sdkPath": "unknown",
+        "scoredForPassRate": false
+      },
+      "perf": {
+        "durationMs": null,
+        "turns": null,
+        "tokensIn": null,
+        "tokensOut": null,
+        "toolCalls": null,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-08-openapi-order-service",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "617f085a2931",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-08-openapi-order-service--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-08-openapi-order-service--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-19T14:16:09.990Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 46695 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:createOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:cancelOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 136026,
+        "turns": 26,
+        "tokensIn": 1225327,
+        "tokensOut": 9618,
+        "toolCalls": 31,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-08-openapi-order-service",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "617f085a2931",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-08-openapi-order-service--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-08-openapi-order-service--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-19T14:18:41.029Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 40953 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:createOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:cancelOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 150931,
+        "turns": 23,
+        "tokensIn": 1468836,
+        "tokensOut": 10389,
+        "toolCalls": 34,
+        "costUsd": null
+      }
+    }
+  ]
+}
