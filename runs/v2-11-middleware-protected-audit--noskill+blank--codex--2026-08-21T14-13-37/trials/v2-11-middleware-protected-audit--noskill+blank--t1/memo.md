@@ -1,0 +1,7 @@
+The substantive miss was a case-sensitive response mismatch: `src/server.ts` returns ``text: `Deleted record ${id}```, while the deterministic check required text containing `deleted R-1`. The agent’s manual verification did not expose this because it only confirmed ``"text":"Deleted record record-1"`` and accepted that output without testing the grader-style `R-1` or lowercase substring.
+
+The agent leaned heavily on installed-package discovery rather than external docs, inspecting `node_modules/mcp-use/README.md`, `dist/index.d.ts`, `dist/middleware/mcp-middleware.d.ts`, `dist/server.d.ts`, and `dist/tools.d.ts`; the transcript explicitly searched for `"resource\\(|use\\(|listen|streamable|mcp:tools/call"`. There was a minor dead end when it attempted `sed ... node_modules/mcp-use/dist/server.js` and received `sed: can't read node_modules/mcp-use/dist/server.js: No such file or directory`, suggesting the package’s declaration/runtime file layout was not immediately obvious.
+
+Dependency alignment also took an extra cycle: the first install yielded top-level `zod@3.25.76` while MCP packages used `zod@4.4.3`, after which the agent modified `package.json` and ran `npm install` again, producing `removed 4 packages, changed 1 package`. Despite that detour, typechecking succeeded with `npx tsc --noEmit`.
+
+The protocol verification itself was otherwise concrete: the denied call returned `"approval required"`, and the resource read showed `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.

@@ -1,0 +1,9 @@
+The main miss was response-text compatibility: `src/server.ts` returned `Read record ${id}` and `Deleted record ${id}`, while the deterministic checks expected substrings `Record R-1` and `deleted R-1`; capitalization made both fail even though the live verification only confirmed outputs such as `"Read record alpha"` and `"Deleted record beta"` without asserting the required text.
+
+The agent relied heavily on installed package internals for API discovery, inspecting `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/resources.d.ts`, and `dist/middleware/mcp-middleware.d.ts` via commands such as `sed -n '1,380p' node_modules/mcp-use/dist/server.d.ts`. No skill file or fetched docs URL appears in the transcript.
+
+Typed output handling caused one correction cycle: the first `npx tsc --noEmit` failed because `structuredContent` inferred `action: string`, with the error `"Type ... is not assignable to type 'ToolResult<{ id: string; action: \"deleted\" | \"read\"; }>'"`. The final source addressed this with `"read" as const` and `"deleted" as const` in `src/server.ts`.
+
+Protocol verification also took a wrong turn when the agent combined a modern header with a legacy initialize request; the server returned `"the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header"`. Retrying without that header and with `"protocolVersion":"2025-11-25"` succeeded.
+
+The final cleanup command unnecessarily assumed Git metadata and failed with `"fatal: not a git repository"`, requiring a second typecheck/file-list command.
