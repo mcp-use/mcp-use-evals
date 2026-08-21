@@ -1,0 +1,215 @@
+{
+  "runId": "v2-09-raw-input-required-approval--noskill+blank--codex--2026-08-21T14-13-35",
+  "batchId": "32490814233-1",
+  "startedAt": "2026-08-21T14:13:35.842Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-09-raw-input-required-approval": "61022f05de83"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": null,
+      "memoPath": null,
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-21T14:13:35.887Z",
+      "error": "agent run reported success but consumed zero input/output tokens — no model turn occurred",
+      "valid": false,
+      "grade": {
+        "contractPass": false,
+        "checks": [],
+        "failureCode": "infra.agent",
+        "sdkPath": "unknown",
+        "scoredForPassRate": false
+      },
+      "perf": {
+        "durationMs": null,
+        "turns": null,
+        "tokensIn": null,
+        "tokensOut": null,
+        "toolCalls": null,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-21T14:16:21.264Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 43647 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:2",
+            "pass": false,
+            "required": true,
+            "detail": "final result \"Deployment was not approved.\" did not match {\"type\":\"contains\",\"value\":\"decline\"}"
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 111291,
+        "turns": 13,
+        "tokensIn": 1274799,
+        "tokensOut": 7315,
+        "toolCalls": 29,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-21T14:18:25.432Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 42385 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:2",
+            "pass": false,
+            "required": true,
+            "detail": "final result \"Deployment was not approved.\" did not match {\"type\":\"contains\",\"value\":\"decline\"}"
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 142350,
+        "turns": 22,
+        "tokensIn": 2221479,
+        "tokensOut": 9504,
+        "toolCalls": 39,
+        "costUsd": null
+      }
+    }
+  ]
+}
