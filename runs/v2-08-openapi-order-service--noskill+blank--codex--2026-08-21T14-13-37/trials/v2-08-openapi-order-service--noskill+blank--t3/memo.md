@@ -1,0 +1,9 @@
+The agent relied on installed package artifacts rather than a skill file or fetched docs, explicitly searching `node_modules/mcp-use` with `rg -n "fromOpenAPI|Streamable|streamable"` and inspecting `node_modules/mcp-use/dist/server.d.ts` plus `node_modules/mcp-use/dist/openapi/types.d.ts` to discover API shape.
+
+Dependency setup took a detour: it initially ran `npm install mcp-use@2.0.4 @modelcontextprotocol/sdk@latest`, producing direct dependencies `"@modelcontextprotocol/sdk": "^1.30.0"` and `"mcp-use": "^2.0.4"`, despite the exact-pin requirement. It later corrected this via `npm uninstall @modelcontextprotocol/sdk && npm install mcp-use@2.0.4`, with final confirmation `└── mcp-use@2.0.4`.
+
+The first typecheck failed because package/module configuration was inconsistent: `TS1470: The 'import.meta' meta-property is not allowed in files which will build into CommonJS output` and `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The displayed `package.json` contained both `"type": "module"` and a later `"type": "commonjs"`, showing scaffold/config editing friction before the agent fixed it.
+
+The agent successfully inferred the generated request-body shape, stating that the SDK “maps a JSON request body to a MCP `body` argument”; `tools/list` confirmed `"required":["body"]`. This API detail required discovery rather than being obvious from the task.
+
+Two verification commands reported failure despite successful behavior. Stopping the live server yielded `exitCode":130` after all calls completed, and the final check exited `129` because `git diff --check` ran outside a repository: `warning: Not a git repository.` These were avoidable test-harness papercuts rather than implementation failures.

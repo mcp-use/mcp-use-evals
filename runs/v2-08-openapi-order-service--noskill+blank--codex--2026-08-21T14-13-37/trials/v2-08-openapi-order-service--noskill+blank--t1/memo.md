@@ -1,0 +1,9 @@
+The agent relied on local package inspection rather than a skill file or fetched docs, grepping `node_modules/mcp-use` for `"fromOpenAPI|streamable|Streamable|MCPServer"` and then reading `node_modules/mcp-use/dist/openapi/types.d.ts`, `server.d.ts`, and `README.md`. It went further into bundled implementation code with `"registerOpenAPITools|requestBody|raw tool-result|not found"`, suggesting the public README/types did not immediately answer request-body binding and error-propagation questions.
+
+There was avoidable dependency churn: it initially ran `npm install mcp-use@2.0.4 express@5` plus `@types/express`, but the final implementation used `node:http`; it later corrected this with `npm uninstall express @types/express`.
+
+The first typecheck exposed two setup/API papercuts. Node typings were installed but not enabled, producing repeated errors such as `Cannot find name 'node:events' ... add 'node' to the types field in your tsconfig`. The agent also attempted an unexported deep type import, receiving `Cannot find module 'mcp-use/dist/openapi/types.js' or its corresponding type declarations`; the final source instead derives the type through `Parameters<typeof MCPServer.fromOpenAPI>[0]["spec"]` at `src/server.ts:15`.
+
+A second typecheck failed because the inline document’s inferred shape was not assignable to the SDK type: `Type '{ openapi: string; ... }' is not assignable to type 'OpenAPIDocument'` and `Types of property 'paths' are incompatible`. The agent needed another source edit before `npx tsc --noEmit && npm run verify` passed.
+
+Final checks included two minor false starts unrelated to the SDK: the foreground startup command ended with `exitCode":130` after printing `Order MCP server listening at http://localhost:3000/mcp`, and a combined inspection command stopped at `fatal: not a git repository`; the agent reran the remaining checks without `git status`.
