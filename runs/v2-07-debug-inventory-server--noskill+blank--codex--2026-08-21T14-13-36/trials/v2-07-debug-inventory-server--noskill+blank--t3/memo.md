@@ -1,0 +1,7 @@
+Dependency setup caused avoidable friction: `npm ls` reported `UNMET DEPENDENCY mcp-use@2.0.4` and the first `npx tsc --noEmit` fetched the unrelated package `tsc@2.0.4`, producing `This is not the tsc command you are looking for`; the agent then had to run `npm install`.
+
+The agent relied on grepping installed SDK internals rather than a skill file or fetched documentation, using `rg -n "listen\\(|class MCPServer|interface.*Listen|Streamable" node_modules/mcp-use` and inspecting `node_modules/mcp-use/dist/server.d.ts`. That inspection exposed the needed API example, `await server.listen(3000);`, and the agent additionally printed `MCPServer.prototype.listen.toString()` to confirm port resolution.
+
+Two environment/scaffold assumptions wasted commands. A combined typecheck/diff command failed because `git diff` encountered `Not a git repository`, despite the preceding typecheck apparently succeeding. Server lifecycle handling was also awkward: a second launch hit `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`, and killing PID 414 left child processes running: `node node_modules/.bin/tsx src/server.ts` and `/usr/local/bin/node ... src/server.ts`, requiring another cleanup command.
+
+The live verification otherwise directly exercised the protocol and state: responses included `Reserved 3 of coffee-mug`, `insufficient stock for coffee-mug`, `Restocked 4 of coffee-mug`, `SKU unknown-sku not found`, and the final listing `coffee-mug: 9\ndesk-lamp: 2`.
