@@ -1,0 +1,9 @@
+The agent had API-discovery friction and relied first on npm metadata/readme—`npm view mcp-use@2.3.0 readme --json`—then inspected installed declarations with `rg -n "class MCPServer|serve\\(|listen\\(|streamable" node_modules/mcp-use/...` and `sed -n '1,430p' node_modules/mcp-use/dist/server.d.ts`. This suggests the package’s exported server/listen shape was not obvious from initial package information.
+
+The first typecheck failed because the generated npm scaffold remained CommonJS and the TypeScript config omitted Node types: `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent had to modify both `package.json` and `tsconfig.json` before retrying, despite `@types/node@26.2.0` already being installed.
+
+A subsequent verification command produced a false-negative shell status because it chained typechecking to Git checks in a blank, non-Git directory: `exitCode":129` with `warning: Not a git repository.` The agent inferred that `npx tsc --noEmit` had succeeded because the failure occurred at `git diff --check`, but this added avoidable noise.
+
+Dependency installation also emitted an execution-policy warning—`esbuild@0.28.2 (postinstall: node install.js)` was “`not yet covered by allowScripts`”—although the later `npx tsx src/server.ts` run worked.
+
+The agent manually exercised the protocol with verbose raw `curl` requests and explicit headers such as `Accept: application/json, text/event-stream` and `MCP-Protocol-Version: 2025-11-25`; this worked, but required several lengthy shell calls rather than an SDK-provided test helper. The final server process ended with `exitCode":130` after verification, even though its log showed successful calls including `tools/call create_ticket`, `claim_ticket`, and `close_ticket`.

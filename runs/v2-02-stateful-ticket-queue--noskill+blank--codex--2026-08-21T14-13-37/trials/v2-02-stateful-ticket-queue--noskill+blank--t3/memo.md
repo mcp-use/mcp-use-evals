@@ -1,0 +1,7 @@
+The agent had to discover the SDK shape locally, first reading `node_modules/mcp-use/README.md` and then grepping declarations with `rg -n "Streamable|streamable|listen\\(|serve\\(|PORT|node-http" ...`; it further inspected `node_modules/mcp-use/dist/server.d.ts`, `config.d.ts`, and `tools.d.ts`. No skill file or external docs URL appears in the transcript.
+
+Implementation took two avoidable compile/fix cycles. The first typecheck failed with `src/server.ts(20,63): error TS1003: Identifier expected.` The next failed because the npm scaffold retained `"type": "commonjs"`, producing `error TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then modified `package.json`, indicating friction between `npm init -y`’s CommonJS default and the SDK example’s top-level `await server.listen()` pattern.
+
+Verification used many hand-written `curl` JSON-RPC calls against `/mcp`, including explicit headers such as `Accept: application/json, text/event-stream`; although successful, this was relatively laborious compared with using an MCP client utility.
+
+Cleanup also hit environment/scaffold assumptions: `fuser -k 3210/tcp` failed with `/bin/bash: line 1: fuser: command not found`, while `git diff --check` failed because `Not a git repository.` The initial `kill 440 480 491` did not immediately remove all child processes—the following `ps` still showed `node node_modules/.bin/tsx src/server.ts` and the underlying Node loader—so the agent followed with `kill -9 480 491`.
