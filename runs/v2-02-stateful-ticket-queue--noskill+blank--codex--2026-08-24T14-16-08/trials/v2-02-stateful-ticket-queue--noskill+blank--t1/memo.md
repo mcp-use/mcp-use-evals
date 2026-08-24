@@ -1,0 +1,9 @@
+The agent spent time discovering the SDK API locally: it inspected `node_modules/mcp-use/README.md`, `dist/index.d.ts`, and `dist/server.d.ts`, then grepped for `listen(` before concluding that “`MCPServer.listen()` … mounts streamable HTTP at `/mcp`.” This worked, but indicates API-shape discovery friction rather than a direct known path.
+
+Dependency/scaffold sequencing caused a preventable typecheck failure. Although it initially ran `npm install -D typescript tsx @types/node`, after creating `package.json` and rerunning `npm install`, TypeScript reported `Cannot find name 'process'` and advised adding Node types. The agent then modified `tsconfig.json`; the subsequent check showed `@types/node@26.2.0`.
+
+Verification also required probing the bundled MCP client layout. The first assumed paths failed with `sed: can't read node_modules/@modelcontextprotocol/client/dist/esm/client/index.d.ts`, after which the agent used `find node_modules/@modelcontextprotocol/client` and `rg -n "class Client|StreamableHTTPClientTransport|callTool\("` to locate the actual bundled declarations.
+
+The first lifecycle test command failed because `tsx --eval` selected CommonJS output: `Top-level await is currently not supported with the "cjs" output format`. Wrapping the script in `void (async () => { ... })()` fixed it, and the resulting output exercised all required cases, including `Ticket 999 not found` and `Open tickets (1): Investigate billing issue`.
+
+The final project-state check unnecessarily assumed Git metadata in the blank directory and failed with `Not a git repository`; because the shell used `&&`, this also prevented the requested `git status --short` from running.

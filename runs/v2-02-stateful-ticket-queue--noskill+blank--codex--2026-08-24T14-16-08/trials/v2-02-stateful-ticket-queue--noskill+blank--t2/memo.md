@@ -1,0 +1,11 @@
+The agent had SDK discovery friction and leaned heavily on installed-package inspection rather than a skill file: it queried npm with `npm view mcp-use version description repository.url --json`, then grepped `node_modules/mcp-use/README.md` and declarations for `"streamable|http|createServer|McpServer|tool\\("`. The README example at `node_modules/mcp-use/README.md:105-170` supplied the core `new MCPServer(...)` / `server.tool(...)` shape, while further inspection searched for `"listen\\("` in `node_modules/mcp-use/dist/server.d.ts`; no docs URL was fetched despite discovering `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`.
+
+Dependency compatibility caused an avoidable install correction. The agent initially ran `npm install mcp-use@2.3.1 zod@3`, then found both `zod@4.4.3` under mcp-use and top-level `zod@3.25.76`, and subsequently ran `npm install zod@4.4.3`.
+
+There was also a source-generation quoting papercut. The first `src/server.ts` contained `id: z.string().describe("Ticket id, such as \\\\\"1\\\\\"").`, prompting both a line inspection and `od -An -tx1c`, followed by recreating the file.
+
+The first typecheck failed even though `@types/node` was installed: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent inspected `npm ls @types/node typescript && cat tsconfig.json`, modified `tsconfig.json`, and only then got a clean `npx tsc --noEmit`.
+
+Lifecycle verification took a wrong turn in the custom SSE parser. The first script failed at `body.split("\\n").find(...).slice(6)` with `TypeError: Cannot read properties of undefined (reading 'slice')`; the agent killed and restarted the server, then changed parsing to `body.match(/^data: (.+)$/m)?.[1]`. The successful replacement command’s displayed output only showed `list_tickets: Open tickets (1): #2: Investigate billing question.`, so it added a separate idempotent-claim check that produced `Claimed ticket 2.` twice.
+
+Finally, a combined cleanup check failed because the blank workspace was not a repository: `fatal: not a git repository`, requiring a separate final `npx tsc --noEmit`.
