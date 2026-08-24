@@ -1,0 +1,9 @@
+The agent needed API discovery before implementation, first querying npm (`npm view mcp-use readme`) and then grepping installed declarations for `"resource\\(|resourceTemplate|Streamable|listen\\("`, followed by reading `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `tools.d.ts`. No skill file was found in the initial `find .. -name AGENTS.md -print` output, which was empty.
+
+The first typecheck exposed two avoidable TypeScript setup issues: `Argument of type 'string' is not assignable to parameter of type '"authentication" | "deployment" | "getting-started"'` and `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` Both required edits to `src/server.ts` and `tsconfig.json`.
+
+Verification briefly fought process management: `PORT=3100 npx tsx src/server.ts` left a server running, so the next launch failed with `listen EADDRINUSE: address already in use 127.0.0.1:3100`. The agent later found the lingering processes via `ps -ef | rg '[t]sx src/server.ts|[n]ode.*server.ts'` and explicitly killed them.
+
+The CLI’s optional-client installation behavior was confusing. `npx mcp-use client connect` reported `[mcp-use] installing @mcp-use/client…` and `added 1 package`, but immediately contradicted that with `@mcp-use/client is not installed`; the following `npm list @mcp-use/client` showed it present, and retrying connected successfully with `Connected and saved docs-verify.` This also added `@mcp-use/client` to runtime dependencies solely for verification.
+
+A final diagnostic command also took an unnecessary wrong turn because the blank directory was not a Git repository: `git diff -- package.json tsconfig.json src/server.ts` produced `warning: Not a git repository.` Despite these papercuts, the agent completed end-to-end checks through `npx mcp-use client docs-verify resources read ...` and `tools call search_docs ...`.
