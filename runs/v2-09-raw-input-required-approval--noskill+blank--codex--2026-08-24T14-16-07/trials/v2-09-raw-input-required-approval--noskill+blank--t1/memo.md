@@ -1,0 +1,9 @@
+The main correctness miss was the decline wording: `src/server.ts` returns `terminalError("Deployment was not approved.")` for `response.action === "decline"`, while the deterministic check required text containing `decline`. The separate `approve: false` branch did use `terminalError("Deployment was declined.")`, so the two negative paths were inconsistently worded.
+
+The agent’s verifier failed to catch that contract detail because `scripts/verify-flow.ts` only checks `declined.isError !== true || isInputRequiredResult(declined)` and never asserts the error text. It therefore reported `verified: accepted approval with note and terminal declined approval` despite the grader’s mismatch.
+
+API discovery required extensive inspection of installed declarations rather than a skill file or fetched documentation. The agent ran searches such as `rg -n "inputRequired|inputResponse|acceptedContent|createMcpServer|streamable" node_modules/mcp-use...` and opened `node_modules/@modelcontextprotocol/server/dist/createMcpHandler-CLhGwQTn.d.mts` to determine helper signatures. No mcp-use skill file or docs URL appears in the transcript.
+
+Several setup and verification papercuts added iterations. Initial typechecking failed with `Cannot find name 'process'. Do you need to install type definitions for node?`, requiring `@types/node`. The custom verifier then hit three typing issues: `'pin' does not exist in type 'VersionNegotiationOptions'`, `Property 'message' does not exist`, and `'initial' is of type 'unknown'`. A background server was also left running, causing `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`, after which the agent inspected processes and later ran `kill 446 491 502`.
+
+The blank workspace also made the final repository check noisy: `fatal: not a git repository (or any of the parent directories): .git`.
