@@ -1,0 +1,7 @@
+The agent first relied on npm metadata/readme—`npm view mcp-use readme` surfaced `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`—then inspected installed declarations with `rg -n "listen\\(|serve\\(|Streamable|http" node_modules/mcp-use/...` and `sed ... node_modules/mcp-use/dist/server.d.ts` to confirm the API shape.
+
+The main scaffold papercut was conflicting module configuration: `package.json` contained both `"type": "module"` and a later `"type": "commonjs"`. This caused `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent corrected `package.json` and reran typechecking successfully.
+
+Verification briefly became confusing because the combined command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` left a listener running, after which a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. The agent correctly reused that existing process for protocol checks, as shown by `HTTP/1.1 200 OK`, `tools/call add`, and `"text":"42"`, then explicitly found and killed the process with `ps ... | rg '[t]sx src/server.ts|[n]ode .*server.ts'` and `kill 431`.
+
+The SDK’s validation behavior was straightforward and useful during verification: invalid input returned `"Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string"`.
