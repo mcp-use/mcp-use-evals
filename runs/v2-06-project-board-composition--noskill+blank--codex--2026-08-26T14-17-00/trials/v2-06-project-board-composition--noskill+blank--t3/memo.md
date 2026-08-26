@@ -1,0 +1,9 @@
+The agent had SDK discovery friction: `npm view mcp-use readme --json` returned an empty `output`, so it inspected installed package files instead with `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `node-http.d.ts`, plus `rg -n "listen|resource\\(" node_modules/mcp-use/README.md`. No skill file or external docs URL was used in the visible transcript.
+
+The initial scaffold edit accidentally left duplicate module declarations—`"type": "module"` and later `"type": "commonjs"`—which caused `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent corrected `package.json` and then got `npx tsc --noEmit` to pass.
+
+Manual protocol verification also took a wrong turn: the first post-initialization `curl` resource request returned only `Invalid JSON`. The agent then searched dependency internals with `rg -n "class StreamableHTTPClientTransport|StreamableHTTPClientTransport"` and switched to a Node `fetch` script, which successfully returned `Open issues: 0`.
+
+The lifecycle test had to be repeated because the first successful script omitted the board read immediately after creation; the agent explicitly said it was doing “`one clean final pass that captures the board count immediately after creation as well`.” The second run then showed `after create summary: Open issues: 1`.
+
+A final generic repository check introduced unrelated noise: `git diff --check` failed with `warning: Not a git repository.` This did not affect the implementation but made the final verification command exit `129` despite its preceding `npx tsc --noEmit`.

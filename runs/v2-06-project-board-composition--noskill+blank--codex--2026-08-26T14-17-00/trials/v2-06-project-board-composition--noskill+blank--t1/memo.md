@@ -1,0 +1,7 @@
+The agent had to discover the SDK API by searching installed package internals rather than using a skill or fetched docs: `rg -n "Streamable|streamable|resource\(|tool\(|create.*Server|MCPServer|McpServer" node_modules/mcp-use`, followed by reads of `node_modules/mcp-use/README.md` and several `dist/*.d.ts` files. It similarly explored the official client package to build lifecycle verification: `rg -n "StreamableHTTPClientTransport|protocolVersion" node_modules/@modelcontextprotocol/client/dist`.
+
+Verification took two retries. The first inline `tsx -e` script failed because `Top-level await is currently not supported with the "cjs" output format`; wrapping it in an async function then exposed an API-shape misunderstanding, `TypeError: Cannot read properties of undefined (reading 'map')`, because resource reads return `contents` rather than tool-style `content`. The third attempt corrected this with `(await client.readResource(...)).contents.map(...)` and passed.
+
+A plain HTTP probe was not useful for validating MCP behavior: `curl -sS -i http://127.0.0.1:3123/mcp` returned `HTTP/1.1 204 No Content`, prompting the official-client verification work.
+
+The final cleanup also lost time to assumptions about the environment. Running `git status` and `git diff` failed with `fatal: not a git repository`, and killing only the parent process left the listener alive: after `kill 410`, the transcript still showed `node node_modules/.bin/tsx src/server.ts` and HTTP `204`. The agent then had to kill child PIDs explicitly with `kill 423 434`.
