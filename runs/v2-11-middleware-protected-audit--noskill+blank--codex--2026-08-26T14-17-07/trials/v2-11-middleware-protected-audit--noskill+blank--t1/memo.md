@@ -1,0 +1,9 @@
+The main miss was tool-result wording: `src/server.ts` returns ``text: `record:${id}` `` and ``text: `deleted:${id}` ``, while the deterministic checks expected strings containing `Record R-1` and `deleted R-1`. The agent’s own end-to-end verification confirmed the mismatching forms—`"text":"record:r-1"` and `"text":"deleted:r-1"`—but it still concluded that “`read_record` succeeds” and “`Approved delete succeeds`,” so verification checked protocol success rather than expected response semantics.
+
+API discovery relied on package metadata and installed declarations rather than a skill or fetched documentation: it ran `npm view mcp-use@2.0.4 ...` and searched `node_modules/mcp-use/dist` for `"mcp:tools/call|streamable|registerTool|resource"`, then inspected `server.d.ts`, `tools.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`.
+
+There was a small typing papercut around middleware parameters: the first typecheck failed with `TS18048: 'arguments_' is possibly 'undefined'`, requiring a source edit before `npx tsc --noEmit` passed.
+
+The first server launch was left running by the tool invocation, so a second launch hit `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`; the agent then used `ps -ef | rg 'tsx src/server|node.*server'` to discover the surviving process. Cleanup also took two attempts: after `kill 385 418 429`, the transcript still showed `node node_modules/.bin/tsx src/server.ts`, followed by a later `kill -TERM 418 429`.
+
+Manual verification had avoidable shell friction: the combined curl command’s resource request returned `HTTP/1.1 400 Bad Request` with `Invalid JSON`, requiring a separate follow-up command. The final repository check also assumed Git despite the blank workspace, producing `warning: Not a git repository` from `git diff --check`.
