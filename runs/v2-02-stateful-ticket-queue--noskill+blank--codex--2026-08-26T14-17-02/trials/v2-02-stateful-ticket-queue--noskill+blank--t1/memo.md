@@ -1,0 +1,9 @@
+The agent relied on the installed package rather than a skill or external docs, first reading `node_modules/mcp-use/README.md` and then grepping declarations with `rg -n "listen|streamable|node-http|MCPServer" node_modules/mcp-use/README.md node_modules/mcp-use/dist/*.d.ts`. It inspected `node_modules/mcp-use/dist/server.d.ts`, `config.d.ts`, and `tools.d.ts` before concluding it could use “`the SDK’s native /mcp streamable-HTTP listener`,” indicating some API-discovery friction in the blank workspace.
+
+Dependency metadata briefly became inconsistent after installation: `npm ls` reported `@types/node@26.3.0 invalid: "^24.10.1"` and `typescript@7.0.2 invalid: "^5.9.3"`. The agent diagnosed this by comparing the lockfile’s root dependencies—`"typescript":"^7.0.2"` and `"@types/node":"^26.3.0"`—then modified `package.json` and ran `npm install --package-lock-only`; the final inventory showed both packages without `invalid`.
+
+A verification command also produced a false failure because the blank workspace was not a Git repository: the combined command exited 129 after `git diff --check`, with `warning: Not a git repository.` Typechecking itself had already succeeded in that same output—`> tsc --noEmit`—so bundling an irrelevant Git check obscured the successful result and required another run.
+
+For protocol discovery, the agent grepped installed JavaScript for versions—`rg -n "2026-[0-9-]+|protocolVersion"`—then initialized with `"protocolVersion":"2026-06-04"`. The server negotiated `"protocolVersion":"2025-11-25"`, after which subsequent requests explicitly used `MCP-Protocol-Version: 2025-11-25`. This worked, but shows manual protocol probing rather than using an MCP client helper.
+
+The implementation and lifecycle verification were otherwise direct: responses included `Created ticket 1`, `Ticket 999 not found`, `Closed ticket 1`, and finally `Open tickets (1): Investigate billing issue`.
