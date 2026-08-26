@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry at root as `index.ts`; the build reported `built index.ts + views ... → .mcp-use/build/index.js`, while the produced tree contains `./index.ts` and no `src/server.ts` or `src/index.ts`. This made the implementation incompatible with the grader’s expected entry locations despite local CLI success.
+
+The agent relied heavily on package internals rather than a skill file: it read `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/tools.d.ts`, `node_modules/mcp-use/dist/server.d.ts`, and grepped `node_modules/mcp-use/dist/chunk-*.js` for `_meta` and resource behavior. The README itself encouraged the root layout with `Replace its index.ts with a view-bound tool like this:`, which likely reinforced the entry mismatch.
+
+Type inference caused an initial detour: `npx tsc --noEmit` produced repeated errors such as `'incident' is of type 'unknown'` and `'data' is of type 'unknown'`. The generated registration file points at the root module—`mcp-env.d.ts: tools: typeof import("./index.js");`—but it was only reported as created during the subsequent successful build: `[mcp-use] created mcp-env.d.ts`.
+
+The scaffold/package edit introduced a duplicate module-mode setting: the inspected `package.json` contained both `"type": "module"` and `"type": "commonjs"`. This surfaced only at start as `Cannot use import statement outside a module`, requiring another package modification and rebuild.
+
+Protocol verification also consumed time through several avoidable papercuts. The CLI first failed because `@mcp-use/client is required for this command`, requiring an extra install. A raw request then returned `{"status":406}` because, as the server later explained, `Client must accept both application/json and text/event-stream`. The agent also guessed unsupported protocol revisions and received `Unsupported protocol version: 2026-03-26`.
+
+Finally, marker verification twice reported failure—`"valid":false` for both resources—because it searched generated HTML for literal JSX attributes, although source-level markers were clearly present at `views/incident-list/view.tsx: <main data-view="incident-list"` and `views/incident-detail/view.tsx: <main data-view="incident-detail"`.

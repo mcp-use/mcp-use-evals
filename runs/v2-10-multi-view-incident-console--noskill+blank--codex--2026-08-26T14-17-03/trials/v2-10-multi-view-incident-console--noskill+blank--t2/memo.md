@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the entry point at repository root: the produced server is `index.ts` with `export default server;`, while the deterministic check reports `no entry file found (tried: src/server.ts, src/index.ts)`. This is especially notable because the SDK itself accepted that layout—`[mcp-use] built index.ts + views ... → .mcp-use/build/index.js`—so successful local build/start verification did not expose the grader’s expected entry convention.
+
+Discovery involved several attempts. Fetching npm README metadata first failed with `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`; the agent then leaned on the installed package’s `node_modules/mcp-use/README.md` and declaration files, explicitly reading `node_modules/mcp-use/dist/index.d.ts`, `dist/tools.d.ts`, `dist/views/types.d.ts`, and `dist/react/index.d.ts`. No skill file or fetched docs URL appears in the transcript; the README merely exposed `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`.
+
+Typed schemas produced one corrective cycle: `npx tsc --noEmit` initially failed because `structuredContent` contained a `readonly` incident tuple, with the error saying it “`is not assignable to type 'ToolResult'`.” The agent modified the server and both views before typechecking and building successfully.
+
+Runtime verification also lost time to process management. After attempting cleanup, the final restart failed with `listen EADDRINUSE: address already in use 127.0.0.1:3410`; `ps` showed the prior `npm exec mcp-use start` and `node node_modules/.bin/mcp-use start` still alive. The agent then explicitly killed them with `kill -TERM 507 520` and restarted.
+
+The first marker-check script misleadingly printed `markerPresent:false` for both resources, even though the subsequent inspection found `data-view present=true`; this prompted an extra 814KB HTML inspection before confirming the markers were bundled.
