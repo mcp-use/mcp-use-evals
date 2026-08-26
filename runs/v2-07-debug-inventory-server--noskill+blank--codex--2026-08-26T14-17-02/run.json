@@ -1,0 +1,414 @@
+{
+  "runId": "v2-07-debug-inventory-server--noskill+blank--codex--2026-08-26T14-17-02",
+  "batchId": "32979129051-1",
+  "startedAt": "2026-08-26T14:17:02.200Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-07-debug-inventory-server": "f95b55ac93d4"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-07-debug-inventory-server",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "f95b55ac93d4",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-07-debug-inventory-server--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-07-debug-inventory-server--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-26T14:17:02.266Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 44287 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_inventory:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_inventory:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:restock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 93634,
+        "turns": 11,
+        "tokensIn": 382730,
+        "tokensOut": 4452,
+        "toolCalls": 14,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-07-debug-inventory-server",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "f95b55ac93d4",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-07-debug-inventory-server--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-07-debug-inventory-server--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-26T14:18:50.002Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 46225 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_inventory:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_inventory:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:restock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 59459,
+        "turns": 10,
+        "tokensIn": 267676,
+        "tokensOut": 3062,
+        "toolCalls": 11,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-07-debug-inventory-server",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "f95b55ac93d4",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-07-debug-inventory-server--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-07-debug-inventory-server--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-26T14:20:02.395Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 35035 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_inventory:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_inventory:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:restock:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:get_stock:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:reserve_stock:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 66330,
+        "turns": 10,
+        "tokensIn": 315963,
+        "tokensOut": 3633,
+        "toolCalls": 13,
+        "costUsd": null
+      }
+    }
+  ]
+}

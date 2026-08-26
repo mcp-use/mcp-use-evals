@@ -1,0 +1,7 @@
+The first inspection lost a turn because `git status --short` was chained with `&&` in a directory where `fatal: not a git repository`, so the command stopped before printing the source and required a second inspection command.
+
+The blank workspace also lacked installed dependencies: `npm ls` reported `UNMET DEPENDENCY mcp-use@2.0.4`, `tsx`, `typescript`, `zod`, and `@types/node`, forcing an `npm install` before SDK verification.
+
+With no skill file or fetched docs visible, the agent leaned on installed package declarations, running `rg -n "class MCPServer|listen\(|streamable|transport" node_modules/mcp-use` and inspecting `node_modules/mcp-use/dist/config.d.ts` and `server.d.ts`. That lookup produced little initially—the combined grep/typecheck command returned empty output—so it followed with direct `sed` reads of declaration files.
+
+Verification worked but process management was awkward. The foreground launch `PORT=3100 npx tsx src/server.ts` eventually ended with `exitCode":143`, and the later default-port cleanup left child processes visible: `node node_modules/.bin/tsx src/server.ts` and `/usr/local/bin/node ... src/server.ts`. A final explicit `kill 502 513` was needed. Startup polling also emitted six noisy `curl: (7) Failed to connect` messages before reaching `Default-port MCP endpoint status: 204`, suggesting no clean readiness signal was used.
