@@ -1,0 +1,7 @@
+API discovery required multiple package-inspection steps: the agent first queried npm with `npm view mcp-use version description repository.url dist-tags --json && npm view mcp-use readme --json`, then inspected `node_modules/mcp-use/README.md`, and finally opened declaration files with `sed -n '1,300p' node_modules/mcp-use/dist/server.d.ts` plus `rg -n "resourceTemplate|listen\\("`. This suggests the installed README/npm metadata alone did not immediately expose enough API shape, so the agent leaned on `node_modules` typings.
+
+The initial endpoint probe produced a potentially confusing but harmless empty response: `GET /mcp` returned `HTTP/1.1 204 No Content`; the agent then switched to a JSON-RPC `initialize` POST, which returned the expected server capabilities.
+
+Final cleanup took an avoidable wrong turn because repository assumptions did not match the blank workspace: `git status --short` and `git diff --check` failed with `fatal: not a git repository`. Process cleanup also needed two attempts: after `kill 410`, the next check still showed `node node_modules/.bin/tsx src/server.ts` and its child process, requiring a subsequent `kill 423`.
+
+Dependency installation surfaced an ecosystem papercut, although it did not block the run: npm warned that `esbuild@0.28.2` had `install scripts not yet covered by allowScripts` and suggested `npm approve-scripts`.
