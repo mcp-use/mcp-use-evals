@@ -1,0 +1,9 @@
+The decisive issue was entry placement: the agent created root `index.ts` (`[tool] fileChange({"event":"create","path":"index.ts"})`), while the grader searched only `src/server.ts` and `src/index.ts`. This was reinforced by the SDK README quickstart saying `Replace its index.ts` and showing “`index.ts — Server entry file`,” and the CLI itself successfully reported `built index.ts + views ... → .mcp-use/build/index.js`; the local build therefore gave no warning that the evaluation entry convention differed.
+
+Dependency setup lost time on a Zod peer conflict: the first install failed with `peer zod@"^4.2.0" from @mcp-use/client@2.2.1` because the project had `zod@"^3.24.2"`. SDK discovery also began with a broken npm README fetch, ending in `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`, before the agent relied on `node_modules/mcp-use/README.md` and grepped declarations such as `node_modules/mcp-use/dist/server.d.ts` and `node_modules/mcp-use/dist/tools.d.ts`.
+
+View typing had a generation-order papercut. Running TypeScript before the MCP build produced `Property 'incidents' does not exist on type '{}'` and equivalent detail-field errors. Running `npx mcp-use build --inline` then generated `mcp-env.d.ts` with `tools: typeof import("./index.js");`, after which `npx tsc --noEmit` passed. This makes the requested standalone typecheck depend on first invoking the framework build/type-generation step.
+
+The agent performed thorough protocol verification against port 3100: the client output showed both tool view URIs, both resources with `"mimeType": "text/html;profile=mcp-app"`, and successful calls. However, that verification exercised the already-built root entry at `http://localhost:3100/mcp`, so it did not catch the grader’s entry-location mismatch.
+
+A final verification command also produced irrelevant failure noise because it assumed Git metadata: `fatal: not a git repository (or any of the parent directories): .git`.
