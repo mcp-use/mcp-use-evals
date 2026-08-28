@@ -1,0 +1,7 @@
+The main wrong turn was protocol verification: the agent sent an initialize body with a modern header and received `“the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header”`. It recovered by retrying without that header using body version `“2025-11-25”`, which returned `HTTP/1.1 200 OK`.
+
+API discovery required substantial package inspection rather than a concise example: it fetched `npm view mcp-use version description repository.url dist-tags`, then examined `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, `config.d.ts`, and `tools.d.ts`, and finally grepped internals with `rg -n "modern|legacy handshake|MCP-Protocol-Version|initialize" node_modules/mcp-use/dist node_modules/@modelcontextprotocol/server/dist`. No skill file or external docs URL appears in the transcript.
+
+There was minor dependency churn: the initial install used `zod@'^3.24.2'`, followed later by `npm install zod@'^4.1.12 && npx tsc --noEmit`; the transcript gives no explicit explanation for the version change.
+
+The final cleanup/check command also hit avoidable environmental friction: `git status --short && git diff --check` failed with `fatal: not a git repository (or any of the parent directories): .git`. The preceding capability-check command ended with `exitCode:143`, although its server log shows `resources/templates/list` completed with `POST /mcp 200 in 2ms`.
