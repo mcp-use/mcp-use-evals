@@ -1,0 +1,7 @@
+The agent had some API-discovery friction: after `npm view mcp-use readme --json` yielded no README content, it inspected the installed package with `rg -n "Streamable|streamable|MCPServer|create.*Server|tool\\(" node_modules/mcp-use` and then read `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/tools.d.ts`. Those resources supplied the working `MCPServer`, Zod `inputSchema`, `server.tool(...)`, and `server.listen(port)` shape.
+
+The first typecheck failed because `npm init -y` created `"type": "commonjs"`, while the source used top-level await: `error TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent corrected `package.json`, after which `npx tsc --noEmit` passed. This is a small scaffold/default papercut rather than an SDK issue.
+
+Verification included a successful initialize and tool call; the latter returned `"text":"41.75"` for `19.5 + 22.25`. However, the subsequent `tools/list` check failed with `Invalid JSON` and HTTP `400`, suggesting a malformed shell-quoted request rather than a server problem; the agent did not retry it. The startup smoke test also appeared as a failed tool invocation solely because `timeout 20s` ended the long-running server with `exitCode":124`, despite output confirming `MCP server listening at http://localhost:3100/mcp`.
+
+The final inspection wasted a little time by running Git commands in a blank non-repository workspace, producing `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.
