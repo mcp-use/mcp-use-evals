@@ -1,0 +1,7 @@
+The agent had to discover the SDK shape from the installed package rather than an available skill or scaffold: it ran `npm view mcp-use version description repository.url peerDependencies dependencies --json`, then inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, and grepped for `listen\(`. This worked, but reflects API-discovery friction before implementation.
+
+A notable papercut was SDK telemetry metadata appearing despite the task’s no-files requirement: the final inventory showed `./.mcp-use/usage.json`, whose content was `{"schemaVersion":1,"serverId":"12d8cf7b-71f9-40ab-b8a3-e7e380b81924"}`. The agent then investigated `node_modules/mcp-use/dist/usage.d.ts` and telemetry internals, deleted the file, and added `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` in `src/server.ts`. That cleanup forced another full server run and lifecycle test, visible in the second sequence ending with `Open tickets (1): Billing question`.
+
+The blank workspace also caused a minor avoidable verification failure: `git diff --check && git status --short` returned `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. The agent recovered by rerunning `npx tsc --noEmit` without Git checks.
+
+The npm installation emitted an environment/tooling warning twice—`esbuild@0.28.2 (postinstall: node install.js)` was “`not yet covered by allowScripts`”—although it did not prevent typechecking or execution.

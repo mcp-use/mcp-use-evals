@@ -1,0 +1,9 @@
+The main discovery cost was learning the SDK API directly from the installed package: the agent opened `node_modules/mcp-use/README.md`, then inspected `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, `config.d.ts`, and searched implementations with `rg -n "listen\\(" node_modules/mcp-use/dist/server.d.ts node_modules/mcp-use/dist/*.js`. This worked, but required several broad node_modules inspection calls before implementation; no skill file or external docs URL appears in the transcript.
+
+Dependency setup took an avoidable second pass: after `npm install`, the agent separately ran `npm install zod@'^4'`, which reported `removed 4 packages, changed 1 package`. This suggests the required Zod version/API compatibility was only settled after inspecting the SDK.
+
+Verification through raw JSON-RPC was successful but cumbersome: the agent manually repeated long `curl` commands with headers including `Accept: application/json, text/event-stream`, and responses arrived as SSE (`event: message`). A small MCP client script could have reduced command construction and transcript bulk.
+
+The final cleanup check took a wrong turn because the blank directory was not a Git repository. Running `git diff --check && git status --short` failed with `warning: Not a git repository`, and because the command used `&&`, the intended subsequent `sed` and `cat` inspection did not execute. This did not affect the produced server, but it was an unnecessary failed tool call.
+
+The test server’s foreground process also ended with an apparent failure status—`"exitCode":1` and `^C`—even though its output confirmed `Support ticket MCP server listening at http://localhost:3100/mcp`; this is a minor process-management papercut from interrupting the server rather than starting and terminating it through a scripted background PID.
