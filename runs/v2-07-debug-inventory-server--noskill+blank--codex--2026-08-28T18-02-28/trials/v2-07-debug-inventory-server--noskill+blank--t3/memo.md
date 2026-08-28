@@ -1,0 +1,7 @@
+The first inspection command lost a turn because `git status --short` ran in a non-git workspace and stopped the chained command: `fatal: not a git repository (or any of the parent directories): .git`; the agent then reran the file inspection separately.
+
+SDK discovery initially failed because dependencies were absent: `find: ‘node_modules/mcp-use’: No such file or directory`. After `npm install`, the agent leaned on installed package internals rather than an external docs URL, inspecting `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/config.d.ts`, and `node_modules/mcp-use/README.md`; the declarations confirmed the expected API with `await server.listen(3000);`. It also grepped `node_modules/@modelcontextprotocol/client` for `StreamableHTTPClientTransport` and `Client` to construct the live verifier.
+
+The first end-to-end verifier attempt failed for an execution-mode reason unrelated to the server: `Top-level await is currently not supported with the "cjs" output format`. The agent recovered by wrapping the same `tsx -e` script in `void (async () => { ... })();`, after which tool discovery and stateful calls succeeded.
+
+The final server process was reported with `exitCode":1` only because it was manually interrupted, as shown by `^C`; this could make an otherwise successful verification look failed in automation logs. The actual protocol log immediately before interruption showed successful calls such as `tools/call reserve_stock` and `tools/call list_inventory`.
