@@ -1,0 +1,7 @@
+The agent had SDK discovery friction: it first queried npm with `npm view mcp-use readme`, then inspected installed declarations using `rg -n "class MCPServer|listen\\(|streamable|http" node_modules/mcp-use/dist`, eventually concluding that the SDK “provides a native `listen()` method that serves streamable HTTP at `/mcp`.” No skill file or fetched docs URL was used; the visible resources were the npm README and `node_modules/mcp-use/dist/server.d.ts`.
+
+The npm scaffold caused a TypeScript module mismatch: `npm init -y` produced `"type": "commonjs"`, and the first typecheck failed with `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent fixed this by changing the package to `"type": "module"`, after which `npx tsc --noEmit` passed.
+
+The SDK unexpectedly created project-local telemetry state: after running the server, `find` showed `./.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":"6811ad73-d881-4166-bf3d-9b8a27f3104a"}`. The agent spent additional steps grepping SDK configuration/usage declarations, deleting the file, and adding `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` in `src/server.ts` to prevent regeneration. This is a notable filesystem side effect for a task explicitly requiring ticket state to use “no files.”
+
+A generic repository-cleanliness check also wasted a command because the blank workspace was not a Git repository: `git diff --check` returned `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.
