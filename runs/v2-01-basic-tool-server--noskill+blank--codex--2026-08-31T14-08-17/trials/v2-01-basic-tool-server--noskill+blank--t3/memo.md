@@ -1,0 +1,7 @@
+The run was largely direct, but API discovery required external inspection: the agent first queried npm with `npm view mcp-use version description repository.url dist-tags --json` and `npm view mcp-use readme --json`, then grepped installed declarations using `rg -n "class MCPServer|listen\\(|streamable|serve\\(" node_modules/mcp-use/dist node_modules/mcp-use`. It specifically opened `node_modules/mcp-use/dist/server.d.ts` to confirm the `MCPServer` constructor and `listen(port?)` shape, suggesting the package README alone did not provide enough immediately usable API detail.
+
+Installation produced an environment/tooling papercut—`esbuild@0.28.2 (postinstall: node install.js)` was “`not yet covered by allowScripts`”—although this did not block typechecking or execution.
+
+Verification itself was comprehensive and worked on the first visible attempt: `npx tsc --noEmit` returned exit code 0, initialization returned `HTTP/1.1 200 OK`, and `tools/call` returned `"text":"41.75"`. The agent also checked schema behavior, receiving `Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string`.
+
+One noisy signal appeared when the server process ended: the tool reported `{"exitCode":130,...,"status":"failed"}` even though its captured log showed successful requests including `initialize ... 200` and `tools/call add ... 200`. This could make a successful manual verification look failed in automation or agent tooling.
