@@ -1,0 +1,335 @@
+{
+  "runId": "v2-03-docs-lookup-server--noskill+blank--codex--2026-08-31T14-08-16",
+  "batchId": "33400724205-1",
+  "startedAt": "2026-08-31T14:08:16.624Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-03-docs-lookup-server": "a9d87fb4812c"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-03-docs-lookup-server",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "a9d87fb4812c",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": null,
+      "memoPath": null,
+      "transcriptPath": "trials/v2-03-docs-lookup-server--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-31T14:08:16.646Z",
+      "error": "agent run reported success but consumed zero input/output tokens — no model turn occurred",
+      "valid": false,
+      "grade": {
+        "contractPass": false,
+        "checks": [],
+        "failureCode": "infra.agent",
+        "sdkPath": "unknown",
+        "scoredForPassRate": false
+      },
+      "perf": {
+        "durationMs": null,
+        "turns": null,
+        "tokensIn": null,
+        "tokensOut": null,
+        "toolCalls": null,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-03-docs-lookup-server",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "a9d87fb4812c",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.3.4",
+      "memoPath": "trials/v2-03-docs-lookup-server--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-03-docs-lookup-server--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-31T14:10:28.088Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 45423 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://getting-started:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://authentication:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://deployment:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://not-a-real-page:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 76913,
+        "turns": 14,
+        "tokensIn": 464591,
+        "tokensOut": 4835,
+        "toolCalls": 17,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-03-docs-lookup-server",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "a9d87fb4812c",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.3.4",
+      "memoPath": "trials/v2-03-docs-lookup-server--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-03-docs-lookup-server--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-31T14:12:05.079Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 35097 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://index:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://getting-started:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://authentication:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://deployment:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:docs://not-a-real-page:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:search_docs:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 80354,
+        "turns": 15,
+        "tokensIn": 627130,
+        "tokensOut": 5503,
+        "toolCalls": 26,
+        "costUsd": null
+      }
+    }
+  ]
+}
