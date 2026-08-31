@@ -1,0 +1,324 @@
+{
+  "runId": "v2-10-multi-view-incident-console--noskill+blank--codex--2026-08-31T14-08-17",
+  "batchId": "33400724205-1",
+  "startedAt": "2026-08-31T14:08:17.469Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-10-multi-view-incident-console": "837b89d340fd"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-10-multi-view-incident-console",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "837b89d340fd",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-08-31T14:08:17.552Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": false,
+            "required": true,
+            "detail": "no entry file found (tried: src/server.ts, src/index.ts)"
+          },
+          {
+            "id": "build",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "start",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "handshake",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "tools",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resources",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-list.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-detail.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:list_incidents:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:get_incident:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          }
+        ],
+        "failureCode": "contract.entry",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 161682,
+        "turns": 16,
+        "tokensIn": 838253,
+        "tokensOut": 9845,
+        "toolCalls": 25,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-10-multi-view-incident-console",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "837b89d340fd",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-08-31T14:11:12.857Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": false,
+            "required": true,
+            "detail": "no entry file found (tried: src/server.ts, src/index.ts)"
+          },
+          {
+            "id": "build",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "start",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "handshake",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "tools",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resources",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-list.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-detail.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:list_incidents:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:get_incident:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          }
+        ],
+        "failureCode": "contract.entry",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 184149,
+        "turns": 21,
+        "tokensIn": 1690248,
+        "tokensOut": 12198,
+        "toolCalls": 39,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-10-multi-view-incident-console",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "837b89d340fd",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-10-multi-view-incident-console--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-08-31T14:14:30.706Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": false,
+            "required": true,
+            "detail": "no entry file found (tried: src/server.ts, src/index.ts)"
+          },
+          {
+            "id": "build",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "start",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "handshake",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "tools",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resources",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-list.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "resource-read:ui://views/incident-detail.html:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:list_incidents:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          },
+          {
+            "id": "call:get_incident:1",
+            "pass": false,
+            "required": true,
+            "detail": "blocked by entry"
+          }
+        ],
+        "failureCode": "contract.entry",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 171468,
+        "turns": 23,
+        "tokensIn": 1525441,
+        "tokensOut": 11254,
+        "toolCalls": 38,
+        "costUsd": null
+      }
+    }
+  ]
+}

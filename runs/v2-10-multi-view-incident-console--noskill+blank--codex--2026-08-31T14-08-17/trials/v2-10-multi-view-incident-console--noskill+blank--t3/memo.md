@@ -1,0 +1,9 @@
+The decisive wrong turn was choosing a root entry, evidenced by `fileChange({"event":"create","path":"index.ts"})` and the build message `[mcp-use] built index.ts + views`; no `src/server.ts` or `src/index.ts` was created, despite the produced server correctly having `export default server;` in `index.ts`. The agent followed the SDK’s own template rather than the grader’s expected layout: it unpacked `create-mcp-use-app-2.0.5.tgz` and inspected `package/dist/templates/mcp-apps/index.ts`, which likely reinforced the root-entry choice.
+
+Discovery was lengthy: the agent inspected `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/views/register.d.ts`, `node_modules/mcp-use/dist/server.d.ts`, CLI help, and the packed create-app template before implementation. No mcp-use skill file or fetched docs URL appears; the resources used were installed package files and npm package contents, such as `sed -n '1,240p' node_modules/mcp-use/README.md`.
+
+The initial npm scaffold introduced a module-format trap: `npm init -y` produced `"type": "commonjs"`, while the generated build contained `import { MCPServer, registerViews } from "mcp-use";`. Consequently, first start failed with `Cannot use import statement outside a module`, requiring a package.json modification.
+
+The verification client had another papercut: `npx mcp-use client` announced `[mcp-use] installing @mcp-use/client…` but then immediately reported `@mcp-use/client is not installed`, forcing an explicit `npm install @mcp-use/client@2.0.0`.
+
+The agent also lost time assuming wrapped JSON output: its check used `read("/tmp/incident-tools.json").tools` and failed with `TypeError: Cannot read properties of undefined (reading 'length')`; inspecting the file showed it was a top-level array beginning `[{"name":"list_incidents"...`, after which the script was corrected.
