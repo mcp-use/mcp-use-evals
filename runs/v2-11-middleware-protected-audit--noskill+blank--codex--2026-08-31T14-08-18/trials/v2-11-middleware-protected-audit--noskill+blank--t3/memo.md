@@ -1,0 +1,9 @@
+The decisive call-contract miss was capitalization: `src/server.ts` returns ``text: `Deleted record ${id}```, while the failed check reports `"Deleted record R-1" did not match ... "deleted R-1"`. The agent’s own verification reinforced rather than caught this mismatch by accepting `Deleted record gamma`.
+
+Discovery was relatively expensive: it first fetched the npm README with `npm view mcp-use@2.0.4 readme --json`, then repeatedly inspected SDK declarations and implementation using `rg -n 'use\\(|mcp:tools/call|streamable|listen\\(' node_modules/mcp-use` and searches for `runMcpOperation`, `#buildSdkServer`, and `#registerTool`. No mcp-use skill file was used; the visible resources were the npm README and installed `node_modules`.
+
+TypeScript setup required a repair after `npx tsc --noEmit` failed with `Cannot find name 'node:url'` and `Cannot find name 'process'`; the agent then modified `tsconfig.json` to include Node types.
+
+Manual protocol testing also hit avoidable transport friction. The first request returned `406` with `Client must accept both application/json and text/event-stream`, after which the agent added `accept: application/json, text/event-stream`. The first audit-resource request then failed with `400 Bad Request` and `Invalid JSON`; the original curl payload visibly ended with an extra brace: ``"params":{"uri":"audit://events"}}}'``. The agent investigated SDK internals before retrying with a heredoc, which succeeded and returned `1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed`.
+
+Cleanup/checking had minor scaffold friction: `git diff --check` produced `Not a git repository`, and killing only PID 479 left child processes `492` and `503`, requiring a second cleanup command.
