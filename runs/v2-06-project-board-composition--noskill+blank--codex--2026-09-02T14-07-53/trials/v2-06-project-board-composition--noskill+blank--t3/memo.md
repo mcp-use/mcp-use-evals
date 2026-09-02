@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package introspection rather than a skill or external docs: it ran `sed -n '1,240p' node_modules/mcp-use/README.md`, then inspected `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `node-http.d.ts`, followed by `rg -n "listen\\(" ...` to discover API shape. The initial npm metadata/readme query yielded little beyond `"version": "2.3.4"` and `"description": "MCP framework and CLI built on the official v2 SDK"`.
+
+TypeScript configuration caused one avoidable iteration: the first typecheck failed with `Cannot find name 'process'` and explicitly suggested adding `'node' to the types field in your tsconfig`; the agent then modified `tsconfig.json`. A subsequent combined validation command also failed for an unrelated workspace assumption: `warning: Not a git repository` after running `git diff --check && git status --short`, even though the preceding `npx tsc --noEmit` had succeeded.
+
+Client-side verification involved another discovery dead end. The agent searched for `StreamableHTTPClientTransport`, then attempted `sed ... node_modules/@modelcontextprotocol/client/dist/esm/client/streamableHttp.d.ts`, which failed with `No such file or directory`. It recovered by using raw `curl` JSON-RPC requests and a custom Node `fetch` script; the handshake returned `"protocolVersion":"2025-11-25"` despite the request sending `"2026-06-17"`.
+
+There is a dependency hygiene papercut: `src/server.ts` imports `zod`, but `npm ls zod --depth=0` reported `└── (empty)` while `require.resolve('zod')` found `node_modules/zod/index.cjs`; the shown `package.json` lists only `"mcp-use": "^2.3.4"` under dependencies, so the source relies on a transitive package being hoisted.
+
+Finally, stopping the live server surfaced as a failed tool result—`"exitCode":130`—despite logs showing the complete lifecycle through `resources/read issue://999 ... 200`; this was shutdown bookkeeping rather than an implementation failure.
