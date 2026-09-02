@@ -1,0 +1,9 @@
+The agent had to discover the SDK shape directly from the installed package, inspecting `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/resources.d.ts`, and `dist/tools.d.ts`; it then concluded that “`The installed SDK provides native static and templated resource registration plus a listen() method`.” No skill file or external docs URL appears in the transcript.
+
+The main implementation stumble was TypeScript configuration: the first `npx tsc --noEmit` failed with “`Cannot find name 'process'`” and instructed it to “`add 'node' to the types field in your tsconfig`,” despite `@types/node` already being installed. A `tsconfig.json` modification fixed the next typecheck.
+
+Verification was thorough but fairly manual: the agent issued separate raw `curl` requests for initialization, `resources/list`, `resources/templates/list`, three resource reads, `tools/list`, and two tool calls. This worked, but the repeated headers and hand-authored JSON-RPC payloads—e.g. “`--header 'Accept: application/json, text/event-stream'`”—added procedural overhead.
+
+The final repository check took an avoidable wrong turn: `npm install && git status --short && git diff --check` failed because “`fatal: not a git repository (or any of the parent directories): .git`.” The running server process also ended with exit code 130 after successful validation, although its log showed completed requests such as “`tools/call search_docs /mcp 200`.”
+
+Installation repeatedly emitted an ecosystem papercut: “`esbuild@0.28.2 (postinstall: node install.js)`” had “`install scripts not yet covered by allowScripts`,” though this did not prevent execution.
