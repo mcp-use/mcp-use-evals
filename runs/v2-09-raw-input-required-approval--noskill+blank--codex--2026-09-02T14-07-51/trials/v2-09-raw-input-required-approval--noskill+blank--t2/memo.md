@@ -1,0 +1,9 @@
+The decisive miss was decline wording: the explicit decline branch returned `Deployment approval was not granted.` (`src/server.ts`, non-accept branch), while the separate `approve: false` branch returned `Deployment was declined.` (`src/server.ts`). The agent’s manual decline test visibly produced `"text":"Deployment approval was not granted."`, but it still concluded, `Declined request returned one terminal isError: true result and no further input request.` This verified terminal behavior but did not check that the response text identified a decline, causing the reported `contract.calls` failure.
+
+API discovery consumed substantial effort through installed-package inspection: the agent ran `rg -n "inputRequired|inputResponse|acceptedContent..." node_modules/mcp-use` and then searched `node_modules/@modelcontextprotocol/server/dist`; one attempt hit `IO error ... dist/*.d.ts: No such file or directory`. No skill file or fetched docs URL appears; the resources used were package declarations, README files, and bundled SDK source under `node_modules`.
+
+The blank scaffold also caused an avoidable typecheck round trip. The first `npx tsc --noEmit` failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`, after which the agent modified `package.json` and `tsconfig.json`.
+
+Raw HTTP verification exposed protocol-header discovery friction. The first call failed because `the required Mcp-Method header is absent`; after adding it, the next failed because `the required Mcp-Name header is absent`. The third request succeeded only after both headers were supplied.
+
+A final repository hygiene command also wasted a step in the blank directory: `git diff --check` failed with `Not a git repository`, making the combined command exit `129` even though installation and typechecking had completed.

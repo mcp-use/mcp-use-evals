@@ -1,0 +1,270 @@
+{
+  "runId": "v2-09-raw-input-required-approval--noskill+blank--codex--2026-09-02T14-07-51",
+  "batchId": "33639855815-1",
+  "startedAt": "2026-09-02T14:07:51.841Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-09-raw-input-required-approval": "61022f05de83"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-09-02T14:07:51.858Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 36997 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 147369,
+        "turns": 19,
+        "tokensIn": 1595093,
+        "tokensOut": 8014,
+        "toolCalls": 30,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-09-02T14:10:33.169Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 46547 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:2",
+            "pass": false,
+            "required": true,
+            "detail": "final result \"Deployment approval was not granted.\" did not match {\"type\":\"contains\",\"value\":\"decline\"}"
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 122392,
+        "turns": 19,
+        "tokensIn": 1616905,
+        "tokensOut": 7474,
+        "toolCalls": 33,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-09-02T14:12:45.664Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 38027 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "input-required:request_deploy:2",
+            "pass": false,
+            "required": true,
+            "detail": "final result \"Deployment was not approved.\" did not match {\"type\":\"contains\",\"value\":\"decline\"}"
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 122077,
+        "turns": 16,
+        "tokensIn": 1569173,
+        "tokensOut": 7079,
+        "toolCalls": 30,
+        "costUsd": null
+      }
+    }
+  ]
+}
