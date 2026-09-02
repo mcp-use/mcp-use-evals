@@ -1,0 +1,9 @@
+The agent had some SDK discovery friction and relied on the installed package rather than a skill or external docs: it queried `npm view mcp-use version description repository.url`, then inspected `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, and `node_modules/mcp-use/dist/tools.d.ts`. The declaration that clarified startup behavior was `listen(port?: number | undefined, options?: ListenOptions)` alongside “`Serve over HTTP on Node`”.
+
+A scaffold-editing mistake caused the first typecheck failure. `package.json` temporarily contained both `"type": "module"` and `"type": "commonjs"`, and TypeScript reported `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent inspected the file, removed the duplicate CommonJS setting, and confirmed `type=module`.
+
+Manual protocol verification also took a wrong turn. The first initialize request paired `MCP-Protocol-Version: 2026-07-28` with an initialize body and received HTTP 400: `the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`. Retrying with `2025-11-25` succeeded, suggesting the supported handshake/version relationship was not obvious during ad hoc testing.
+
+The lifecycle test itself was thorough and successful, including `claim_ticket: Claimed ticket 1.` twice, `claim_ticket: Ticket 999 not found.`, `close_ticket: Ticket 999 not found.`, and `list_tickets: Open tickets (1): Billing question`.
+
+The final cleanup verification command unnecessarily assumed a Git checkout: `npx tsc --noEmit && git status --short && git diff --check` ended with `fatal: not a git repository`, even though the preceding typecheck had succeeded. The temporary server process also surfaced as a failed tool result with `exitCode":130`, although its log showed successful requests and the agent explicitly said, `I’ve stopped the temporary verification server`.
