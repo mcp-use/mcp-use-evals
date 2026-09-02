@@ -1,0 +1,9 @@
+The repair itself was localized and direct: the original source explicitly said `// BUG: a reservation should decrease stock, not increase it.`, while unknown and insufficient cases used `throw new Error(...)`; the final source changed these to returned text and `inventory.set(sku, available - quantity)` (`src/server.ts`).
+
+Dependency setup cost time because the scaffold had no installed modules: the inspection reported `node_modules missing`, and an attempted read failed with `sed: can't read node_modules/mcp-use/package.json`. The agent then ran `npm install`, which took `14s`.
+
+With no skill file or fetched docs visible, the agent leaned on installed SDK internals to confirm API and transport shape, grepping `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/config.d.ts`, and `node_modules/mcp-use/README.md` for `"class MCPServer"`, `"listen("`, `"mcpPath"`, and `"streamableHttp"`.
+
+A generic repository-validation command created avoidable noise after typechecking: `npx tsc --noEmit && git diff --check && git diff ...` exited `129` because `Not a git repository`, even though the agent correctly observed afterward that `Typechecking now passes.`
+
+Live verification was thorough but manually assembled around raw JSON-RPC requests to `http://127.0.0.1:3100/mcp`, including explicit headers such as `MCP-Protocol-Version: 2025-06-18`. The final verification script reported `MCP HTTP verification passed: reserve, insufficient reserve, restock, unknown SKU, and shared state.` Stopping the foreground server produced exit code `130` and was labeled `"status":"failed"`, despite the preceding request log showing successful `POST /mcp 200` calls; this is a tooling papercut rather than an implementation issue.
