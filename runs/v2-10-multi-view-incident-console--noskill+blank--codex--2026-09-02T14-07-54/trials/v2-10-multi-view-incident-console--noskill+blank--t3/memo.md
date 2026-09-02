@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry at repository root: produced `index.ts` contains `export default server;`, while the grader reports `no entry file found (tried: src/server.ts, src/index.ts)`. The agent saw SDK documentation describing root placement—README output said `Replace its index.ts`—and the CLI itself successfully reported `[mcp-use] built index.ts + views ...`, so local SDK behavior did not expose the grader’s required entry convention.
+
+Dependency setup cost an extra iteration. The first install failed with `peer zod@"^4.2.0" from @mcp-use/client@2.2.2` because the root requested `zod@"^3.24.2"`; the agent then noted, `The required framework version expects Zod 4`, changed the package, and installation succeeded.
+
+The agent leaned heavily on installed-package discovery rather than a skill file: it inspected `node_modules/mcp-use/README.md`, opened `node_modules/mcp-use/dist/tools.d.ts`, `node_modules/mcp-use/dist/views/register.d.ts`, and grepped `node_modules/@mcp-use/cli/dist` for `entry|index.ts|views`. Its initial npm README-fetch attempt also failed with `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`.
+
+Typed React integration required another corrective pass. The first typecheck produced `'incident' is of type 'unknown'` and `'context.toolOutput' is of type 'unknown'`; only after creating `mcp-env.d.ts` with `tools: typeof import("./index.js");` did `npx tsc --noEmit` pass. This registration requirement was discovered through `node_modules/mcp-use/dist/react/types/register.d.ts`, whose comment says it is `Augmented by the project's mcp-env.d.ts`.
+
+Verification had a misleading result: resource reads had the correct MIME type but reported `"hasExpectedMarker": false`, despite source markers at `views/incident-list/view.tsx` (`<main data-view="incident-list"`) and `views/incident-detail/view.tsx` (`<main data-view="incident-detail"`). The agent did not resolve why bundled HTML lacked the literal marker and instead relied on a later source grep.
+
+A final chained audit unnecessarily stopped because `git status --short` returned `fatal: not a git repository`; the agent reran typecheck/build separately afterward.
