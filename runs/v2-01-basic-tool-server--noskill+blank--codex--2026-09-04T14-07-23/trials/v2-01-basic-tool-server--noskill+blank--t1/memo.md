@@ -1,0 +1,7 @@
+The agent relied on npm metadata and package-local documentation/type declarations rather than a skill file: it ran `npm view mcp-use version description repository.url peerDependencies dependencies --json`, searched `node_modules/mcp-use/README.md` and `node_modules/mcp-use/dist`, then inspected `server.d.ts` for `listen(port?: number | undefined, options?: ListenOptions)`.
+
+The main wrong turn came from the default npm scaffold. `npm init -y` created `"type": "commonjs"`, and the first `npx tsc --noEmit` failed with both `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` This happened even though `npm ls` showed `@types/node@26.4.1`; the agent then modified `package.json` and `tsconfig.json`, producing `"type": "module"` and a successful second typecheck.
+
+Verification had minor friction. The agent first explored the bundled CLI with `npx mcp-use client --help && npx mcp-use client connect --help`, but ultimately used three manual `curl` JSON-RPC requests for `initialize`, `tools/list`, and `tools/call`. The server process subsequently reported `"exitCode":130` despite successful request logs such as `tools/call add /mcp 200`, which is potentially confusing when an intentionally stopped verification server is surfaced as a failed tool call.
+
+A final repository sanity check was inapplicable in the blank workspace: `git status --short && git diff --check` failed with `fatal: not a git repository (or any of the parent directories): .git`.

@@ -1,0 +1,5 @@
+Discovery took a detour when fetching npm metadata/readme: `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`. The agent recovered by inspecting the installed package directly, first grepping `node_modules/mcp-use` for `"streamable|Streamable|tool\\("`, then reading `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/config.d.ts`. Those declarations supplied the key behavior, including `listen(port?: number...)` and the config note that the TCP port uses `PORT`.
+
+The implementation itself was straightforward and typechecked on the first attempt: `npx tsc --noEmit` returned `exitCode:0`. Runtime verification also worked immediately: initialization returned server info for `"add-server"`, `add(19.5, 22.25)` returned `"41.75"`, and invalid input produced `"expected number, received string"`.
+
+Two non-SDK cleanup checks appeared as failed tool calls despite successful work. Stopping the foreground server yielded `exitCode":130`, and the final status command failed with `fatal: not a git repository (or any of the parent directories): .git`. The latter also prevented the chained `git diff` and `sed` commands from running.
