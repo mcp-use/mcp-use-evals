@@ -1,0 +1,414 @@
+{
+  "runId": "v2-02-stateful-ticket-queue--noskill+blank--codex--2026-09-04T14-07-27",
+  "batchId": "33881746910-1",
+  "startedAt": "2026-09-04T14:07:27.084Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-02-stateful-ticket-queue": "5a74015f4085"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-02-stateful-ticket-queue",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "5a74015f4085",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.4.2",
+      "memoPath": "trials/v2-02-stateful-ticket-queue--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-02-stateful-ticket-queue--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-09-04T14:07:27.132Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 40235 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:claim_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:claim_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:close_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:close_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 157116,
+        "turns": 20,
+        "tokensIn": 969275,
+        "tokensOut": 8379,
+        "toolCalls": 32,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-02-stateful-ticket-queue",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "5a74015f4085",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.4.2",
+      "memoPath": "trials/v2-02-stateful-ticket-queue--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-02-stateful-ticket-queue--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-09-04T14:10:20.248Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 39885 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:claim_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:claim_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:close_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:close_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 117236,
+        "turns": 18,
+        "tokensIn": 649433,
+        "tokensOut": 6929,
+        "toolCalls": 25,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-02-stateful-ticket-queue",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "5a74015f4085",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.4.2",
+      "memoPath": "trials/v2-02-stateful-ticket-queue--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-02-stateful-ticket-queue--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-09-04T14:12:30.595Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 32979 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:3",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:claim_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:claim_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:close_ticket:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:close_ticket:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:4",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:list_tickets:5",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 74174,
+        "turns": 11,
+        "tokensIn": 553582,
+        "tokensOut": 4188,
+        "toolCalls": 15,
+        "costUsd": null
+      }
+    }
+  ]
+}
