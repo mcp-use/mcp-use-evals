@@ -1,0 +1,9 @@
+The agent had to discover the SDK shape by inspecting the installed package rather than using a skill or fetched docs: `sed -n '1,260p' node_modules/mcp-use/dist/resources.d.ts`, `sed -n '1,320p' node_modules/mcp-use/dist/server.d.ts`, and `rg -n "resource\\(|listen\\(|Streamable|streamable" node_modules/mcp-use/README.md node_modules/mcp-use/dist`. This worked, but required several exploratory commands before implementation.
+
+The initial scaffold fought TypeScript’s module setup. `npm init -y` created `"type": "commonjs"`, and the first typecheck failed with `Cannot find name 'process'` plus `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then modified both `package.json` and `tsconfig.json`; the next statement was `Typechecking now passes.`
+
+A verification command bundled typechecking with Git checks in a directory that was not a repository: `npx tsc --noEmit && git diff --check && git status --short`. Although typechecking succeeded, the command exited 129 with `warning: Not a git repository`, adding a distracting failure unrelated to the server.
+
+Protocol verification was thorough but manually verbose, using separate `curl` JSON-RPC calls for initialization, `resources/list`, `resources/templates/list`, reads, tool listing, and two tool calls. The initialization request also guessed `"protocolVersion":"2026-07-28"`, while the server negotiated `"protocolVersion":"2025-11-25"`; negotiation succeeded, but this indicates protocol-version discovery friction.
+
+Process cleanup was untidy. The foreground server tool ended with `exitCode":143`, and the subsequent cleanup command `kill 471 ...` itself returned `exitCode":1`; the transcript does not show a later successful cleanup confirmation.

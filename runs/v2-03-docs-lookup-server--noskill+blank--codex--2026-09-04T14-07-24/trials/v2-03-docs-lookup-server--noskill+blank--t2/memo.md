@@ -1,0 +1,9 @@
+The agent spent substantial discovery effort inspecting installed package internals rather than using a skill or fetched docs: it read `node_modules/mcp-use/README.md`, then inspected `node_modules/mcp-use/dist/resources.d.ts`, `server.d.ts`, `tools.d.ts`, and searched for `listen(`. It also explored the transitive MCP client API with searches for `"StreamableHTTPClientTransport"`, `"listResources("`, `"readResource("`, and `"callTool("`. This worked, but indicates API-shape discovery friction in a blank setup.
+
+Server-process handling caused a false start. The first background launch remained active, so a second launch failed with `listen EADDRINUSE: address already in use 127.0.0.1:3100`; the agent then had to inspect processes using `ps -ef` and later explicitly `kill 476 489 500`. The same lifecycle issue recurred on port 3101, where the transcript shows three live server processes before `kill 665 678 689`.
+
+The first end-to-end verification command also failed because `tsx -e` inherited CommonJS output from the generated package setup: `Top-level await is currently not supported with the "cjs" output format`. The agent recovered by wrapping the verification code in `(async () => { ... })();`, but this added another iteration.
+
+A generic repository check was mismatched to the blank workspace: `git diff --check` emitted `warning: Not a git repository. Use --no-index to compare two paths outside a working tree` plus a long usage dump. This was avoidable scaffold/workflow noise rather than an SDK issue.
+
+Despite these papercuts, the eventual protocol verification was thorough: the client output included `"resources"`, `"resourceTemplates"`, reads of `"docs://index"` and `"docs://getting-started"`, a missing-page response containing `"not found"`, and both matching and empty search results.
