@@ -1,0 +1,7 @@
+The main discovery detour was checking the SDK before dependencies existed: `rg: node_modules/mcp-use: IO error for operation on node_modules/mcp-use: No such file or directory`. The agent then ran `npm install` and relied on grepping installed declarations—`rg -n "listen\(|Streamable|streamable|port" node_modules/mcp-use`—followed by direct inspection of `node_modules/mcp-use/dist/server.d.ts` and `node_modules/mcp-use/dist/config.d.ts`; no skill file or fetched docs URL appears in the transcript.
+
+Diagnosis itself was direct: the agent identified that “`unknown-SKU paths throw, reservation updates in the wrong direction, and restocks use a discarded copy`,” matching the scaffold comments `// BUG: a reservation should decrease stock, not increase it.` and `// BUG: this copy is discarded after the call, so restocks are not shared.`
+
+Verification was thorough but mechanically expensive, using separate handwritten `curl` commands for initialization, `tools/list`, and each tool call; the initialization request alone manually supplied headers including `'Accept: application/json, text/event-stream'` and `'MCP-Protocol-Version: 2025-06-18'`. The live sequence did confirm shared state with `coffee-mug: 9\ndesk-lamp: 2`.
+
+Two harmless command failures added noise near the end: stopping the server surfaced as `exitCode":130` with `"status":"failed"`, and the final diff check failed because `fatal: not a git repository (or any of the parent directories): .git`.
