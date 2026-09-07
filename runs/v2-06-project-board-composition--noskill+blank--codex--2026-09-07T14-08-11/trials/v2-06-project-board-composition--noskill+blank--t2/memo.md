@@ -1,0 +1,7 @@
+Discovery took several steps: the registry README query returned nothing (`npm view mcp-use readme` → `output":""`), so the agent inspected the installed package with `find node_modules/mcp-use` and `rg -n "streamable|...|MCPServer..."`, then read `node_modules/mcp-use/README.md` and declaration files including `dist/server.d.ts`, `dist/tools.d.ts`, and `dist/resources.d.ts`. This local package documentation supplied the working `MCPServer`, `server.tool`, resource, and `listen` API shapes; no skill file or fetched docs URL appears in the transcript.
+
+The first typecheck failed despite `@types/node` being installed: `Cannot find name 'process'. Do you need to install type definitions for node? ... add 'node' to the types field in your tsconfig.` The agent confirmed `@types/node@26.5.0` was present and then modified `tsconfig.json`; this is a TypeScript configuration papercut rather than an SDK failure.
+
+Lifecycle verification lost a turn to shell/JSON quoting. A combined pair of resource reads failed with `curl: (22) The requested URL returned error: 400` and `Invalid JSON`; retrying each request separately with `--data-raw` worked, returning `"Open issues: 1"` and `"status: open"`.
+
+The final housekeeping command also failed because the blank workspace was not a repository: `fatal: not a git repository (or any of the parent directories): .git`. This did not affect the implementation, but it was an avoidable scaffold assumption after all functional checks had succeeded.
