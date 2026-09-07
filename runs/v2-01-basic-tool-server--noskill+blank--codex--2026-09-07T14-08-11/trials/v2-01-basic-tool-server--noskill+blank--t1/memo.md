@@ -1,0 +1,7 @@
+The agent had some SDK discovery friction: `npm view mcp-use readme --json` returned no README content, so it inspected the installed package with `rg -n "streamable|http|MCPServer|createMCPServer|tool\(" node_modules/mcp-use` and read `node_modules/mcp-use/README.md` plus `dist/server.d.ts`, `dist/tools.d.ts`, and `dist/config.d.ts`. The package README’s quickstart supplied the eventual API shape, including `import { MCPServer } from "mcp-use"` and `server.tool(...)`.
+
+TypeScript setup required a repair after the first check failed with `Cannot find name 'process'`, even though `@types/node@26.5.0` was installed; the compiler explicitly suggested `add 'node' to the types field in your tsconfig`, after which the agent modified `tsconfig.json` and `npx tsc --noEmit` passed.
+
+Manual MCP verification also took an avoidable detour. Initialization and `tools/call` immediately worked, returning `"text":"7.25"`, but the first `tools/list` request failed with `curl: (22) The requested URL returned error: 400`. A retry with `MCP-Protocol-Version: 2025-03-26` still returned `Invalid JSON`; rerunning the apparently same JSON under `set -x` then produced `HTTP/1.1 200 OK` and listed only `"name":"add"`. This suggests shell/request-debugging friction rather than an SDK API issue, but the server logs recorded two unexplained failures: `POST /mcp 400`.
+
+The final cleanup command also assumed a Git checkout and failed noisily with `warning: Not a git repository`, preventing the chained `git status` and `find` commands from running.
