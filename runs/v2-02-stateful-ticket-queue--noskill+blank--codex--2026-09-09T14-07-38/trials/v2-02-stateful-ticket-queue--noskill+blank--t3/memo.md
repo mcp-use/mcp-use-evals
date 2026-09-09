@@ -1,0 +1,9 @@
+The agent relied heavily on package inspection rather than a skill or external docs: it queried npm with `npm view mcp-use version description repository.url --json`, opened `node_modules/mcp-use/README.md`, and inspected SDK declarations via `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` plus `rg -n "listen\\(|streamable|mount"`. This worked, but indicates API-discovery friction in the blank-workspace variant.
+
+The first typecheck failed because the generated npm scaffold remained CommonJS and Node types were not configured: `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then modified `package.json`, `tsconfig.json`, and `src/server.ts` before typechecking successfully, showing some scaffold fighting around ESM/top-level await.
+
+End-to-end verification also hit an optional-dependency surprise. Although `npx mcp-use client --help` advertised the client commands, the first actual connection failed with `@mcp-use/client is required for this command.` and instructed `npm install @mcp-use/client`; the agent then installed it separately with `npm install -D @mcp-use/client`.
+
+Process management was slightly awkward. The agent first launched `PORT=3210 npx tsx src/server.ts` without backgrounding, then launched it again with `>/tmp/support-ticket-server.log 2>&1 &`, and later found multiple related processes: `npm exec tsx src/server.ts`, `node node_modules/.bin/tsx src/server.ts`, and `/usr/local/bin/node ... src/server.ts`. Its first cleanup still showed `node node_modules/.bin/tsx src/server.ts` and the child process alive, requiring another `kill 512 523`.
+
+The CLI verification generated an incidental project artifact, `./.mcp-use/usage.json`, which the agent explicitly inspected and deleted before finishing: `fileChange({"event":"delete","path":".mcp-use/usage.json"})`.
