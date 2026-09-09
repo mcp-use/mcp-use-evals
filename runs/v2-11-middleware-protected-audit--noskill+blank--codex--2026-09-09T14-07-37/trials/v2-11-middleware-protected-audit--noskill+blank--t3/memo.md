@@ -1,0 +1,7 @@
+The agent had to discover the SDK API by grepping installed declarations—`rg -n "Streamable|streamable|server\\.use|mcp:tools/call|createMcp" node_modules/mcp-use`—and then reading `node_modules/mcp-use/dist/server.d.ts`, middleware declarations, tools, and resources; no skill file or fetched documentation URL appears in the transcript.
+
+Dependency setup required a repair after typechecking failed with `Cannot find name 'process'. Do you need to install type definitions for node?`, followed by another `package.json` modification and install. The final cleanup also wasted a command by assuming a Git checkout: `warning: Not a git repository. Use --no-index`.
+
+The live verification exposed the exact strings later rejected but did not prompt corrections. The read returned `"text":"read record r-1"` and the approved delete returned `"text":"deleted record r-1"`; in source these are `text: \`read record ${id}\`` and `text: \`deleted record ${id}\``, rather than the grader-expected substrings `Record R-1` and `deleted R-1`. The verification used lowercase `"id":"r-1"`, while the task’s eventual checks used `R-1`, making exact casing/output conventions less visible.
+
+Likewise, `resources/list` visibly returned `"name":"Audit events"`, matching `src/server.ts`’s `name: "Audit events"`, but the agent accepted it without checking the expected machine-style name `audit-events`. The final summary only said it `Lists audit://events as a text resource`, so it did not surface or reconsider the listed resource name despite having inspected the wire response.

@@ -1,0 +1,9 @@
+The main miss was response-text compatibility: `src/server.ts` returns ``text: `Read record ${id}``` and ``text: `Deleted record ${id}```, while the deterministic checks expected case-sensitive substrings `Record R-1` and `deleted R-1`. The agent’s manual verification reinforced these choices rather than testing likely contract wording: it called with lowercase `"id":"r-1"` and accepted `"Read record r-1"` and `"Deleted record r-1"` as success.
+
+Discovery relied heavily on installed-package inspection rather than a skill file or fetched docs: commands read `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, `tools.d.ts`, and grepped implementation files with `rg -n "listen\\(|approval|required|throw new"`. This did yield the middleware example: `server.use("mcp:tools/call", async (ctx, next) => { ... return next(); })`.
+
+There was dependency/version churn. The first install used `zod@'^3.24.2'`, then the agent stated, `"I’m using Zod 4 because this mcp-use release’s typed schema contract requires it."` and ran `npm install zod@'^4.1.13'`. The resulting package resolved to `zod@4.5.4`, as shown by `npm ls`.
+
+The scaffold’s default CommonJS setting caused an avoidable typecheck failure: `package.json` contained `"type": "commonjs"`, and TypeScript reported `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent fixed the package configuration and the next `npx tsc --noEmit` passed.
+
+Final cleanup also lost time to shell/process handling. The combined command beginning `pkill -f 'tsx src/server.ts'` exited `143`, preventing later checks, and the retry ran Git commands in a non-repository, producing `warning: Not a git repository.` Despite that, live protocol verification did correctly confirm the middleware error and ordered resource: `"approval required"` and `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
