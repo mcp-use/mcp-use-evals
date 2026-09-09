@@ -1,0 +1,9 @@
+The main time sink was API discovery: the agent queried npm (`npm view mcp-use version description repository.url`), unpacked the package README (`npm pack mcp-use@2.4.3`), and searched shipped declarations (`rg -n "resource\\(" /tmp/mcp-use-package/package`). This worked, but indicates the blank run required inspecting package internals such as `dist/server.d.ts` and `dist/resources.d.ts` rather than relying on an immediately usable example.
+
+Verification also hit client-discovery friction. Grepping expected declarations returned nothing (`rg -n "class StreamableHTTPClientTransport|StreamableHTTPClientTransport" ...` produced `output":""`), prompting a broad file search (`find node_modules/@modelcontextprotocol/client -maxdepth 3 -type f`). The agent then switched to the CLI via `npx mcp-use client --help`.
+
+The CLI’s dependency handling was confusing: it announced `[mcp-use] installing @mcp-use/client…` and reported `added 1 package`, but immediately failed with `[mcp-use] @mcp-use/client is not installed.` The agent had to explicitly run `npm install --save-dev @mcp-use/client@'^2.3.0'` before `Connected and saved docs-local.` This added an otherwise unnecessary development dependency solely for verification.
+
+There were two minor dead ends unrelated to implementation. An assumed declaration path failed with `sed: can't read /tmp/mcp-use-package/package/dist/index-node.d.ts: No such file or directory`, and a cleanup/check command failed because `fatal: not a git repository`. The package-inspection tarball and CLI state also required explicit cleanup, shown by `unlink mcp-use-2.4.3.tgz` and `unlink .mcp-use/usage.json`.
+
+Despite these papercuts, implementation itself was direct: the first `npx tsc --noEmit` returned `exitCode":0`, and the live verification successfully exercised `resources read docs://index`, `resources read docs://authentication`, the missing-page path, and `tools call search_docs`.
