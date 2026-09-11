@@ -1,0 +1,7 @@
+The agent needed package/API discovery rather than relying on a skill file: it queried npm with `npm view mcp-use version description repository.url dist-tags --json`, read the package README, then inspected installed declarations using `rg -n "class MCPServer|serve\\(|listen\\(|http" node_modules/mcp-use/dist` and `sed -n '1,125p' node_modules/mcp-use/dist/server.d.ts`. This suggests the blank/no-skill setup imposed some API-shape discovery overhead.
+
+The first typecheck failed because Node types were installed but not enabled in TypeScript configuration: `error TS2591: Cannot find name 'process'` and `add 'node' to the types field in your tsconfig`. The agent then modified `tsconfig.json` and reran `npx tsc --noEmit`.
+
+A notable SDK papercut was unexpected filesystem state from optional telemetry. After verification, `find` showed `./.mcp-use/usage.json`, whose content included `"serverId":"1b2210e6-838c-4ef6-b817-ed2112e52327"`. The agent explicitly reported, `the SDK’s optional anonymous telemetry had created an identity file during verification`, deleted it, and added `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` in `src/server.ts`. This required a second full server/lifecycle run to ensure the artifact stayed absent.
+
+There was also a minor scaffold-assumption detour: `git diff --check && git status --short` failed because the blank working directory was `Not a git repository`, so the chained command never reached its final typecheck and had to be replaced with a separate `npx tsc --noEmit`.
