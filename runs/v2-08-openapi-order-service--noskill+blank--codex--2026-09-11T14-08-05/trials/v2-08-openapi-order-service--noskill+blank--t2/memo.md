@@ -1,0 +1,9 @@
+The main discovery cost was inspecting installed SDK internals rather than using a higher-level guide: the agent ran `rg -n "fromOpenAPI|StreamableHTTP|streamable" node_modules/mcp-use` and then opened `node_modules/mcp-use/dist/server.d.ts`, `openapi/types.d.ts`, `config.d.ts`, and `index.d.ts`. This investigation established the listener shape and route behavior from declarations such as `listen(port?: number ...): Promise<{ ... url: string; }>`.
+
+The generated OpenAPI input shape had a notable API surprise: `tools/list` exposed `createOrder` with a required wrapper, `"properties":{"body":{...}}` and `"required":["body"]`, so the lifecycle call had to use `"arguments":{"body":{"sku":"green-tea","quantity":2}}` rather than passing body fields directly.
+
+Verification was thorough but manually verbose, using several raw `curl` JSON-RPC/SSE requests with `accept: application/json, text/event-stream`; the initialize response itself arrived as `event: message` / `data: {...}`. There was no failed MCP attempt, and the first tool calls worked.
+
+A generic repository check caused an avoidable failed command because the blank workspace was not a Git checkout: `fatal: not a git repository (or any of the parent directories): .git`. The agent then reran the remaining checks with `git diff --check 2>/dev/null || true`.
+
+Process cleanup also took extra steps. Killing the npm wrapper with `kill 420` left child processes `433 node node_modules/.bin/tsx src/server.ts` and `444 ... src/server.ts`, requiring a second `kill 433 444`. Installation emitted an environment-specific warning that `esbuild@0.28.2` had an install script “`not yet covered by allowScripts`,” although `npm install` still completed successfully.

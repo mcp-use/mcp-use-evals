@@ -1,0 +1,9 @@
+The main time sink was SDK/API discovery through installed package internals: the agent ran `rg -n "fromOpenAPI|streamable|Streamable" node_modules/mcp-use`, then inspected `node_modules/mcp-use/dist/server.d.ts`, `openapi/types.d.ts`, `node-bridge.d.ts`, and the README. No skill file or fetched docs URL appears; the transcript instead shows repeated grepping of `node_modules` for `listen`, `baseUrl`, `StreamableHTTPClientTransport`, `listTools`, and `callTool`.
+
+Dependency selection took a wrong turn. The agent initially installed `@modelcontextprotocol/sdk@^1.12.1 zod@^3.24.0`, discovered that the installed version was actually `1.30.0` while mcp-use used `@modelcontextprotocol/client`/`server` `2.0.0`, and then corrected course with `npm uninstall @modelcontextprotocol/sdk zod && npm install -D @modelcontextprotocol/client@2.0.0`. This suggests the client package/version relationship was not obvious from the top-level SDK surface.
+
+The first lifecycle test failed for tooling rather than server behavior: `npx tsx -e` produced `Top-level await is currently not supported with the "cjs" output format`. The agent then wrapped the script in `(async () => { ... })`, after which the full lifecycle succeeded.
+
+The initial combined typecheck/start command left a server running, requiring process inspection and cleanup: `pgrep -af 'tsx src/server.ts|node.*server.ts'` showed three related processes, followed by `kill 447 488 499 || true`. This added avoidable verification friction.
+
+A final hygiene check also failed because the blank workspace was not a Git repository: `git diff --check` returned `warning: Not a git repository`. The preceding output still confirmed the important pinning—`mcp-use package spec: 2.0.4` and `mcp-use lock version: 2.0.4`—but the chained command exited `129`, forcing another inspection command.
