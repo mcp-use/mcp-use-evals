@@ -1,0 +1,7 @@
+The decisive miss was in tool response wording: `src/server.ts` returns ``text: `record ${id}``` and ``text: `deleted record ${id}```, while the grader expected “Record R-1” and “deleted R-1.” The agent’s own verification exposed those exact outputs—`"text":"record r-1"` and `"text":"deleted record r-1"`—but it concluded, `The core behavior is working`, without checking expected response text or capitalization.
+
+API discovery relied heavily on package metadata and installed declarations: it fetched `npm view mcp-use@2.0.4 ... readme`, then searched with `rg -n "\\.use\\(|mcp:tools/call|resource\\(" node_modules/mcp-use`, and inspected `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`. This was productive but relatively broad, contributing several exploration calls before implementation.
+
+Verification hit avoidable shell friction: the combined call sequence ended with `Invalid JSON`, requiring a separate verbose `curl -v` resource request. Final inspection also assumed a Git checkout and failed with `fatal: not a git repository`, after which the agent reran the inspection using `git diff --check 2>/dev/null || true`.
+
+The middleware and audit behavior were verified clearly: the denied call produced `"approval required"` with `"isError":true`, and the resource returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`. The main usability/process papercut was therefore not SDK behavior but insufficient assertion of deterministic tool text despite manually observing it.
