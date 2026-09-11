@@ -1,0 +1,9 @@
+The first inspection command was unnecessarily marked failed because it bundled repository status with file discovery in a directory that was not a Git checkout: `fatal: not a git repository (or any of the parent directories): .git`.
+
+Dependency setup caused the main detour. Running `npx tsc --noEmit` before installation made npm fetch the unrelated deprecated `tsc@2.0.4`, producing `This is not the tsc command you are looking for`; the agent then recovered with `npm install`, which `added 59 packages`. Installation also surfaced an environment papercut around blocked lifecycle scripts: `esbuild@0.28.2 (postinstall: node install.js)` was `not yet covered by allowScripts`.
+
+With no skill file or fetched documentation visible, the agent discovered the SDK API by grepping the installed package: `rg -n "class MCPServer|listen\\(" node_modules/mcp-use/dist node_modules/mcp-use`. It then inspected `node_modules/mcp-use/dist/server.d.ts`, `config.d.ts`, and README listen examples; the declaration’s example, `await server.listen(3000);`, contrasts with the final configuration-based approach in `src/server.ts`, `port: Number(process.env.PORT ?? 3000)`, making port placement something the agent explicitly had to investigate.
+
+The repair itself was direct after inspection: the scaffold visibly contained `throw new Error("insufficient stock")`, `inventory.set(sku, available + quantity)`, and `const localInventory = new Map(inventory)`. The final source replaced those with ordinary tool error results and shared-map mutations, including `return errorResult("insufficient stock")`, `inventory.set(sku, available - quantity)`, and `inventory.set(sku, available + quantity)`.
+
+Process cleanup was slightly awkward: terminating the foreground server produced `exitCode":143` and `"status":"failed"`, after which the agent issued two separate kill/check commands, first `kill 428 441 452` and then `kill -TERM 441 452`.

@@ -1,0 +1,7 @@
+The main discovery friction was that dependencies were absent: `npm ls --depth=0` reported `UNMET DEPENDENCY mcp-use@2.0.4` and the agent had to run `npm install`, which took `14s`, before SDK inspection or validation could proceed. Its first SDK grep therefore returned no output: `rg -n "class MCPServer|listen... node_modules/mcp-use"` produced `output":""`.
+
+After installation, the agent relied on grepping SDK declarations rather than a skill file or fetched docs, finding `node_modules/mcp-use/dist/server.d.ts:343: listen(port?: number | undefined...)` and `node_modules/mcp-use/dist/config.d.ts:115: TCP port ... when neither an explicit port nor PORT is set.` This resolved the potentially non-obvious behavior of leaving `await server.listen();` unchanged while still honoring `PORT` and the default.
+
+A validation command unnecessarily chained Git inspection in a directory without Git metadata: `npx tsc --noEmit && git diff ... && git status --short` failed with `Not a git repository.` Because `tsc` succeeded before that failure, the agent had to run `npx tsc --noEmit` again later to obtain a clean validation result.
+
+Live verification required hand-written JSON-RPC/SSE calls, including headers such as `Accept: application/json, text/event-stream` and a separate `initialize` request. The server process was then interrupted and surfaced as a failed tool result with `exitCode":130`, even though its log showed successful requests such as `tools/call reserve_stock`; this is minor harness/process-management noise rather than an implementation problem.
