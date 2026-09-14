@@ -1,0 +1,9 @@
+The agent spent time discovering the SDK shape locally, first grepping `node_modules/mcp-use/README.md` and declarations for `"streamable|http|new MCP|MCPServer|create.*server|tool\\("`, then reading `node_modules/mcp-use/dist/server.d.ts`, `node-bridge.d.ts`, and `tools.d.ts`. The README quickstart supplied the eventual pattern: `import { MCPServer } from "mcp-use"` and `server.tool(...)`; no skill file or fetched docs URL appears in the transcript.
+
+The first typecheck failed despite installing `@types/node`: `error TS2591: Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent had to modify `tsconfig.json` before compilation passed, a small TypeScript configuration papercut.
+
+A verification command also took an avoidable wrong turn by chaining `git diff --check && git status --short` in a blank, non-git directory; it exited 129 with `warning: Not a git repository.` This obscured the successful typecheck and required another run.
+
+There was minor scaffold churn: `npm init -y` generated `"type": "commonjs"` and a placeholder failing test script, after which the agent recreated `package.json` via `[tool] fileChange({"event":"create","path":"package.json"})` and later modified it again. Installation also emitted the repeated warning `esbuild@0.28.2 (postinstall: node install.js)` was `not yet covered by allowScripts`, though it did not block execution.
+
+The manual protocol verification itself was direct and successful: initialization returned `"protocolVersion":"2025-03-26"`, `tools/call` returned `"text":"41.75"`, and `tools/list` showed only `"name":"add"` with required numeric `a` and `b`.
