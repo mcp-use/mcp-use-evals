@@ -1,0 +1,7 @@
+The decisive miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the grader reported `"record R-1" did not match ... "Record R-1"`. The agent’s manual verification reproduced the lowercase output—`"text":"record record-1"`—but treated the call as verified, so it did not catch the exact-content expectation.
+
+API discovery required substantial package inspection. The agent fetched the npm README with `npm view mcp-use@2.0.4 readme`, then grepped installed declarations for `"use\\(|resource\\(|listen\\(|mcp:tools/call|Streamable"` and opened `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`. No skill file was used; the run variant was `noskill+blank`.
+
+There was a dependency-version detour: it first ran `npm install mcp-use@2.0.4 zod@'^3.24.0'`, then replaced Zod via `npm install zod@'^4.0.0'`. Verification tooling also had a papercut: `npx mcp-use client connect ...` announced `[mcp-use] installing @mcp-use/client…` but immediately failed with `@mcp-use/client is not installed`, requiring an explicit `npm install --save-dev @mcp-use/client@'^2.0.0'`.
+
+A combined validation command obscured a successful typecheck behind an unrelated scaffold assumption: `npx tsc --noEmit && ... && git diff` exited `129` because `warning: Not a git repository`, after which the agent had to infer and separately state that `Typechecking passes.`

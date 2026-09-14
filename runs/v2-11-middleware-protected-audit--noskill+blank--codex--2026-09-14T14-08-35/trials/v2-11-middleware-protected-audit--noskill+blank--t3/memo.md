@@ -1,0 +1,9 @@
+The decisive miss was a response-format mismatch in `src/server.ts` (`text: \`record ${id}\``): the grader expected `Record R-1`, but received `"record R-1"`. The agent’s own verification used lowercase input and only checked that the call completed—`"arguments":{"id":"r-1"}` produced `"text":"record r-1"`—so it did not catch the capitalization contract.
+
+API discovery leaned heavily on package internals: it ran `npm view mcp-use@2.0.4 ... readme`, then searched declarations with `rg -n "\\.use\\(|mcp:tools/call|streamable|resource\\(" node_modules/mcp-use` and inspected `node_modules/mcp-use/dist/server.d.ts` plus middleware/resource typings. No skill file was used; the variant was `noskill+blank`.
+
+The blank scaffold caused an avoidable TypeScript/module detour. Initial typechecking failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`; the agent then changed `package.json` to `"type": "module"` and added Node types before `npx tsc --noEmit` passed.
+
+Protocol verification also took a wrong turn: sending an initialize body with `MCP-Protocol-Version: 2026-07-28` returned `the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`. The agent responded by grepping `node_modules` for `"MCP-Protocol-Version|initialize request|2026-07-28"` and succeeded only after switching the body to `"protocolVersion":"2025-11-25"` and omitting that header.
+
+The middleware and audit behavior were exercised successfully in the transcript: the denied call returned `"approval required"` with `"isError":true`, and the resource returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`. However, the final summary’s bare claim ``read_record` → allowed` masked the untested output wording that ultimately caused `contract.calls`.
