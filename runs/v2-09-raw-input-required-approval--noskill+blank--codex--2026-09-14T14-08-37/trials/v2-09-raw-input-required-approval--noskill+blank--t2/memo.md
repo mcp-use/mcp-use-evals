@@ -1,0 +1,9 @@
+The decisive miss was the explicit decline branch’s wording: `src/server.ts` returns `terminalError("Deployment was not approved.")` for `response.action === "decline"`, while the separate accepted-`false` branch returns `terminalError("Deployment was declined.")`. The agent manually observed the former response as `"Deployment was not approved."` but still concluded, `Both HTTP retries now behave correctly`, so its verification checked terminality but not whether the decline result clearly contained “decline.”
+
+API discovery consumed substantial effort through installed-package inspection rather than a skill file or fetched docs: the agent ran `rg -n "inputRequired|inputResponse|acceptedContent|streamable|http" node_modules/mcp-use` and later printed helper implementations with `console.log('inputRequired',inputRequired.toString())`. No mcp-use skill or external docs URL appears in the transcript.
+
+Manual HTTP testing encountered several protocol-specific requirements in sequence: first, `"request is missing the required per-request envelope key(s): _meta"`, then `"the required Mcp-Method header is absent"`, and then `"the required Mcp-Name header is absent"`. This made direct curl verification unexpectedly cumbersome.
+
+The typed elicitation schema also hit an SDK compatibility surprise: `"Elicitation requestedSchema contains unsupported JSON Schema constraint(s) after Standard Schema conversion: additionalProperties"`. The agent had to modify the schema after noting, `embedded form schemas cannot carry Zod’s additionalProperties: false`, and it changed Zod from the initially installed `zod@^3.24.0` to `zod@^4.0.0`.
+
+There were smaller setup and environment papercuts: initial typechecking failed with `Cannot find name 'process'` until Node types were added to `tsconfig.json`; restarting failed because `fuser: command not found` followed by `EADDRINUSE`; and a final validation command failed because `Not a git repository`.
