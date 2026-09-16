@@ -1,0 +1,7 @@
+The initial repository-inspection command unnecessarily failed because it included `git status --short` in a non-Git workspace, yielding `fatal: not a git repository (or any of the parent directories): .git`.
+
+SDK discovery initially went nowhere because dependencies were absent: `rg: node_modules/mcp-use: IO error ... No such file or directory`. The agent then ran `npm install` and leaned on the local SDK README and type declarations, specifically `node_modules/mcp-use/README.md` and `node_modules/mcp-use/dist/server.d.ts`, where it found `listen(port?: number | undefined, options?: ListenOptions)`. It did not fetch the linked docs URL; the transcript only displays `[Explore MCP server tools →](https://mcp-use.com/docs/typescript/server/tools)` from the README.
+
+There was a minor package-layout wrong turn when it searched for `node_modules/mcp-use/dist/server.js`, producing `IO error ... No such file or directory`, even though the declaration lookup had already established the needed API shape.
+
+Live verification was somewhat awkward around process management. The background server eventually returned `exitCode":143`, and the subsequent command intended to verify unknown `reserve_stock` and `restock` returned `output":""`. However, the captured server logs did show those calls occurred: `tools/call reserve_stock ERROR SKU missing-sku not found` and `tools/call restock ERROR SKU missing-sku not found`. This suggests the raw curl/background-process workflow made evidence collection less clear than necessary, despite the successful implementation.
