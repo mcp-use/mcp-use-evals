@@ -1,0 +1,7 @@
+The decisive miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the grader expected a value containing `Record R-1`. The agent’s live check reinforced rather than caught this mismatch because it used `"id":"record-1"` and accepted `"text":"record record-1"` as successful verification.
+
+The agent relied heavily on the installed package rather than external docs or a skill file, inspecting `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/resources.d.ts`, and middleware declarations. This discovery involved several broad searches, including `find node_modules/mcp-use -maxdepth 3 -type f` and `rg -n "approval|required|tools/call|server.listen|resource\\(" node_modules/mcp-use/README.md`.
+
+There was a minor TypeScript configuration papercut: although `@types/node` had already been installed via `npm install -D typescript tsx @types/node`, the first typecheck failed with `Cannot find name 'process'` and instructed the agent to “add 'node' to the types field in your tsconfig.” The agent then modified `tsconfig.json` and obtained a passing typecheck.
+
+Some cleanup and verification commands also produced avoidable noise. Combining protocol listing with `git status --short` failed because `fatal: not a git repository`, and the first shutdown/final-check command exited `143` after `pkill -f 'tsx src/server.ts'`. A subsequent separate command finally completed with `npx tsc --noEmit` successfully.
