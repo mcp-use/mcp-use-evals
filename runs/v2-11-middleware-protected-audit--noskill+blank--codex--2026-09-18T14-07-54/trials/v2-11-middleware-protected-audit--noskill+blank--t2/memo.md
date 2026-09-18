@@ -1,0 +1,7 @@
+The decisive miss was response casing: `src/server.ts` returns ``text: `Deleted record ${id}```, while the deterministic check reports ``did not match {"type":"contains","value":"deleted R-1"}``. The agent’s manual test used a different ID and only checked broad success—`"Deleted record example"`—then concluded, `"the approved delete runs"`, so it never tested the grader-sensitive lowercase substring.
+
+SDK discovery relied heavily on installed-package inspection rather than a skill or fetched docs: it ran `rg -n "server\\.use|mcp:tools/call|Streamable|resource\\(|tool\\(" node_modules/mcp-use` and opened `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/middleware/mcp-middleware.d.ts`. This worked, but the statement `"I’ve confirmed the installed framework’s typed middleware API"` came only after several node_modules searches.
+
+There was minor TypeScript configuration friction even though `@types/node` was installed: the first typecheck failed with `"Cannot find name 'process' ... add 'node' to the types field in your tsconfig"`, prompting an `npm ls @types/node typescript` check and a `tsconfig.json` modification.
+
+Protocol verification also had a malformed request: the combined curl sequence ended with `"Invalid JSON"`, requiring a separate `resources/read` call afterward. The final registration-check command unnecessarily included `git status --short` in a blank non-repository workspace, causing an overall exit code 128 with `"fatal: not a git repository"`, despite the preceding tool and resource listings succeeding.
