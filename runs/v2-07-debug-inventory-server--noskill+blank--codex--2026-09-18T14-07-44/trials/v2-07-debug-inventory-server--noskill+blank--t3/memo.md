@@ -1,0 +1,9 @@
+The run was mostly direct, but the initial inspection command unnecessarily failed because it included `git status --short` in a directory where `fatal: not a git repository (or any of the parent directories): .git`; this did not block subsequent work.
+
+The agent installed dependencies with `npm install`, then leaned on installed SDK internals rather than external docs or a skill file, explicitly saying, `I’m checking the installed SDK API before making the in-place fix.` It searched `node_modules/mcp-use` for `class MCPServer|listen\(` and inspected `node_modules/mcp-use/dist/config.d.ts`, `node_modules/mcp-use/dist/server.d.ts`, and `node_modules/mcp-use/README.md`. This API-shape lookup was focused on listener behavior; the discovered declaration documented `TCP port listen() binds when neither an explicit port nor PORT is set.`
+
+The repair itself was localized and correct: the agent identified that `error paths throw, reservations add instead of subtracting, restocks update a discarded copy, and the listener does not explicitly honor PORT`, then changed the existing file rather than fighting or replacing the scaffold. Typechecking succeeded in the combined command `npx tsc --noEmit && sed -n '1,220p' src/server.ts`.
+
+Verification used hand-written JSON-RPC `curl` requests against `/mcp`, including an explicit initialization request with `"method":"initialize"`. The live checks returned `Reserved 3 of coffee-mug`, `insufficient stock`, `Restocked 5 of coffee-mug`, and `SKU missing-sku not found`; the final listing `coffee-mug: 10\ndesk-lamp: 2` demonstrated shared state and non-mutation on the failed reserve.
+
+The only noisy ending was expected process teardown being surfaced as a failed tool result: the server command ended with `"exitCode":130` and `"status":"failed"` after successful request logs such as `tools/call reserve_stock`. This could be confusing in automation even though the verification itself had completed successfully.
