@@ -1,0 +1,14 @@
+# Native Harbor JobConfig; also works with `uv run harbor run -c ...` after prepare.
+n_attempts: 3
+n_concurrent_trials: 3
+retry:
+  max_retries: 2
+environment:
+  type: docker
+agents:
+  - name: codex
+    model_name: openai/gpt-5.6-terra
+    kwargs:
+      reasoning_effort: high
+datasets:
+  - path: .harbor/tasks

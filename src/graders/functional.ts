@@ -842,7 +842,7 @@ export function requiredImportProblems(
   return problems;
 }
 
-function collectSourceImports(files: Map<string, string>): SourceImport[] {
+export function collectSourceImports(files: Map<string, string>): SourceImport[] {
   const imports: SourceImport[] = [];
   for (const [file, content] of files) {
     imports.push(...collectEsmImports(file, content));

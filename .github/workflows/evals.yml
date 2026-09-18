@@ -1,218 +1,131 @@
-name: Evals
-
+name: Weekly SDK experience
 on:
   schedule:
-    # Mon/Wed/Fri 14:00 UTC
-    - cron: "0 14 * * 1,3,5"
+    - cron: '0 14 * * 1'
   workflow_dispatch:
     inputs:
       tasks:
-        description: "Comma-separated task ids (blank = all)"
-        required: false
+        description: Comma-separated task ids (empty = all compatible tasks)
+        default: ''
         type: string
-      conditions:
-        description: >
-          Comma-separated condition ids. skill+* conditions require a checkout of the mcp-apps-builder skill
-          and a skill-dir wired to the action, which this workflow does not (yet) provide — requesting one
-          fails the gate step fast instead of silently burning agent budget on invalid infra.sandbox trials.
-        required: false
+      attempts:
+        description: Independent attempts per task
+        default: '3'
         type: string
-        default: "noskill+blank"
-      trials:
-        description: "Trials per task x condition"
-        required: false
+      sdk-package:
+        description: npm SDK package
+        default: mcp-use
         type: string
-        default: "3"
-
+      sdk-name:
+        description: SDK display name (defaults to package name)
+        default: ''
+        type: string
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: weekly-sdk-history
+  cancel-in-progress: false
 jobs:
-  # Gates the whole workflow: every task's known-good `golden/` solution must
-  # pass the grader before we spend agent+judge budget on it.
-  verify:
-    name: verify-tasks
+  experience:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write # Append run evidence and reports to eval-history only.
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Install pnpm
-        run: corepack prepare --activate "$(node -p "require('./package.json').packageManager")"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify every task's golden solution passes the grader
-        run: pnpm verify-tasks
-
-  eval:
-    name: eval (Codex · ${{ matrix.task }})
-    needs: verify
-    runs-on: ubuntu-latest
-    # Explicit ceiling well under GitHub-hosted runners' hard 6h job limit.
-    # Sharding the matrix per-task (see below) keeps each leg's worst case
-    # (2 conditions x 3 trials, 20min agent timeout each, plus install/grade
-    # overhead) comfortably inside this window.
-    timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix:
-        # Sharded per-task (rather than one job running every task) so a
-        # single leg can't approach GitHub's 6h job execution limit — see
-        # timeout-minutes above. Keep in sync with tasks/*.
-        task:
-          - v2-01-basic-tool-server
-          - v2-02-stateful-ticket-queue
-          - v2-03-docs-lookup-server
-          - v2-06-project-board-composition
-          - v2-07-debug-inventory-server
-          - v2-08-openapi-order-service
-          - v2-09-raw-input-required-approval
-          - v2-10-multi-view-incident-console
-          - v2-11-middleware-protected-audit
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Decide whether to run this matrix leg
-        id: gate
+          node-version: '24.15.0'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.11'
+          python-version: '3.12'
+      - run: uv sync --locked
+      - name: Restore durable history
+        id: history
         run: |
-          set -euo pipefail
-          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Skipping Codex leg: OPENAI_API_KEY secret is not set"
-            exit 0
+          if git ls-remote --exit-code origin refs/heads/eval-history > /dev/null; then
+            git fetch origin refs/heads/eval-history:refs/remotes/origin/eval-history
+            git archive FETCH_HEAD history | tar -x
+          else
+            status=$?
+            [ "$status" = 2 ] || exit "$status"
+            mkdir -p history
           fi
-
-          DISPATCH_TASKS="${{ github.event.inputs.tasks }}"
-          if [ -n "$DISPATCH_TASKS" ]; then
-            MATCH=false
-            IFS=',' read -ra WANTED <<< "$DISPATCH_TASKS"
-            for t in "${WANTED[@]}"; do
-              t="${t#"${t%%[![:space:]]*}"}"
-              t="${t%"${t##*[![:space:]]}"}"
-              [ "$t" = "${{ matrix.task }}" ] && MATCH=true
-            done
-            if [ "$MATCH" != "true" ]; then
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "::notice::Skipping task ${{ matrix.task }}: not in requested tasks=$DISPATCH_TASKS"
-              exit 0
-            fi
-          fi
-
-          # skill+* conditions need a checkout of the mcp-apps-builder skill and
-          # a skill-dir passed to the action; this workflow provides neither.
-          # Fail fast instead of silently burning agent budget on trials that
-          # are guaranteed to come back invalid (infra.sandbox).
-          CONDITIONS="${{ github.event.inputs.conditions || 'noskill+blank' }}"
-          IFS=',' read -ra VLIST <<< "$CONDITIONS"
-          for v in "${VLIST[@]}"; do
-            case "$v" in
-              skill+*)
-                echo "::error::Requested conditions ($CONDITIONS) include a skill+* condition, but this workflow has no mcp-apps-builder skill checked out (no skill-dir input wired to the action). Every skill+* trial would fail as invalid infra.sandbox. Vendor the skill and pass skill-dir, or drop the skill+* condition."
-                exit 1
-                ;;
-            esac
-          done
-
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-
-      - name: Run evals
-        id: run
-        if: steps.gate.outputs.skip != 'true'
+      - name: Harness checks
+        id: checks
+        continue-on-error: true
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          uv run ruff check mcp_use_evals tests_python
+          uv run pytest
+      - name: Run agent attempts and per-trial analysis
+        id: eval
         uses: ./
-        # Step-level backstop so a stuck leg fails before the job timeout,
-        # leaving the (always()-guarded) upload/publish steps below a chance
-        # to run for whatever this leg already produced.
-        timeout-minutes: 150
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          agent: codex
-          tasks: ${{ matrix.task }}
-          conditions: ${{ github.event.inputs.conditions || 'noskill+blank' }}
-          trials: ${{ github.event.inputs.trials || '3' }}
-          batch-id: ${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Upload run artifact
-        if: always() && steps.gate.outputs.skip != 'true' && steps.run.outputs.run-dir != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-results-codex-${{ matrix.task }}-${{ github.run_id }}
-          path: |
-            ${{ steps.run.outputs.run-dir }}
-            !${{ steps.run.outputs.run-dir }}/**/workspace/**
-          retention-days: 30
-
-      - name: Publish compact results to eval-results branch
-        if: always() && steps.gate.outputs.skip != 'true' && steps.run.outputs.run-dir != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_DIR: ${{ steps.run.outputs.run-dir }}
+          tasks: ${{ inputs.tasks }}
+          attempts: ${{ inputs.attempts || '3' }}
+          sdk-package: ${{ inputs.sdk-package || 'mcp-use' }}
+          sdk-name: ${{ inputs.sdk-name }}
+      - name: Archive complete or partial runs
+        if: always()
         run: |
-          set -euo pipefail
-
-          RUN_ID="$(basename "$RUN_DIR")"
-          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-          WORK="$(mktemp -d)"
-
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          if git clone --depth 1 --branch eval-results "$REMOTE" "$WORK" 2>/dev/null; then
-            echo "eval-results branch exists"
-          else
-            echo "eval-results branch missing; creating an orphan branch"
-            git clone --depth 1 "$REMOTE" "$WORK"
-            (cd "$WORK" && git checkout --orphan eval-results && git rm -rf . >/dev/null 2>&1 || true)
-          fi
-
-          DEST="$WORK/runs/$RUN_ID"
-          mkdir -p "$DEST"
-          cp "$RUN_DIR/run.json" "$DEST/"
-          cp "$RUN_DIR/report.md" "$DEST/"
-
-          # Preserve trials/<task--condition--trial>/memo.md layout under DEST.
-          if [ -d "$RUN_DIR/trials" ]; then
-            (cd "$RUN_DIR" && find trials -name memo.md) | while read -r f; do
-              mkdir -p "$DEST/$(dirname "$f")"
-              cp "$RUN_DIR/$f" "$DEST/$f"
-            done
-          fi
-
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to publish for $RUN_ID"
-            exit 0
-          fi
-          git commit -m "Publish eval results: $RUN_ID"
-
-          # Rebase and retry if another concurrent leg's push landed in
-          # between (with the matrix now sharded per-task, many legs may
-          # race to publish at once). Rebase onto FETCH_HEAD, not
-          # origin/eval-results: when the branch didn't exist yet above, the
-          # orphan-creation clone above is a --depth 1 clone of the *default*
-          # branch, whose configured fetch refspec never creates a local
-          # origin/eval-results ref, even after fetching it by name — only
-          # FETCH_HEAD is guaranteed to be updated by `git fetch origin
-          # eval-results` in both the orphan and pre-existing-branch cases.
-          for attempt in 1 2 3 4 5; do
-            if git push origin HEAD:eval-results; then
-              exit 0
-            fi
-            echo "push failed (attempt $attempt); rebasing onto latest eval-results"
-            git fetch origin eval-results
-            if ! git rebase FETCH_HEAD; then
-              echo "rebase conflict against latest eval-results; aborting and retrying"
-              git rebase --abort
-            fi
-            sleep 5
+          for manifest in jobs/*/manifest.json; do
+            [ -f "$manifest" ] || continue
+            uv run evals archive "$(dirname "$manifest")"
           done
-          echo "::error::Failed to push results to eval-results branch after retries"
-          exit 1
+      - name: Record workflow coverage
+        if: always()
+        env:
+          CHECK_STATUS: ${{ steps.checks.outcome }}
+          EVAL_STATUS: ${{ steps.eval.outcome }}
+        run: |
+          uv run python - <<'PYTHON'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          events = Path('history/events')
+          events.mkdir(parents=True, exist_ok=True)
+          identity = os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT']
+          (events / (identity + '.json')).write_text(json.dumps({
+              'created_at': datetime.now(timezone.utc).isoformat(),
+              'checks': os.environ['CHECK_STATUS'], 'eval': os.environ['EVAL_STATUS'],
+              'source_url': 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID'],
+          }, indent=2))
+          PYTHON
+      - name: Synthesize the reporting week
+        if: always()
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run evals synthesize --days 7
+      - name: Persist history
+        if: always() && steps.history.outcome == 'success'
+        run: |
+          [ -d history ] || exit 0
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_INDEX_FILE="$RUNNER_TEMP/eval-history-index"
+          git read-tree --empty
+          git add -f history
+          tree=$(git write-tree)
+          parent=()
+          if git show-ref --verify --quiet refs/remotes/origin/eval-history; then
+            parent=(-p refs/remotes/origin/eval-history)
+          fi
+          commit=$(git commit-tree "$tree" "${parent[@]}" -m "Weekly evidence: $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT")
+          git push origin "$commit:refs/heads/eval-history"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sdk-experience
+          path: |
+            jobs/
+            history/reports/
+          retention-days: 90
+      - name: Surface harness failures after collecting evidence
+        if: always() && steps.checks.outcome == 'failure'
+        run: exit 1

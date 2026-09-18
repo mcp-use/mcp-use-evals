@@ -1,0 +1,6 @@
+# Used by Harbor's native analyze job; bounded independently from eval execution.
+# Analyze's template allows 1800 seconds. Harbor reconstructs its AgentConfig,
+# so set the supported job-level multiplier instead of an ignored agent override.
+agent_timeout_multiplier: 0.3333333333333333
+retry:
+  max_retries: 1
