@@ -23,4 +23,3 @@ testpaths = ["tests_python"]
 
 [tool.ruff]
 target-version = "py312"
-
