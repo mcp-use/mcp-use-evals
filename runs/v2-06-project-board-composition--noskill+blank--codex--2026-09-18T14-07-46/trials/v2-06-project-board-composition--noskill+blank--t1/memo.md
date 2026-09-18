@@ -1,0 +1,9 @@
+The main discovery cost was learning the SDK API from the installed package rather than a skill or external docs: the agent searched `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/resources.d.ts`, and `dist/node-http.d.ts` with `rg -n "createMcpServer|streamable|resource|tool\("`, then separately searched for `listen(`. This suggests the quickstart did not immediately expose all resource-template and HTTP-listening shapes needed.
+
+Dependency setup took a corrective pass. The first typecheck failed with `src/server.ts(127,30): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node?`, requiring another `package.json` edit and install of Node typings. The agent also investigated potentially confusing duplicated Zod versions: `mcp-use@2.5.0` resolved `zod@4.6.5`, while the root showed `zod@3.25.76`; despite that surprise, typed schemas ultimately worked.
+
+Process management caused avoidable churn. Starting the server twice produced `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`, because the first invocation was already running as `npm exec tsx src/server.ts`. Its diagnostic command then hit an environment papercut: `/bin/bash: line 1: ss: command not found`.
+
+Cleanup was also awkward because killing the parent did not stop the spawned processes: after `kill 503`, the transcript still showed PID 516 as `node node_modules/.bin/tsx src/server.ts` and PID 527 as the loaded `src/server.ts` process. The final combined cleanup/typecheck/status command returned failure solely because `git status` encountered `fatal: not a git repository (or any of the parent directories): .git`, obscuring that `npx tsc --noEmit` had run before it.
+
+Verification relied on many hand-written `curl` JSON-RPC calls with repeated headers such as `Accept: application/json, text/event-stream`; these successfully exercised the lifecycle but contributed substantial command overhead.

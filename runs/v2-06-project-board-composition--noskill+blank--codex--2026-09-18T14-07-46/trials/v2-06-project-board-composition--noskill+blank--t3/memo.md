@@ -1,0 +1,9 @@
+The agent had API-discovery friction and leaned on the installed package rather than an external guide, inspecting `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/resources.d.ts`, and grepping for `"listen\\(|streamable|resource\\("`. It also inspected the underlying client transport with `"rg -n \"StreamableHTTP\" node_modules/@modelcontextprotocol/client"`.
+
+The first typecheck failed because Node globals were omitted from `tsconfig.json`: `error TS2591: Cannot find name 'process' ... add 'node' to the types field`. A `tsconfig.json` edit fixed it.
+
+Wire-level verification took an avoidable retry because the custom SSE parser split on the wrong newline representation; the first script failed with `SyntaxError: Unexpected token 'e', "event: mes"... is not valid JSON`. The next attempt switched to `body.match(/^data: (.+)$/m)` and succeeded.
+
+The SDK’s telemetry identity persistence was a notable surprise for an explicitly file-free project. After running the server, the agent found `"./.mcp-use/usage.json"` containing `{"schemaVersion":1,"serverId":"..."}`, then searched SDK internals for `"MCP_USE_ANONYMIZED_TELEMETRY"` and modified `src/server.ts` to set `process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false"`. The produced source documents this papercut directly: `src/server.ts`: `mcp-use otherwise writes an anonymous telemetry identity file when the server starts.`
+
+A generic final-check command also assumed a Git repository and failed noisily: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. Several intentional server shutdowns surfaced as failed tool results with `exitCode:143`, adding noise despite successful lifecycle checks.
