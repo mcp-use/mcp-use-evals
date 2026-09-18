@@ -43,20 +43,6 @@ def job_name(value: str) -> str:
 def build_config(args: argparse.Namespace, dataset: Path) -> JobConfig:
     data = yaml.safe_load(args.config.read_text()) if args.config else {}
     config = JobConfig.model_validate(data)
-    if args.command == "verify":
-        config.agents = [
-            config.agents[0].model_copy(
-                update={
-                    "name": "oracle",
-                    "import_path": None,
-                    "model_name": None,
-                    "kwargs": {},
-                    "skills": [],
-                    "env": {},
-                }
-            )
-        ]
-        config.n_attempts = 1
     if args.attempts:
         config.n_attempts = args.attempts
     if args.concurrency:
@@ -74,8 +60,7 @@ def build_config(args: argparse.Namespace, dataset: Path) -> JobConfig:
 
     config.datasets = []
     config.tasks = [
-        TaskConfig(path=dataset / name, source="mcp-use-v2")
-        for name in sorted(selected)
+        TaskConfig(path=dataset / name, source="sdk-v3") for name in sorted(selected)
     ]
     for agent in config.agents:
         agent.skills = [
@@ -133,8 +118,23 @@ async def analyze(path: Path, args: argparse.Namespace) -> bool:
 
 
 async def execute(args: argparse.Namespace) -> int:
+    if args.command == "archive":
+        from .history import archive
+
+        print(archive(args.path, args.history))
+        return 0
+    if args.command == "synthesize":
+        from .synthesis import synthesize
+
+        return await synthesize(args)
     if args.command == "prepare":
-        print(prepare())
+        print(
+            prepare(
+                sdk_package=args.sdk_package,
+                sdk_name=args.sdk_name or args.sdk_package,
+                selected=args.task,
+            )
+        )
         return 0
     if args.command == "report":
         summary = write_report(args.path)
@@ -144,22 +144,44 @@ async def execute(args: argparse.Namespace) -> int:
     if args.command == "analyze":
         return 0 if await analyze(args.path.resolve(), args) else 1
 
-    config = build_config(args, prepare())
+    config = build_config(
+        args,
+        prepare(
+            sdk_package=args.sdk_package,
+            sdk_name=args.sdk_name or args.sdk_package,
+            selected=args.task,
+        ),
+    )
     job_dir = config.jobs_dir / config.job_name
     if job_dir.exists():
         raise ValueError(
             f"Job already exists: {job_dir}. Use harbor jobs resume -p {job_dir}"
         )
+    from .history import manifest
+
+    job_dir.mkdir(parents=True)
+    manifest(job_dir, args.sdk_package, args.sdk_name or args.sdk_package, config)
     github_outputs(job_dir)  # Available even if startup or a later step fails.
     print(f"Harbor job: {job_dir}", flush=True)
+    execution_ok = True
+    summary = None
     try:
         job = await Job.create(config)
         await job.run()
+    except Exception as exc:
+        execution_ok = False
+        (job_dir / "execution-error.txt").write_text(str(exc))
+        print(f"Execution incomplete: {exc}", file=sys.stderr)
     finally:
         if (job_dir / "result.json").exists():
-            summary = write_report(job_dir)
-            github_outputs(job_dir, summary)
-            print((job_dir / "report.md").read_text())
+            try:
+                summary = write_report(job_dir)
+                github_outputs(job_dir, summary)
+                print((job_dir / "report.md").read_text())
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                execution_ok = False
+                (job_dir / "report-error.txt").write_text(str(exc))
+                print(f"Report incomplete: {exc}", file=sys.stderr)
 
     # Run analysis even when deterministic checks fail. Keep its error visible
     # without changing the scores or losing the already-written scorecard.
@@ -173,7 +195,9 @@ async def execute(args: argparse.Namespace) -> int:
             print(f"Analysis failed: {exc}", file=sys.stderr)
     return (
         0
-        if gate(summary, args.min_pass_rate, oracle=args.command == "verify")
+        if execution_ok
+        and summary is not None
+        and gate(summary, args.min_pass_rate)
         and analysis_ok
         else 1
     )
@@ -183,22 +207,33 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("prepare", help="Package and validate the Harbor task dataset")
-    for command in ("run", "verify"):
+    prep = commands.add_parser("prepare", help="Package the Harbor task dataset")
+    add_experiment_args(prep)
+    for command in ("run",):
         sub = commands.add_parser(command)
+        add_experiment_args(sub)
         sub.add_argument("--config", type=Path, default=ROOT / "configs/baseline.yaml")
-        sub.add_argument("--task", action="append", help="Exact task id; repeatable")
         sub.add_argument("--attempts", type=positive)
         sub.add_argument("--concurrency", type=positive)
         sub.add_argument("--skill", action="append", type=Path, default=[])
         sub.add_argument("--job-name", type=job_name)
         sub.add_argument("--jobs-dir", type=Path, default=ROOT / "jobs")
-        sub.add_argument("--min-pass-rate", type=percentage, default=80)
+        sub.add_argument("--min-pass-rate", type=percentage, default=0)
         sub.add_argument("--no-analyze", action="store_true")
         add_analysis_args(sub)
+    sub = commands.add_parser(
+        "synthesize", help="Synthesize recent runs and prior findings"
+    )
+    sub.add_argument("--history", type=Path, default=ROOT / "history")
+    sub.add_argument("--jobs-dir", type=Path, default=ROOT / "jobs")
+    sub.add_argument("--days", type=positive, default=7)
+    add_analysis_args(sub)
+    sub = commands.add_parser("archive", help="Preserve a run in durable history")
+    sub.add_argument("path", type=Path)
+    sub.add_argument("--history", type=Path, default=ROOT / "history")
     sub = commands.add_parser("report")
     sub.add_argument("path", type=Path)
-    sub.add_argument("--min-pass-rate", type=percentage, default=80)
+    sub.add_argument("--min-pass-rate", type=percentage, default=0)
     sub = commands.add_parser("analyze")
     sub.add_argument("path", type=Path)
     add_analysis_args(sub)
@@ -208,6 +243,12 @@ def main() -> None:
         raise SystemExit(asyncio.run(execute(args)))
     except (ValueError, OSError) as exc:
         parser.exit(2, f"Error: {exc}\n")
+
+
+def add_experiment_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--sdk-package", default="mcp-use")
+    parser.add_argument("--sdk-name", help="Display name; defaults to the package name")
+    parser.add_argument("--task", action="append", help="Exact task id; repeatable")
 
 
 def add_analysis_args(parser: argparse.ArgumentParser) -> None:

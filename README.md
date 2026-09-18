@@ -1,223 +1,175 @@
-# mcp-use SDK evals · Harbor
+# Weekly SDK developer-experience evals · Harbor
 
-Can a coding agent build a correct MCP server with mcp-use, and what should we
-improve when it struggles?
+Can a coding agent build a working MCP server with today's SDK, and where does it struggle?
 
-This repo owns **nine frozen tasks and a deterministic TypeScript verifier**.
-[Harbor](https://docs.harborframework.com/) owns agent execution, Docker sandboxes,
-parallel attempts, infrastructure retries, trajectories, and agentic analysis.
-There is no custom agent runner, sandbox implementation, or LLM judge loop.
+Harbor 0.23.0 owns agent execution, Docker environments, attempts, retries and
+trajectories. This repository owns task contracts, deterministic MCP verification,
+per-attempt analysis, and weekly synthesis. There are no golden solutions, oracle
+runs, PR checks, or automatic push checks.
 
 ## Run locally
 
-Requirements: Docker with Compose, [uv](https://docs.astral.sh/uv/), and an
-`OPENAI_API_KEY` in your shell or this checkout's ignored `.env`. `uv sync`
-installs the pinned Python/Harbor dependencies. Node and pnpm are installed
-inside the task containers; host Node is only needed to develop the verifier.
+Requirements: Docker with Compose, uv, and an `OPENAI_API_KEY` in your shell or
+this checkout's ignored `.env`. Existing credentials are reused; paid agent and
+analysis runs incur provider costs. Host Node is only needed for verifier development.
 
 ```bash
 uv sync --locked
-
-# Validate every golden solution using Harbor's oracle agent. No model/API key.
-uv run evals verify
-
-# One real Codex attempt, then automatic agentic analysis.
-uv run evals run --task v2-01-basic-tool-server --attempts 1
-
-# Baseline: nine tasks × three independent attempts.
-uv run evals run
-
-# Browse outcomes, tool calls, token usage, and each trial's Analysis tab.
+uv run evals run --task v3-01-basic-tool-server --attempts 1
+uv run evals run                         # nine tasks × three attempts
 uv run harbor view jobs
 ```
 
-The existing key can be reused without copying it into a new checkout:
+The baseline uses Codex with `openai/gpt-5.6-terra`, high reasoning, three concurrent
+containers, and up to two infrastructure retries under Harbor's policy. Attempts
+have 20 minutes; verification has 15 minutes. Analysis independently uses Codex
+with `openai/gpt-5.6-sol`, two concurrent analyses, a ten-minute timeout, and one retry.
 
 ```bash
-uv run evals --env-file /path/to/existing/.env run --task v2-01-basic-tool-server --attempts 1
-```
-
-Shell environment takes precedence over `.env`. Credentials are never written
-to a job config by our wrapper. Model requests still incur your provider's costs.
-
-## What Harbor replaces
-
-| Previously maintained here | Now |
-| --- | --- |
-| Codex/Claude SDK wrappers, process parsing, agent installation | Harbor's built-in agents |
-| Docker/Vercel sandbox lifecycle and workspace syncing | Harbor environments |
-| Trial loops, retries, concurrency and timeouts | Harbor `Job` / `JobConfig` |
-| Custom transcript format and performance extraction | Native results and ATIF trajectories |
-| Per-trial LLM judge and weekly synthesis runner | Harbor `analyze` with an MCP-specific rubric |
-| Bespoke report UI | Harbor's local results viewer |
-| Results-branch push/rebase races in CI | Workflow artifacts and a single batch gate |
-
-The remaining Python code packages tasks, invokes the SDK, and applies our
-pass-rate policy to native results. The TypeScript code is domain logic: MCP
-handshakes, exact tools/resources, stateful calls, view metadata, raw
-`input_required` flows, source requirements, and OAuth verification helpers.
-
-The tradeoffs are a Python dependency alongside the TypeScript verifier, a
-Docker requirement for the default configuration, and model costs for analysis.
-Harbor is pinned to **0.23.0** in `pyproject.toml` and `uv.lock`; upgrades must
-pass our tests and oracle gate. This uses the current `harbor analyze` interface,
-not the removed `harbor jobs summarize` command.
-
-## Configuration and experiments
-
-[`configs/baseline.yaml`](configs/baseline.yaml) is a native Harbor job config:
-Codex, `openai/gpt-5.6-terra`, high reasoning, three attempts per task, three
-concurrent containers, and up to two retries using Harbor's exception policy.
-The agent has 20 minutes; the verifier has 15 minutes including installation.
-
-```bash
-# Different sample size/concurrency; repeat --task to select multiple tasks.
-uv run evals run --attempts 5 --concurrency 2 --min-pass-rate 90
-
-# Separate skill experiment: Harbor installs the skill for the selected agent.
-uv run evals run --skill /path/to/mcp-apps-builder --job-name codex-with-skill
-
-# Choose agents/models/environment in a separate native config.
+uv run evals run --attempts 5 --concurrency 2
+uv run evals run --skill /path/to/skill --job-name with-skill
 uv run evals run --config configs/my-experiment.yaml
-
-# Skip paid qualitative analysis, or rerun it later on saved evidence.
 uv run evals run --no-analyze
 uv run evals analyze jobs/<job-name>
+uv run evals --env-file /existing/.env run --task v3-01-basic-tool-server
 ```
 
-The wrapper always selects this repo's task suite; it overrides `tasks`,
-`datasets`, `jobs_dir`, and `job_name` from a supplied config. Agent/model,
-retry, timeout and environment settings remain native Harbor configuration.
-CLI overrides take precedence. Additional agent providers need their normal
-provider credentials. Automatic analysis independently uses Codex with
-`openai/gpt-5.6-sol` and therefore needs OpenAI access even for Claude trials.
-Use `--analysis-model` to change that model and `--analysis-concurrency` to cap
-parallel analyses. Analysis has a 10-minute per-agent timeout and one retry.
+## Latest SDK and alternate experiments
 
-For the full Harbor CLI—including cloud providers, resume, multi-agent
-experiments, and custom dataset selection—package the tasks once:
+The v3 prompts ask for the latest SDK, without prescribing a version. Before the
+job starts, `manifest.json` records npm's `latest` version, the requested SDK,
+repository revision, configured agents/models/skills, selected tasks and Actions
+URL. A registry lookup failure is recorded without blocking the run. Each
+`grade.json` records the installed requested-package version and whether source
+imports reference it. Harbor results retain actual agent versions and usage.
+The rendered prompt and contract are also preserved. Versions are evidence, not
+constraints; selecting an older SDK is a finding to investigate.
 
 ```bash
-uv run evals prepare
-uv run harbor run -c configs/baseline.yaml
-uv run harbor run -p .harbor/tasks -a claude-code -m anthropic/claude-sonnet-5
-uv run harbor jobs resume --help
+uv run evals run --sdk-package @modelcontextprotocol/sdk --sdk-name 'official MCP SDK'
 ```
 
-Direct Harbor runs retain native artifacts but bypass our automatic analysis
-and CI gate. Apply them afterward with `evals analyze` and `evals report`.
-Use separate checkouts for simultaneous experiments that regenerate tasks.
+This selects the four portable greenfield tasks (basic tools, tickets, docs,
+project board), using the same behavior contracts and SDK-specific rendered
+instructions. The inventory starter and OpenAPI, approval, views and middleware
+tasks require mcp-use; explicitly selecting one with another SDK raises an error.
+Add a separate variant/environment for equivalent SDK-specific experiments.
+SDK adoption is reported separately and does not alter functional correctness.
+The generic experiment mechanism accepts other npm packages too.
 
-## Scores and reports
+## Correctness and diagnosis
 
-Each successful verification emits `/logs/verifier/reward.txt` (`1` or `0`)
-and `grade.json` with every check, first failure code, SDK provenance, and grader
-version. A verifier crash leaves no reward; it becomes a Harbor infrastructure
-error, never an ordinary failed solution. Tests and golden solutions are kept
-out of the agent's Docker build context and uploaded by Harbor in their phase.
+The TypeScript verifier checks installation, typechecking, task-specific source
+requirements, optional builds, server startup, real MCP handshakes, tools,
+resources, calls and metadata. Every required check must pass: reward is 1 or 0,
+with per-check details and the first failure in `grade.json`. This is contract
+coverage, not proof that every requirement in prose is exhaustively tested.
 
-Our headline remains **passing valid runtime trials / valid runtime trials**.
-Infrastructure errors and static-import-only tasks are excluded from that
-denominator. The CI gate nevertheless rejects infrastructure errors, missing
-results, unfinished jobs, empty samples, and inconsistent reward/grade evidence.
-The default runtime pass-rate floor is 80%, configurable with `--min-pass-rate`.
-Oracle verification requires every task—including static tasks—to pass.
+The pass rate is passing valid runtime attempts divided by all valid runtime
+attempts. Static-only tasks, if added, are tracked separately. Missing or
+inconsistent evidence and infrastructure errors stay visible and cause a nonzero
+exit. Ordinary solution failures do not fail a complete run by default: the
+weekly percentage is a health signal, not a release gate. An optional explicit
+`--min-pass-rate` restores threshold enforcement for an experiment. Our
+`summary.json` is authoritative, rather than Harbor metrics with other denominators.
 
-Native Harbor aggregate metrics may use different denominators; `summary.json`
-is authoritative for our policy. Harbor's pass@k means "at least one success"
-and is not the old custom pass^k reliability metric. Do not interchange them.
+Per-attempt analysis reviews passing and failing trajectories for SDK friction,
+documentation gaps, task fairness and reward integrity. It asks for evidence and
+fixes, and cannot change deterministic grades. Negative findings do not fail the
+run; an analysis execution failure does. Execution errors preserve partial
+evidence and still attempt analysis.
 
+## Weekly synthesis and durable history
+
+```bash
+# Include manual/local experiments in subsequent reports:
+uv run evals archive jobs/<job-name> --history history
+uv run evals synthesize --history history --days 7
 ```
-jobs/<job-name>/
-  config.json, lock.json, result.json   # native Harbor job metadata/results
-  report.md, summary.json              # deterministic scorecard and CI policy
-  analysis.md, analysis.json           # readable/native qualitative reports
-  <trial>/
-    result.json, config.json
-    agent/trajectory.json             # native ATIF; tool-by-tool evidence
-    verifier/grade.json, reward.txt    # deterministic result
-    verifier/test-stdout.txt
-    analysis.json                     # Harbor viewer's Analysis tab
-jobs/analysis/<job-name>-<id>/         # analysis-agent trajectories and usage
-```
 
-The analysis rubric investigates SDK friction, documentation gaps, unfair task
-requirements, and reward manipulation. It requests quoted evidence and concrete
-fixes. Analysis cannot alter scores. If analysis fails, the command exits nonzero
-but preserves the already-written deterministic report; rerun only analysis.
-Reports draft findings for review and never post messages or create issues.
+Archive after rerunning analysis to update that run's saved evidence. Local runs
+enter CI synthesis only after their history is added to the `eval-history` branch;
+manual Actions runs are archived automatically. Archive uses a manifest-derived
+identity, so repeated archival updates the same run rather than double-counting it.
 
-## CI/CD
+Synthesis runs one separate Harbor task. It receives the reporting window's runs,
+historical evidence and prior reports. It groups repeated issues, examines passes
+with recovered friction, distinguishes likely causes, and reuses finding IDs across
+new/recurring/apparently-resolved/not-observed findings. Lack of recurrence alone
+is not evidence of resolution. Findings include frequency, impact, confidence,
+suggested fixes, and evidence paths with verbatim excerpts. A deterministic
+validator checks report structure, evidence-file existence and exact quotations;
+it does not prove the analyst's causal interpretation.
 
-- **Harness checks** runs TypeScript/Python tests and all oracle tasks on PRs,
-  including forks, without model secrets.
-- **Evals** runs Monday/Wednesday/Friday or manually. An oracle gate precedes a
-  dynamically discovered task matrix. Each shard executes trials and analysis,
-  uploads artifacts even on failure, and adds reports to the Actions summary.
-  A final job computes the weighted batch pass rate and applies the threshold
-  once across all selected tasks. Missing shards and analysis errors remain red.
-- Permissions are `contents: read`. Raw jobs and analyses are retained for 90
-  days. Download/extract them into `jobs/` and use `uv run harbor view jobs`.
+Reports are JSON plus Markdown in `history/reports/`, separate from delivery.
+Nothing posts to Slack or creates issues. Empty weeks and failed synthesis produce
+explicit coverage/error reports without invented conclusions. Reports contain
+relative evidence links for browsing the history branch; Actions source links
+provide run context. The history includes trajectories and verifier output, but
+omits native config files that may contain environment credentials. Evidence is
+stored with the repository's visibility and access permissions.
 
-For callers in another repo, pin this action to a reviewed commit:
+The single weekly/manual workflow:
+
+1. Restores `eval-history`.
+2. Runs local harness tests (failures are surfaced after evidence collection).
+3. Runs attempts and per-trial analysis.
+4. Archives complete or partial runs, even after failures.
+5. Synthesizes all runs from the last seven days, including manual Actions runs.
+6. Commits evidence and reports to `eval-history`, even if synthesis fails.
+7. Uploads raw jobs and reports as 90-day Actions artifacts.
+
+The Git history branch has no automatic expiry and preserves earlier revisions.
+Writes are serialized across scheduled/manual runs to avoid lost updates. The job
+needs `contents: write` for that branch and `OPENAI_API_KEY` for paid runs. It runs
+Mondays at 14:00 UTC, or through workflow dispatch. There are no PR or push triggers.
+Branch protections must permit the Actions token to update `eval-history`.
+
+## Using the action elsewhere
+
+Pin the action to a reviewed commit. It runs attempts and per-trial analysis;
+weekly scheduling, archival and synthesis are orchestration responsibilities.
 
 ```yaml
-jobs:
-  eval:
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    steps:
-      - uses: mcp-use/mcp-use-evals@<commit-sha>
-        id: eval
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          tasks: v2-01-basic-tool-server
-          attempts: '3'
-          min-pass-rate: '80'
-      - uses: actions/upload-artifact@v4
-        if: always() && steps.eval.outputs.run-dir != ''
-        with:
-          name: mcp-evals
-          path: ${{ steps.eval.outputs.run-dir }}
+- uses: mcp-use/mcp-use-evals@<commit-sha>
+  id: eval
+  with:
+    openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+    tasks: v3-01-basic-tool-server
+    attempts: '3'
+    sdk-package: mcp-use
+    sdk-name: mcp-use
+- uses: actions/upload-artifact@v4
+  if: always() && steps.eval.outputs.run-dir != ''
+  with:
+    name: sdk-evals
+    path: ${{ steps.eval.outputs.run-dir }}
 ```
 
-## Task authoring and migration
+## Authoring and development
 
-Keep editing `tasks/<id>/prompt.md`, `task.json`, `golden/`, and optional `starter/`.
-`evals prepare` assembles self-contained native tasks under ignored `.harbor/tasks/`:
-`instruction.md`, `task.toml`, `environment/Dockerfile`, `tests/test.sh`, and
-`solution/solve.sh`. Shared verifier sources are copied automatically; there
-are no checked-in duplicated graders or fragile symlinks.
-
-All nine existing task prompts/contracts/golden solutions are unchanged.
-The grader remains version 2.1.0. Prompt and contract hashes are recorded in
-task metadata; Harbor also records task checksums and actual agent versions.
-Never edit a frozen task's behavior in place—add a new task id and golden
-solution, then run `evals verify`.
-
-This is an intentional harness-version boundary, not a drop-in old-CLI adapter:
-
-- `pnpm eval` → `uv run evals run`; `pnpm verify-tasks` → `uv run evals verify`.
-- `--trials` → `--attempts`; skill conditions → native agent skills / `--skill`.
-- Legacy automatic `create-mcp-use-app` scaffold conditions are not reproduced;
-  use a separately versioned task environment containing a pinned scaffold.
-  The debugging task's checked-in starter is preserved.
-- Old `run.json`, weekly Slack synthesis, the writable `eval-results` branch,
-  and custom longitudinal metrics are retired. Historical data stays untouched;
-  compare new Harbor jobs within the new harness version. Keep longer-lived
-  artifacts in your chosen storage if the 90-day Actions retention is insufficient.
-- New OAuth tasks needing an agent-phase IdP or external secrets must define
-  that service/environment in Harbor before being added. The packager rejects
-  legacy agent-phase secret fields rather than silently omitting them. None of
-  the nine current tasks requires those fields.
-
-Develop the verifier with Node 24 and pnpm 10.33:
+Edit `tasks/<id>/prompt.md`, `task.json`, `experiment.json`, and optional `starter/`.
+`experiment.json` declares portability. Prompt placeholders are `{{sdk_package}}`
+and `{{sdk_name}}`. `evals prepare` renders self-contained Harbor tasks under
+`.harbor/tasks/`; tests are uploaded only during verification, not placed in the
+agent image. No reference implementation or solution directory is required.
+Add a new revision when changing task behavior; v2 is retained in Git history,
+while v3 introduces latest-SDK instructions. The deterministic contract checks
+remain unchanged by this revision. Suspected verifier defects are findings for
+investigation; there is no oracle gate.
 
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
-pnpm typecheck && pnpm test
+pnpm typecheck
+pnpm test
 uv run ruff check mcp_use_evals tests_python
 uv run pytest
-uv run evals verify
+uv run evals prepare
 ```
+
+Direct Harbor experiments can use `uv run harbor run -c configs/baseline.yaml`
+after preparation, but bypass wrapper manifests, automatic analysis and reporting.
+Use the wrapper for runs intended for weekly history. Avoid concurrent task
+preparation in one checkout. New tasks requiring agent-phase services or secrets
+need an explicit Harbor environment; legacy secret fields are rejected.

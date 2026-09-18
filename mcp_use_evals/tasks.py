@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -12,7 +13,14 @@ GRADER_VERSION = "2.1.0"
 IGNORE = shutil.ignore_patterns("node_modules", ".git", ".env", ".env.*", "dist")
 
 
-def prepare(root: Path = ROOT) -> Path:
+def prepare(
+    root: Path = ROOT,
+    sdk_package: str = "mcp-use",
+    sdk_name: str = "mcp-use",
+    selected: list[str] | None = None,
+) -> Path:
+    if not re.fullmatch(r"(?:@[a-z0-9_.-]+/)?[a-z0-9_.-]+", sdk_package):
+        raise ValueError("Invalid npm SDK package name")
     # Keep one copy of the domain-specific verifier in source control. The
     # generated tasks are portable: no symlinks or dependencies on this checkout.
     output = root / ".harbor" / "tasks"
@@ -20,14 +28,36 @@ def prepare(root: Path = ROOT) -> Path:
     source_tasks = sorted((root / "tasks").glob("*/task.json"))
     if not source_tasks:
         raise ValueError("No task contracts found")
+    available = {p.parent.name for p in source_tasks}
+    if selected and set(selected) - available:
+        raise ValueError(f"Unknown tasks: {sorted(set(selected) - available)}")
     for contract in source_tasks:
+        if selected and contract.parent.name not in selected:
+            continue
+        portable = json.loads((contract.parent / "experiment.json").read_text())[
+            "portable"
+        ]
+        if sdk_package != "mcp-use" and (
+            not portable or (contract.parent / "starter").exists()
+        ):
+            if selected:
+                raise ValueError(
+                    f"{contract.parent.name} requires an SDK-specific environment or API; select portable greenfield tasks"
+                )
+            continue
         source = contract.parent
         target = output / source.name
         if target.exists():
             shutil.rmtree(target)
-        for directory in ("environment", "tests/verifier", "solution"):
+        for directory in ("environment", "tests/verifier"):
             (target / directory).mkdir(parents=True)
-        prompt = (source / "prompt.md").read_bytes()
+        prompt = (
+            (source / "prompt.md")
+            .read_text()
+            .replace("{{sdk_package}}", sdk_package)
+            .replace("{{sdk_name}}", sdk_name)
+            .encode()
+        )
         (target / "instruction.md").write_bytes(prompt)
         config = json.loads(contract.read_text())
         if config.get("oauth") or config.get("agentEnvKeys"):
@@ -46,16 +76,14 @@ def prepare(root: Path = ROOT) -> Path:
             )
             dockerfile += "COPY starter/ /app/\n"
         (target / "environment/Dockerfile").write_text(dockerfile)
-        # Tests and oracle sources are uploaded by Harbor only in their phase;
-        # neither is placed in the agent's Docker build context.
+        # Tests are uploaded by Harbor only during verification.
         shutil.copy2(contract, target / "tests/task.json")
+        (target / "tests/experiment.json").write_text(
+            json.dumps({"sdk_package": sdk_package, "sdk_name": sdk_name})
+        )
         for name in ("package.json", "pnpm-lock.yaml", "tsconfig.json"):
             shutil.copy2(root / name, target / "tests/verifier" / name)
         shutil.copytree(root / "src", target / "tests/verifier/src")
-        shutil.copytree(source / "golden", target / "solution/golden", ignore=IGNORE)
-        (target / "solution/solve.sh").write_text(
-            "#!/bin/bash\nset -euo pipefail\ncp -a /solution/golden/. /app/\n"
-        )
         (target / "tests/test.sh").write_text(
             "#!/bin/bash\nset -euo pipefail\n"
             "mkdir -p /logs/verifier\n"
@@ -78,7 +106,18 @@ def prepare(root: Path = ROOT) -> Path:
             "build_timeout_sec = 600\n"
         )
         Task(target)  # Validate using the pinned SDK, including the input tree.
-    expected = {p.parent.name for p in source_tasks}
+    expected = {
+        p.parent.name
+        for p in source_tasks
+        if (not selected or p.parent.name in selected)
+        and (
+            sdk_package == "mcp-use"
+            or (
+                json.loads((p.parent / "experiment.json").read_text())["portable"]
+                and not (p.parent / "starter").exists()
+            )
+        )
+    }
     for stale in output.iterdir():
         if stale.is_dir() and stale.name not in expected:
             shutil.rmtree(stale)

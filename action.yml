@@ -18,13 +18,16 @@ inputs:
     default: '3'
   min-pass-rate:
     description: Required percentage of valid runtime trials passing
-    default: '80'
+    default: '0'
   analyze:
     description: Generate Harbor's agentic analysis after execution
     default: 'true'
-  verify:
-    description: Gate paid execution on the oracle solutions
-    default: 'true'
+  sdk-package:
+    description: npm SDK package requested in portable task prompts
+    default: mcp-use
+  sdk-name:
+    description: SDK display name (defaults to package name)
+    default: ''
   job-name:
     description: Unique job name; empty generates one
     default: ''
@@ -49,17 +52,14 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       run: uv sync --locked
-    - name: Verify golden solutions
-      if: inputs.verify == 'true'
-      shell: bash
-      working-directory: ${{ github.action_path }}
-      run: uv run --locked evals verify --concurrency 2
     - name: Run and analyze
       id: eval
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
         OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        IN_SDK_PACKAGE: ${{ inputs.sdk-package }}
+        IN_SDK_NAME: ${{ inputs.sdk-name }}
         IN_CONFIG: ${{ inputs.config }}
         IN_TASKS: ${{ inputs.tasks }}
         IN_ATTEMPTS: ${{ inputs.attempts }}
@@ -70,7 +70,7 @@ runs:
       run: |
         set -euo pipefail
         : "${OPENAI_API_KEY:?Set the openai-api-key input}"
-        args=(run --config "$IN_CONFIG" --attempts "$IN_ATTEMPTS"
+        args=(run --sdk-package "$IN_SDK_PACKAGE" --sdk-name "$IN_SDK_NAME" --config "$IN_CONFIG" --attempts "$IN_ATTEMPTS"
           --concurrency "$IN_CONCURRENCY" --min-pass-rate "$IN_MIN_PASS_RATE")
         IFS=',' read -ra tasks <<< "$IN_TASKS"
         for task in "${tasks[@]}"; do

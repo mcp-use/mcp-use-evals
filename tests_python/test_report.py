@@ -108,12 +108,6 @@ def test_threshold_uses_unrounded_rate_and_analysis_does_not_affect_it(tmp_path)
     assert "66.7%" in (tmp_path / "report.md").read_text()
 
 
-def test_oracle_requires_static_tasks_to_pass(tmp_path):
-    summary = summarize(make_job(tmp_path, ["pass", "static-fail"]))
-    assert gate(summary, 100)
-    assert not gate(summary, 100, oracle=True)
-
-
 def test_batch_weights_trials_and_rejects_missing_shards(tmp_path):
     make_job(tmp_path / "one", ["pass", "pass", "fail"])
     make_job(tmp_path / "two", ["pass"])

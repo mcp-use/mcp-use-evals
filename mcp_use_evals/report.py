@@ -48,6 +48,7 @@ def summarize(job_dir: Path) -> dict:
                 "failure": (error or {}).get("exception_type")
                 or grade.get("failureCode"),
                 "sdk_path": grade.get("sdkPath"),
+                "sdk": grade.get("sdk"),
                 "agent": trial.get("agent_info"),
                 "usage": trial.get("agent_result"),
             }
@@ -79,11 +80,9 @@ def summarize(job_dir: Path) -> dict:
     }
 
 
-def gate(summary: dict, min_pass_rate: float, *, oracle: bool = False) -> bool:
+def gate(summary: dict, min_pass_rate: float) -> bool:
     if not summary["complete"] or summary["invalid"]:
         return False
-    if oracle:
-        return summary["failed"] == 0 and summary["static_failed"] == 0
     return summary["pass_rate"] is not None and summary["pass_rate"] >= min_pass_rate
 
 
@@ -101,12 +100,15 @@ def write_report(job_dir: Path) -> dict:
         f"Static adoption (excluded): {summary['static_passed']} passed, "
         f"{summary['static_failed']} failed.",
         "",
-        "| Task | Result | First failure | SDK |",
-        "| --- | --- | --- | --- |",
+        "| Task | Result | First failure | SDK imports | Requested package version | Adopted |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for row in summary["trials"]:
+        sdk = row.get("sdk") or {}
+        installed = sdk.get("installedVersion") or "unknown"
+        adopted = sdk.get("importedRequestedSdk", "unknown")
         lines.append(
-            f"| {row['task']} | {row['outcome']} | {row['failure'] or '—'} | {row['sdk_path'] or '—'} |"
+            f"| {row['task']} | {row['outcome']} | {row['failure'] or '—'} | {row['sdk_path'] or '—'} | {installed} | {adopted} |"
         )
     lines.extend(
         [
