@@ -1,0 +1,26 @@
+[project]
+name = "mcp-use-evals"
+version = "0.1.0"
+description = "MCP SDK task contracts, executed and analyzed by Harbor"
+requires-python = ">=3.12"
+dependencies = ["harbor==0.23.0"]
+
+[project.scripts]
+evals = "mcp_use_evals.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_use_evals"]
+
+[dependency-groups]
+dev = ["pytest>=8.4,<9", "ruff>=0.15,<0.16"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests_python"]
+
+[tool.ruff]
+target-version = "py312"
+

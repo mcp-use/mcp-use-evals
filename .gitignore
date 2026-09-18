@@ -12,3 +12,12 @@ coverage/
 .vercel/
 .turbo/
 .DS_Store
+
+.harbor/
+.venv/
+jobs/
+analysis/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
