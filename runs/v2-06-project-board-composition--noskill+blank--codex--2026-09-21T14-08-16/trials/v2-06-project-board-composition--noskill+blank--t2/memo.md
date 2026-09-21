@@ -1,0 +1,7 @@
+The agent had initial SDK-discovery friction: it first queried npm with `npm view mcp-use readme --json`, then inspected the installed package directly via `sed -n '1,240p' node_modules/mcp-use/README.md` and declarations including `node_modules/mcp-use/dist/server.d.ts` and `resources.d.ts`. No skill file or external docs URL appears in the transcript; the implementation leaned on the package README and grepping/type declarations for `resource\(`, `listen\(`, and `streamable`.
+
+Verification lost time to hand-authored JSON: the first unknown-ID request returned `Invalid JSON`, and a follow-up parser check identified `SyntaxError: Unexpected non-whitespace character after JSON at position 122`. The agent then corrected the extra brace and obtained `"Issue 999 not found."`.
+
+A cleanup check also took an avoidable wrong turn because the blank workspace was not a Git repository: `git diff --check` failed with `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. Because it was chained with `&&`, that command stopped before the intended `git status --short` and source display.
+
+The server shutdown surfaced as a failed tool result despite being intentional: the running process ended with `exitCode":130` after the lifecycle checks. This did not affect the implementation, but it added noisy failure output alongside otherwise successful request logs such as `resources/read issue://999 /mcp 200` and `tools/call assign_issue /mcp 200`.
