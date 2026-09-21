@@ -1,0 +1,9 @@
+The repair itself was direct after inspecting `src/server.ts`: the scaffold explicitly exposed the mutation bugs with comments such as `// BUG: a reservation should decrease stock, not increase it.` and `// BUG: this copy is discarded after the call, so restocks are not shared.`
+
+There was avoidable SDK-discovery friction because the agent searched dependencies before installing them; the first lookup returned `node_modules/mcp-use: No such file or directory`. After `npm install`, it leaned on installed SDK declarations, searching `node_modules/mcp-use/dist/config.d.ts` and `node_modules/mcp-use/dist/server.d.ts` for `class MCPServer`, `listen(`, `streamable`, `http`, and `port`. No skill file or fetched docs URL appears in the transcript.
+
+The combined verification command obscured its result: `npx tsc --noEmit && ... rg ...` exited with `exitCode":1,"output":""`, yet the agent inferred `Typechecking now passes.` This was likely the trailing README search failing, but combining both checks made the failure ambiguous.
+
+Live JSON-RPC verification was thorough and confirmed persistent state in one process: responses included `Reserved 3 of coffee-mug`, `insufficient stock for coffee-mug`, `Restocked 4 of coffee-mug`, `SKU unknown-sku not found`, and final inventory `coffee-mug: 9\ndesk-lamp: 2`. The server command later ended with `exitCode":130`, which was consistent with stopping the long-running process but surfaced as a failed tool result.
+
+The final diff check was another unnecessary dead end because the workspace was not a repository: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. The agent recovered by directly printing `src/server.ts`, but `git diff` and `git status` provided no useful validation.
