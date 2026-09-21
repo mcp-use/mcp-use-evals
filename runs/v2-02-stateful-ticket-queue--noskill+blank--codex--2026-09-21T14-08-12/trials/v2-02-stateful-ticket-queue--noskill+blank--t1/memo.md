@@ -1,0 +1,9 @@
+The agent relied on package-local discovery rather than a skill or fetched docs: it queried `npm view mcp-use version description repository.url --json`, then inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/index.d.ts`, and `dist/tools.d.ts` to determine the `MCPServer`, `tool`, and `listen` APIs. This worked, but required several exploratory calls, including `rg -n "listen\\(|serve|streamable|mount"` across declarations and the README.
+
+Dependency setup had minor churn: it first ran `npm install mcp-use@2.5.1 zod@3`, then separately replaced that with `npm install zod@4`; the transcript does not explain the compatibility requirement that prompted the switch.
+
+The first typecheck failed despite `@types/node` already being installed: `Cannot find name 'process'. Do you need to install type definitions for node? ... add 'node' to the types field in your tsconfig.` The agent corrected `tsconfig.json` and the next `npx tsc --noEmit` passed, suggesting a small scaffold/configuration papercut rather than an SDK issue.
+
+Lifecycle verification was thorough and directly exercised raw streamable-HTTP JSON-RPC with `curl ... http://127.0.0.1:3100/mcp`; it additionally checked repeat-claim idempotence, receiving `Ticket 2 claimed.` twice. However, stopping the background server surfaced as a failed tool result, `exitCode":130`, even though the logs showed successful calls such as `tools/call close_ticket /mcp 200`, which could create noisy false-failure signals.
+
+The final cleanup check was an avoidable wrong turn: `git diff --check && git status --short` failed with `Not a git repository`, producing a large usage dump after implementation and verification were already complete.
