@@ -1,0 +1,7 @@
+The main friction was API discovery: the agent first queried npm metadata with `npm view mcp-use version description repository.url dist-tags --json && npm view mcp-use readme --json`, then inspected installed declarations via `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and searched for `"resourceTemplate|resources/list|server.listen"`. No skill file or external docs URL was used; the implementation leaned on `node_modules/mcp-use/dist/*.d.ts`.
+
+The only substantive implementation setback was TypeScript’s Node globals configuration. Although `@types/node@26.6.2` was installed, typechecking failed with `Cannot find name 'process'. Do you need to install type definitions for node?` The agent inspected `tsconfig.json`, added the needed configuration, and the next `npx tsc --noEmit` succeeded.
+
+Verification was thorough but somewhat manual and tool-call-heavy: separate raw `curl` requests covered `initialize`, `resources/list`, `resources/templates/list`, index/page/unknown reads, two searches, and `tools/list`. This exposed streamable HTTP behavior directly—`content-type: text/event-stream`—but required repeatedly constructing JSON-RPC payloads rather than using an MCP client.
+
+Two harmless cleanup checks produced noisy failures. Killing the test server made its foreground tool report `exitCode:143` even though shutdown was intentional, after `kill 540 553`. The final repository inspection also failed because the blank workspace was not a Git checkout: `fatal: not a git repository (or any of the parent directories): .git`.
