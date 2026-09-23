@@ -1,0 +1,7 @@
+The decisive miss was response casing: `src/server.ts` returns ``text: `record ${id}```, while the grader reports ``"record R-1" did not match ... "Record R-1"``. The agent’s live verification repeated the lowercase behavior—`"text":"record r-1"`—but concluded broadly that “`The live endpoint now accepts a read`,” so it checked protocol success rather than the expected payload text.
+
+API discovery relied heavily on installed declarations: the agent ran `rg -n "class MCPServer|MCPServer|...|use\(" node_modules/mcp-use/dist` and then inspected `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`. It also queried package metadata with `npm view mcp-use@2.0.4 ... --json`; no fetched docs URL or skill-file use appears in the transcript.
+
+There was minor dependency churn: it first ran `npm install mcp-use@2.0.4 zod@'^3.24.0'`, then separately ran `npm install zod@'^4.0.0'`. It also pinned `mcp-use` only at the end with `npm install --save-exact mcp-use@2.0.4`, despite initially installing the requested version.
+
+The blank workspace caused a nonessential final check to fail: `git status --short && git diff --check` produced `fatal: not a git repository`. The substantive middleware and audit verification itself was successful, with the denied call returning `"approval required"` and the resource returning `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
