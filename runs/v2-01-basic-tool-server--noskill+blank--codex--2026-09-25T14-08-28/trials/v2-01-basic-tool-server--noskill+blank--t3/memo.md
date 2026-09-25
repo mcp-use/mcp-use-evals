@@ -1,0 +1,7 @@
+The agent had to discover the API from the installed package rather than from readily surfaced README guidance: it inspected `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, and `config.d.ts`, then relied on the declaration that “`Port precedence is the argument, PORT, config.port, then 3000`.” Its initial `npm view mcp-use readme --json` produced no README content beyond package metadata, prompting this deeper inspection.
+
+One exploratory command took a wrong turn by assuming a file existed: `rg: node_modules/mcp-use/dist/server.js: No such file or directory (os error 2)`, and because the chained command exited with code 2, the agent had to rerun narrower declaration-file reads.
+
+Verification also incurred avoidable scaffold/environment friction. The combined command `npx tsc --noEmit && git diff --check && git diff ...` exited 129 because “`Not a git repository`,” even though the agent subsequently stated “`Typechecking is clean.`” This made a successful typecheck look like a failed verification command and required separate runtime validation.
+
+The final server check was thorough: `tools/list` exposed numeric fields, `add(12.5, 7.5)` returned “`"text":"20"`,” and invalid input produced “`expected number, received string`.” Stopping the foreground server yielded `exitCode:130` and status “`failed`,” which is noisy despite being consistent with intentional interruption after testing.
