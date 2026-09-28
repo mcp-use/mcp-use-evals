@@ -1,0 +1,5 @@
+API discovery relied on npm metadata and installed declarations rather than a skill or fetched docs: the agent ran `npm view mcp-use version description repository.url dist-tags --json`, then inspected `node_modules/mcp-use/dist/server.d.ts` and searched `rg -n "listen\\(" ...`; the declaration exposed `listen(port?: number | undefined, options?: ListenOptions)`.
+
+The main wrong turn was in the custom SSE verification harness. Its first lifecycle attempt failed with `Error: initialize returned no MCP message` even though the body visibly contained `event: message` and `data: {...}`. The agent correctly diagnosed this as `a parsing issue in my verification harness (not the server)` and reran with corrected newline splitting, after which the complete lifecycle output succeeded.
+
+There was also an avoidable repository check at the end: `git status --short && git diff --check` failed because `fatal: not a git repository (or any of the parent directories): .git`. This did not affect the implementation but added a failed tool call in a blank workspace.

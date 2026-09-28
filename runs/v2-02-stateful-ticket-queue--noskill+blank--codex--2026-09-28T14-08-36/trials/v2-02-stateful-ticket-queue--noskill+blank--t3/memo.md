@@ -1,0 +1,9 @@
+The agent relied on package-local documentation and API inspection rather than a skill file: it read `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, and searched implementation files with `rg -n "listen\\(" node_modules/mcp-use/...`. This discovery worked, but required several exploratory commands before settling on `MCPServer.listen`.
+
+The first typecheck failed because the npm scaffold defaulted to CommonJS while the server used top-level await: `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent inspected `package.json` and modified it before `npx tsc --noEmit` succeeded, showing friction from `npm init -y` producing `"type": "commonjs"`.
+
+Most lost time came from the custom lifecycle harness rather than server implementation. The first port-3100 test raced server startup and failed with `connect ECONNREFUSED 127.0.0.1:3100`. After restarting interactively, the next harness attempt mishandled SSE line parsing and reported `Error: No MCP response event`, even though the body visibly contained `event: message` and `data: {...}`. Replacing the split logic with `body.match(/data: (.*)/)?.[1]` finally produced the complete successful lifecycle output.
+
+Process management was also awkward: killing the original background server caused the combined command to be recorded as `exitCode":143`, and the replacement server similarly ended with `exitCode":143` after verification. A final cleanup was needed using `kill 571 586 597`.
+
+The final validation command unnecessarily assumed a Git repository; `git diff --check` emitted `warning: Not a git repository` plus the full usage text, interrupting that check chain despite the project itself being valid.
