@@ -1,0 +1,7 @@
+The agent had to discover the SDK API by inspecting installed package declarations rather than using a skill or fetched documentation: it ran `sed -n '1,240p' node_modules/mcp-use/dist/server.d.ts` and searched for `listen\(`, `ServerConfig`, and `basePath` across `node_modules/mcp-use/dist/{server,config,tools}.d.ts`.
+
+The generated npm scaffold initially conflicted with the ESM-style server: `npm init -y` produced `"type": "commonjs"`, and the first typecheck failed with `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` TypeScript also did not recognize Node globals despite `@types/node` being installed, reporting `Cannot find name 'process'` and advising to `add 'node' to the types field in your tsconfig`; the agent then modified both `package.json` and `tsconfig.json`.
+
+A bundled verification command introduced unrelated noise after typechecking: `npx tsc --noEmit && git diff --check && git status --short` exited 129 because `Not a git repository`, obscuring the successful first stage and requiring continued verification separately.
+
+The protocol verification itself was direct and effective: the initialization request returned `"serverInfo":{"name":"addition-server","version":"1.0.0"}`, the tool call returned `"text":"41.75"`, and `tools/list` exposed numeric properties with `"required":["a","b"]`. The foreground server process ended with exit code 130 after shutdown, shown alongside `MCP server listening at http://localhost:3100/mcp`, which is benign but surfaced as a failed tool result.
