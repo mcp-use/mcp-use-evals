@@ -1,0 +1,7 @@
+The decisive miss was the read-tool response’s capitalization: `src/server.ts` returns ``text: `record ${id}```, while the grader required a value containing `Record R-1`; the agent’s own live check exposed `"text":"record alpha"` but did not prompt a correction.
+
+The agent relied heavily on installed-package inspection rather than external docs: it opened `node_modules/mcp-use/README.md`, then examined `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`. This did surface the key middleware guidance: `Middleware runs in registration order; call next() to continue the chain.` It also grepped implementation/type files with `rg -n "params\\.arguments|approval required|McpMiddleware"` to confirm API shape.
+
+Verification had a minor false start: the combined curl command ended with `Invalid JSON`, after the read and delete calls had otherwise succeeded. The agent recovered by separately issuing `resources/read` and `tools/list`, obtaining the expected audit text: `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+A final repository check also took an avoidable wrong turn because the workspace was not a Git repository: `fatal: not a git repository (or any of the parent directories): .git`. The agent then reran the checks with `git diff --check 2>/dev/null || true` and successfully repeated `npx tsc --noEmit`.
