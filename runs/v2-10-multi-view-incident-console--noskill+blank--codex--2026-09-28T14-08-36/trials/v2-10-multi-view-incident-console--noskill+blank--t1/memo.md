@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry at root as `index.ts`; the produced source is `index.ts`, while the deterministic check searched `src/server.ts` and `src/index.ts` and reported `entry: FAIL — no entry file found`. This is especially notable because the agent investigated entry conventions with `rg -n "mcp-env|index\\.ts|entry.*index|views/" node_modules/...`, but followed the CLI’s successful message, `[mcp-use] built index.ts + views ...`, rather than creating a conventional `src/` entry.
+
+The agent relied heavily on package internals rather than a skill or fetched documentation: it read `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, `dist/views/types.d.ts`, and `dist/react/hooks/use-tool-context.d.ts`. That exploration still missed the grader-facing entry convention.
+
+Typed view setup caused one repair cycle. Initial typechecking reported `Property 'id' does not exist on type '{}'` and `'context.toolOutput' is of type 'unknown'`; the agent then created `mcp-env.d.ts` with `tools: typeof import("./index.js")`, after which `npx tsc --noEmit` passed. This registration requirement was not established before implementing the views.
+
+Startup also required a configuration correction. The first start failed with `Cannot use import statement outside a module` and `Make sure to set "type": "module"`, prompting a `package.json` modification; the final package shows `"type": "module"`.
+
+Protocol verification encountered an avoidable client-install papercut. `npx mcp-use client connect` printed `[mcp-use] installing @mcp-use/client…` but immediately afterward said `@mcp-use/client is not installed`, requiring an explicit `npm install @mcp-use/client`. The installed client was `@mcp-use/client: "^2.3.3"` while the requested server SDK remained `"mcp-use": "2.0.4"`, and server logs likewise identified requests as `mcp-use/2.3.3`.
+
+A final verification command also failed for an unrelated assumption: `git status --short` produced `fatal: not a git repository`, although the preceding build had succeeded.
