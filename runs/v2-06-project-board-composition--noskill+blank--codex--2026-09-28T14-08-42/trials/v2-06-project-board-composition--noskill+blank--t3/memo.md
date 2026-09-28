@@ -1,0 +1,11 @@
+The agent had substantial SDK/API discovery friction and relied on installed-package inspection rather than a skill or fetched docs: it ran `npm view mcp-use version description repository.url`, read `node_modules/mcp-use/README.md`, and inspected `node_modules/mcp-use/dist/server.d.ts` plus `resources.d.ts`.
+
+The initial scaffold introduced conflicting module metadata: `package.json` contained both `"type": "module"` and `"type": "commonjs"`. This caused the first typecheck to fail with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`, despite `@types/node` already being installed (`node-types-present`). The agent then modified both `package.json` and `tsconfig.json`.
+
+A combined verification command obscured a successful typecheck behind an unrelated failure: `npx tsc --noEmit && git diff` exited because `warning: Not a git repository`. This was avoidable in the blank workspace.
+
+Most time was lost manually reverse-engineering the newer HTTP protocol envelope. Requests successively failed because they were missing `_meta`, then `io.modelcontextprotocol/protocolVersion` and `io.modelcontextprotocol/clientCapabilities`, then the `Mcp-Method` header: `the required Mcp-Method header is absent`. Resource verification exposed another undocumented requirement: `the required Mcp-Name header is absent`. The agent searched bundled implementation code with `rg -n "required per-request envelope|protocolVersion|clientInfo" node_modules/mcp-use/dist/*.js`, indicating the SDK’s transport requirements were not obvious from the initial declarations/README inspection.
+
+The first lifecycle script also failed because `tsx -e` emitted CommonJS: `Top-level await is currently not supported with the "cjs" output format`; wrapping it in `void (async () => { ... })` fixed that. The next attempt still failed on the missing `Mcp-Name` header before the final script passed all checks.
+
+Process cleanup required two kills: after `kill 507`, `ps` still showed `520 node node_modules/.bin/tsx src/server.ts`, so the child process had to be killed separately.
