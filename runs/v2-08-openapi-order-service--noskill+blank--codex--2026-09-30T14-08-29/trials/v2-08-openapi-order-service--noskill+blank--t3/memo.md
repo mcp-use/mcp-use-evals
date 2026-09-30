@@ -1,0 +1,9 @@
+The agent relied heavily on installed package declarations and implementation discovery rather than a skill file or fetched documentation: it searched `node_modules/mcp-use` with `rg -n "fromOpenAPI|streamable|Streamable|HTTP"` and inspected `node_modules/mcp-use/dist/server.d.ts`, `dist/openapi/types.d.ts`, and `README.md`. It also checked package metadata first via `npm view mcp-use@2.0.4 version dependencies peerDependencies dist.tarball`.
+
+Client API discovery took several exploratory commands and one wrong path: `sed: can't read node_modules/@modelcontextprotocol/client/dist/esm/client/streamableHttp.d.ts: No such file or directory`. The package’s bundled/chunked declaration layout prompted further searches such as `find node_modules/@modelcontextprotocol/client/dist -maxdepth 2 -type f` and `rg -n "Streamable" node_modules/@modelcontextprotocol/client/dist`.
+
+Lifecycle verification initially failed because `tsx -e` emitted CommonJS and rejected top-level await: `Top-level await is currently not supported with the "cjs" output format`. The agent worked around this by wrapping the same test in `void (async () => { ... })();`, after which it successfully listed and called the tools.
+
+A final repository inspection also took an avoidable wrong turn because the blank workspace was not a Git checkout: `fatal: not a git repository (or any of the parent directories): .git`. The combined command stopped before its package-lock and source checks, so the agent reran them separately and confirmed `{"installed":"2.0.4","requested":"2.0.4"}`.
+
+The implementation itself used the SDK’s generated-body convention, discovered from package internals, with verification calling `createOrder` using `{ body: { sku: "green-tea", quantity: 2 } }`; this is a mild API surprise because path/query parameters were top-level while the JSON payload was nested under `body`.
