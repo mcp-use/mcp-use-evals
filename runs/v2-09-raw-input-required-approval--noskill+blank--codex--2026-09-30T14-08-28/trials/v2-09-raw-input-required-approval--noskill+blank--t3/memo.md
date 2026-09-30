@@ -1,0 +1,9 @@
+The decisive miss was the decline-action wording: `src/server.ts` returns `terminalError("Deployment approval was not granted.")` for `response.action === "decline" || response.action === "cancel"`, while only the separate `approve: false` branch says `"Deployment approval was declined."`. The agent’s own verification printed `{"text":"Deployment approval was not granted.","isError":true}`, but it concluded, `Declined retry returned one isError: true terminal result`, without checking that the message explicitly contained “decline.”
+
+Discovery relied heavily on installed package internals rather than a skill file or fetched docs: it ran `rg -n "inputRequired|inputResponse|acceptedContent|streamable" node_modules/mcp-use` and inspected `node_modules/@modelcontextprotocol/server/dist/createMcpHandler-CLhGwQTn.d.mts`; the bundled README supplied the basic registration example under `## Quickstart`. The transcript shows no external docs fetch.
+
+Several verification detours added friction. A raw HTTP call hit protocol-era behavior rather than the intended flow: `Cannot request input 'deployment-approval' ... the client on this 2025-era connection did not declare the required capability`. The agent then had to discover and use `versionNegotiation:{mode:{pin:"2026-07-28"}}` plus `{allowInputRequired:true}`. Its first client script also failed because `Top-level await is currently not supported with the "cjs" output format`, requiring an async-IIFE retry.
+
+Type inference caused one implementation correction: the first `npx tsc --noEmit` failed because `structuredContent` inferred `deployed: boolean` instead of the declared literal `deployed: true`; the produced source addresses this with `deployed: true as const` at `src/server.ts`.
+
+There was also minor environment-check noise: `git diff --check` failed with `warning: Not a git repository`, despite the task not requiring Git.

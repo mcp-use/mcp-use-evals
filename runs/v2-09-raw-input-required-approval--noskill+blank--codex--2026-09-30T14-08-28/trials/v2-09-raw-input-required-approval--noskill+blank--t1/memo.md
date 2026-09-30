@@ -1,0 +1,9 @@
+The decisive miss was the decline-action message: `src/server.ts` returns `terminalError("Deployment was not approved.")`, while the false-approval branch separately returns `terminalError("Deployment was declined.")`. The grader specifically reports that `"Deployment was not approved." did not match {"type":"contains","value":"decline"}`, so using consistent “declined” wording would have avoided the failure.
+
+The agent did manually exercise the decline path, but only checked that it was terminal rather than validating the expected wording: the response was `"text":"Deployment was not approved."` with `"isError":true`, followed by the conclusion, `"Declined approval returned one terminal error result, with no further input request."`
+
+API discovery consumed substantial effort through installed-package inspection. The agent ran `rg -n "inputRequired|inputResponse|acceptedContent|streamable" node_modules/mcp-use`, inspected `node_modules/mcp-use/dist/index.d.ts`, `server.d.ts`, and then searched implementation bundles for `function acceptedContent` and `const inputRequired`. No skill file or external docs URL appears; the resources used were package declarations, bundled source, and README searches such as `rg ... node_modules/mcp-use/README.md`.
+
+Manual HTTP verification also hit protocol-version friction. The first initialize request failed with `"the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header"`. The agent then dug through SDK internals for `"DiscoverRequestSchema"`, `"MCP-Protocol-Version"`, and reserved metadata keys before constructing modern requests with headers such as `'Mcp-Method: tools/call'` and `_meta` containing `"io.modelcontextprotocol/protocolVersion":"2026-07-28"`.
+
+Cleanup produced minor avoidable noise: killing the verification process yielded `exitCode:143`, and `git status --short` failed with `"fatal: not a git repository"`.
