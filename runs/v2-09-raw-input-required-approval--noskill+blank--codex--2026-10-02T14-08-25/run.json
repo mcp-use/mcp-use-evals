@@ -1,0 +1,105 @@
+{
+  "runId": "v2-09-raw-input-required-approval--noskill+blank--codex--2026-10-02T14-08-25",
+  "batchId": "37017568115-1",
+  "startedAt": "2026-10-02T14:08:25.362Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-09-raw-input-required-approval": "61022f05de83"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": null,
+      "memoPath": null,
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-10-02T14:08:25.386Z",
+      "error": "agent run reported success but consumed zero input/output tokens — no model turn occurred",
+      "valid": false,
+      "grade": {
+        "contractPass": false,
+        "checks": [],
+        "failureCode": "infra.agent",
+        "sdkPath": "unknown",
+        "scoredForPassRate": false
+      },
+      "perf": {
+        "durationMs": null,
+        "turns": null,
+        "tokensIn": null,
+        "tokensOut": null,
+        "toolCalls": null,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": null,
+      "memoPath": null,
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-10-02T14:08:49.904Z",
+      "error": "agent run reported success but consumed zero input/output tokens — no model turn occurred",
+      "valid": false,
+      "grade": {
+        "contractPass": false,
+        "checks": [],
+        "failureCode": "infra.agent",
+        "sdkPath": "unknown",
+        "scoredForPassRate": false
+      },
+      "perf": {
+        "durationMs": null,
+        "turns": null,
+        "tokensIn": null,
+        "tokensOut": null,
+        "toolCalls": null,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-09-raw-input-required-approval",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "61022f05de83",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": null,
+      "memoPath": null,
+      "transcriptPath": "trials/v2-09-raw-input-required-approval--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-10-02T14:08:57.432Z",
+      "error": "agent run reported success but consumed zero input/output tokens — no model turn occurred",
+      "valid": false,
+      "grade": {
+        "contractPass": false,
+        "checks": [],
+        "failureCode": "infra.agent",
+        "sdkPath": "unknown",
+        "scoredForPassRate": false
+      },
+      "perf": {
+        "durationMs": null,
+        "turns": null,
+        "tokensIn": null,
+        "tokensOut": null,
+        "toolCalls": null,
+        "costUsd": null
+      }
+    }
+  ]
+}
