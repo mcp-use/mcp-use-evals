@@ -1,0 +1,7 @@
+The agent relied first on npm package metadata and the bundled README via `npm view mcp-use readme --json`, which exposed the documentation link `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`; it then inspected the installed package with `rg -n "listen\\(|serve\\(|Streamable|streamable" node_modules/mcp-use/dist node_modules/mcp-use`. This suggests some API-discovery friction, though it quickly concluded that the SDK provides a native `listen()` method and `/mcp` endpoint.
+
+Verification lost time because the initial background launch did not survive: the first request failed with `curl: (7) Failed to connect to 127.0.0.1 port 3100`, and the agent explained, `The first background process was reaped with its shell`. It then confirmed startup using `PORT=3100 timeout 8s npx tsx src/server.ts`, whose expected long-running behavior produced `exitCode":124`, before restarting in a persistent session.
+
+A final hygiene command also took an avoidable wrong turn: `git diff --check && git status --short && npm ls --depth=0` failed because the blank workspace was `Not a git repository`, returning exit code 129 and preventing the chained dependency check from running. The agent recovered by invoking `npm ls --depth=0` separately.
+
+Despite those papercuts, protocol verification was direct: the initialize request returned server info for `"name":"add-server"`, and `tools/call` returned `"text":"41.75"` with `"structuredContent":{"sum":41.75}`.
