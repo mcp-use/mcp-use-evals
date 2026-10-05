@@ -1,0 +1,9 @@
+The agent spent time discovering the SDK API rather than relying on a scaffold: it queried the npm README (`npm view mcp-use readme`) and then grepped installed declarations with `rg -n "class MCPServer|listen\\(|serve\\(|streamable|Streamable" node_modules/mcp-use/dist`. This led it to the direct API conclusion, `"The SDK’s current server API provides streamable HTTP directly through MCPServer.listen()."`
+
+The first typecheck failed despite `@types/node` being installed because the initial TypeScript configuration did not include Node types: `error TS2591: Cannot find name 'process'` followed by `Try npm i --save-dev @types/node and then add 'node' to the types field in your tsconfig.` The agent inspected `npm ls @types/node typescript tsx` and `tsconfig.json`, modified the config, and the next `npx tsc --noEmit` passed.
+
+Its first protocol verification made an incorrect session-state assumption. Initialization succeeded, but the script aborted with `Error: Server did not create an MCP session`. The agent then switched to sessionless requests, after which the lifecycle test passed. This suggests the SDK’s streamable HTTP behavior was not obvious from the API declarations the agent inspected.
+
+A final hygiene command also took an avoidable wrong turn: `git diff --check && git status --short && npx tsc --noEmit` failed immediately because `warning: Not a git repository`, preventing the chained typecheck from running. The agent recovered by separately running `npx tsc --noEmit`.
+
+The manually started server command was recorded as failed after shutdown, with output ending in `^C` and `"exitCode":1`, even though its logs showed successful calls such as `tools/call create_ticket /mcp 200`; this is a minor verification-harness papercut rather than an implementation failure.
