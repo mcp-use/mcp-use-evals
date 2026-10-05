@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the entry at root `index.ts`; the grader only tried `src/server.ts` and `src/index.ts`, while the final file listing showed `./index.ts`. This was encouraged by the installed README’s scaffold wording, `Replace its index.ts with a view-bound tool like this`, and local CLI auto-discovery appeared successful with `[mcp-use] built index.ts + views`, masking the grader incompatibility.
+
+The agent leaned heavily on package-local discovery rather than a skill file: it queried `npm view mcp-use@2.0.4`, grepped `node_modules/mcp-use/README.md` and declarations with `rg -n "registerTool|registerApp|ui://|App"`, and inspected CLI help via `npx mcp-use --help`. That research also hit a dead path: `rg: node_modules/@mcp-use/ext-apps: No such file or directory`.
+
+Typing required an SDK-specific generation step that was not obvious from plain `tsc`: initial errors said `'context.toolOutput' is of type 'unknown'`, after which `npx mcp-use typecheck` reported `[mcp-use] created mcp-env.d.ts`; only then did `npx tsc --noEmit` pass.
+
+A package-editing mistake created duplicate module declarations—`"type": "module"` and later `"type": "commonjs"`—causing startup to fail with `Cannot use import statement outside a module`. The agent diagnosed this by printing `package.json`, then modified it and rebuilt.
+
+Protocol verification consumed extra attempts because the custom SSE parser first failed with `Error: tools/list failed: event: message`, and two subsequent checks failed with `Error: View marker missing`. The eventual check only reported `MCP verification passed.` after several repeated `tools/list`, `resources/list`, tool-call, and resource-read requests. The server process exits shown as `exitCode":130` were manual termination artifacts despite logs saying `mcp-use server running at http://localhost:3100/mcp`.
