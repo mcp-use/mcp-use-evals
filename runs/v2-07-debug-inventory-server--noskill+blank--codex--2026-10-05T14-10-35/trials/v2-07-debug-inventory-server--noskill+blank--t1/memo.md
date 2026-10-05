@@ -1,0 +1,7 @@
+The repair itself was direct: the agent identified that “`unknown-SKU paths throw, reservations add instead of subtract, and restocks mutate a temporary copy`,” then corrected those localized defects in `src/server.ts`.
+
+SDK discovery had some friction because dependencies were initially absent: grepping returned `node_modules/mcp-use: No such file or directory`, forcing an `npm install` before API inspection. The agent then leaned on installed package internals rather than a skill file or external docs, inspecting `node_modules/mcp-use/dist/server.d.ts` and `node_modules/mcp-use/README.md`; the declaration’s example explicitly showed `await server.listen(3000);`. This confirmed the listener shape used in `src/server.ts`: `await server.listen(port);`.
+
+Verification took an avoidable wrong turn when the first `PORT=3100 npx tsx src/server.ts` remained running and the agent immediately attempted to start another instance. The duplicate failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. Process management then required `fuser`, `pgrep`, and explicit `kill 434 447`, while server tool sessions surfaced as failed with `exitCode":143` despite successful MCP calls. The agent also restarted once more on port 3000 solely to verify the default, then again had to find and kill `536` and `549`.
+
+The initial repository-inspection command also unnecessarily failed because `git status --short` was chained in a non-git directory, producing `fatal: not a git repository`; subsequent inspection had to be issued separately.
