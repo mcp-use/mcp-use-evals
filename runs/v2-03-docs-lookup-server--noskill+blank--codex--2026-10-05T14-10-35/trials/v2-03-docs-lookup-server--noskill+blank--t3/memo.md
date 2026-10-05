@@ -1,0 +1,7 @@
+The agent had discovery friction in the blank workspace (`total 8 ... . ..`): it first queried npm with `npm view mcp-use version description repository.url` and fetched the package README, which pointed to `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`. It then relied on installed-package inspection rather than a skill file, grepping `node_modules/mcp-use` for `"resource\\(|resources|listen\\(|Streamable|streamable"` and reading `dist/resources.d.ts`, `dist/server.d.ts`, and `dist/config.d.ts` to determine the resource and listener APIs.
+
+The main implementation wrong turn was TypeScript configuration: although `@types/node` had been installed, the first `npx tsc --noEmit` failed with `Cannot find name 'process'` and explicitly suggested adding `'node' to the types field in your tsconfig`; the agent then modified `tsconfig.json`, after which typechecking passed.
+
+End-to-end verification was thorough but manually repetitive: the agent issued separate raw `curl` JSON-RPC requests for `initialize`, `resources/list`, multiple `resources/read` calls, `tools/list`, and two `tools/call` checks. Process cleanup surfaced as a nominal failed tool result—`"exitCode":130`—even though its output confirmed `Documentation Lookup MCP server listening at http://localhost:3100/mcp`.
+
+The final repository check was an avoidable dead end in this scaffold: `git status --short && git diff --check` failed with `fatal: not a git repository`, and because it used `&&`, the trailing source grep did not run.
