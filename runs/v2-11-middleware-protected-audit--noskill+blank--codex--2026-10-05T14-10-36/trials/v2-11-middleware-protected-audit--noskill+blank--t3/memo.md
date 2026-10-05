@@ -1,0 +1,7 @@
+The main miss was response-text compatibility: `src/server.ts` returns ``text: `Read record ${id}``` and ``text: `Deleted record ${id}```, while the deterministic checks required substrings `Record R-1` and `deleted R-1`; the capitalization and extra “Read” caused both call failures. The agent’s own verification reproduced these outputs—`"Read record record-1"` and `"Deleted record record-1"`—but concluded only that the calls were “allowed,” so it did not scrutinize exact result text.
+
+There was dependency-version friction around typed schemas. The first typecheck failed because Zod lacked the required Standard JSON Schema support: `Property 'jsonSchema' is missing`, after which the agent modified `package.json`, reinstalled, and reported, `TypeScript now passes with Zod 4, which mcp-use’s typed schema interface requires.` This added an install/typecheck iteration that clearer compatibility guidance could avoid.
+
+With no skill resource used, the agent discovered API shape by grepping the installed package: `rg -n "class MCPServer|use\\(|streamable|tool\\(|resource\\(" node_modules/mcp-use`, then inspected `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, `resources.d.ts`, and `config.d.ts`. That worked, but required several broad searches before implementation.
+
+The final verification command also mixed successful protocol checks with an irrelevant repository check, causing an otherwise useful command to exit unsuccessfully: `fatal: not a git repository (or any of the parent directories): .git`.
