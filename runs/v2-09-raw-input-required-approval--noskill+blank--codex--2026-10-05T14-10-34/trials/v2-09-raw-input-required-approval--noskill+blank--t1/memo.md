@@ -1,0 +1,9 @@
+The main correctness miss was the explicit decline-action message: `src/server.ts` returns `terminalError("Deployment was not approved.")` for `response.action === "decline" || response.action === "cancel"`, while only an accepted response with `approve: false` returns `terminalError("Deployment was declined.")`. This distinction caused the deterministic failure because the decline result did not contain `decline`.
+
+API discovery consumed substantial effort through installed-package inspection rather than a skill file or fetched docs. The agent repeatedly searched declarations and bundles, including `rg -n "inputRequired|inputResponse|acceptedContent|streamable" node_modules/mcp-use`, `sed -n '1368,1515p' node_modules/@modelcontextprotocol/server/dist/createMcpHandler-dBHMsxwf.d.cts`, and searches for `inputResponses` in `src-CX2iR2pK.mjs`.
+
+Manual HTTP verification exposed protocol papercuts through three successive 400 responses. The first required a per-request envelope: `request is missing the required per-request envelope key(s): _meta`. After adding that, the server required an additional header: `the required Mcp-Method header is absent`. After adding it, another header was required: `the required Mcp-Name header is absent`. The fourth attempt finally returned the requested form.
+
+The agent did exercise both terminal branches, but its verification accepted a semantically generic decline message without checking the requested wording signal: the live response was `"text":"Deployment was not approved."`, followed by the conclusion that it was a valid `terminal isError: true result after a decline`. A more assertion-oriented test checking for “decline” would have caught the grader mismatch.
+
+The final cleanup command also unnecessarily assumed Git metadata and failed with `fatal: not a git repository (or any of the parent directories): .git`, despite typechecking having already succeeded earlier with `npm install && npx tsc --noEmit`.
