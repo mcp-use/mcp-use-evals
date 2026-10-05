@@ -1,0 +1,9 @@
+The agent had API-discovery friction and relied first on the npm README (`npm view mcp-use readme`) and then extensively inspected installed declarations, including `sed -n '1,240p' node_modules/mcp-use/dist/server.d.ts` and searches for `StreamableHTTPClientTransport` under `node_modules/@modelcontextprotocol/client/dist`; no skill file or fetched docs page appears in the transcript.
+
+The initial scaffold retained CommonJS mode (`"type": "commonjs"`), causing the first typecheck to fail with `TS1470: The 'import.meta' meta-property is not allowed in files which will build into CommonJS output` and `TS1309: ... cannot use 'await' at the top level`; the agent then modified `package.json`.
+
+Process management consumed several attempts. Running `npx tsc --noEmit && PORT=31337 npx tsx src/server.ts` left a server alive, so the next start failed with `EADDRINUSE: address already in use 127.0.0.1:31337`. A later background launch disappeared before verification, producing `fetch failed` with `ECONNREFUSED 127.0.0.1:31338`. Cleanup also required escalation: after `kill 817 860 871`, `node node_modules/.bin/tsx src/server.ts` remained, followed by `kill -9 860`.
+
+The SDK unexpectedly wrote local telemetry identity state: the final directory listing showed `.mcp-use`, and inspection found `.mcp-use/usage.json` containing `{"schemaVersion":1,"serverId":"f9b5a4f1-205f-4f9a-90af-b153ad935152"}`. The agent had to grep bundled SDK code for `MCP_USE_ANONYMIZED_TELEMETRY` and add `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` in `src/server.ts`, indicating a filesystem-side-effect papercut for an explicitly in-memory task.
+
+One unrelated final check also failed because the blank workspace was not a repository: `fatal: not a git repository (or any of the parent directories): .git`.

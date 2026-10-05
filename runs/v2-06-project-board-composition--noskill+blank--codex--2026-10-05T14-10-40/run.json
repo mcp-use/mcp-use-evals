@@ -1,0 +1,360 @@
+{
+  "runId": "v2-06-project-board-composition--noskill+blank--codex--2026-10-05T14-10-40",
+  "batchId": "37322335339-1",
+  "startedAt": "2026-10-05T14:10:40.065Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-06-project-board-composition": "312c05ccb35f"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-06-project-board-composition",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "312c05ccb35f",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.7.3",
+      "memoPath": "trials/v2-06-project-board-composition--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-06-project-board-composition--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-10-05T14:10:40.083Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 35207 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:board://summary:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:issue://ghost:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:assign_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:assign_issue:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:resolve_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:resolve_issue:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 108503,
+        "turns": 13,
+        "tokensIn": 650373,
+        "tokensOut": 6286,
+        "toolCalls": 27,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-06-project-board-composition",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "312c05ccb35f",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.7.3",
+      "memoPath": "trials/v2-06-project-board-composition--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-06-project-board-composition--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-10-05T14:12:43.513Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 37651 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:board://summary:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:issue://ghost:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:assign_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:assign_issue:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:resolve_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:resolve_issue:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 99727,
+        "turns": 16,
+        "tokensIn": 1073427,
+        "tokensOut": 7880,
+        "toolCalls": 32,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-06-project-board-composition",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "312c05ccb35f",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.7.3",
+      "memoPath": "trials/v2-06-project-board-composition--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-06-project-board-composition--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-10-05T14:14:35.121Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 34171 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:board://summary:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resource-read:issue://ghost:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:create_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:assign_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:assign_issue:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:resolve_issue:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:resolve_issue:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 125065,
+        "turns": 22,
+        "tokensIn": 1631615,
+        "tokensOut": 9780,
+        "toolCalls": 43,
+        "costUsd": null
+      }
+    }
+  ]
+}

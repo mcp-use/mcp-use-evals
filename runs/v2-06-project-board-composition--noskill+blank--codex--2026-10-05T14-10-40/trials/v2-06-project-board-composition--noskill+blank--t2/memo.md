@@ -1,0 +1,7 @@
+The agent had discovery friction around the SDK API: it first queried npm metadata and the README (`npm view mcp-use version description repository.url dist.tarball` and `npm view mcp-use readme`), then inspected installed declarations and implementation with `sed`/`rg` under `node_modules/mcp-use/dist/`; one exploratory command also referenced nonexistent declaration files and exited `2`.
+
+TypeScript setup required two correction loops. The first typecheck failed with `Cannot find name 'process'` and explicitly suggested adding Node types. After modifying `tsconfig.json`, dependency ranges were inconsistent: `@types/node@26.6.4 invalid: "^25.0.3"` and `typescript@7.0.2 invalid: "^5.9.3"`. The agent then rewrote `package.json`, reran `npm install`, and reached a clean `npx tsc --noEmit`.
+
+Manual HTTP verification also lost time to shell/JSON handling rather than server behavior. The same board read returned `Invalid JSON` twice, including `HTTP/1.1 400 Bad Request`, before switching from `--data` to curl’s `--json`, after which it returned `"text":"Open issues: 1"`.
+
+Shutdown and final hygiene checks were noisy. The foreground server ended with `exitCode":143`, a subsequent `kill 521` check exited `1`, and `git status --short` failed because `fatal: not a git repository`. The agent recovered by running a standalone final check, `npx tsc --noEmit && rg --files`, which succeeded.
