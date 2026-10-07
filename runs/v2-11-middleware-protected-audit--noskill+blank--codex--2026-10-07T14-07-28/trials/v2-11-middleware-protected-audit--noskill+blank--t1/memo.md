@@ -1,0 +1,9 @@
+The main miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the deterministic check expected `Record R-1`. The agent’s manual verification reinforced the wrong form because it only observed `"text":"record alpha"` and did not compare it against the grader’s expected wording.
+
+API discovery relied heavily on the installed package rather than a skill or fetched docs: the agent ran `rg ... node_modules/mcp-use` and inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/middleware/mcp-middleware.d.ts`. This worked, but required three exploratory shell commands before implementation; the transcript explicitly concludes, `The installed library supports typed mcp:tools/call middleware and static listed resources directly`.
+
+Verification had a command-construction papercut: the combined curl sequence successfully exercised all three calls but ended with `Invalid JSON`, apparently from the truncated fourth payload in that shell command. The agent recovered by reading the resource separately, obtaining `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+The final listing check unnecessarily chained `git status --short` in a blank, non-git workspace, producing `fatal: not a git repository (or any of the parent directories): .git` despite successful `tools/list` and `resources/list` responses.
+
+Server shutdown also took two attempts: after `kill 414`, the child processes remained as `node node_modules/.bin/tsx src/server.ts` and `/usr/local/bin/node ... src/server.ts`; the agent then had to `kill 427` to clean them up.
