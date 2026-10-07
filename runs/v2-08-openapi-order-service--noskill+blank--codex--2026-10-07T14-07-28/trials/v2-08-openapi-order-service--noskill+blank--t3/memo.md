@@ -1,0 +1,9 @@
+The agent had to discover the OpenAPI API shape by inspecting the installed package rather than using an obvious guide: it ran `rg -n "fromOpenAPI|Streamable|streamable|MCPServer" node_modules/mcp-use` and then examined `dist/openapi/types.d.ts` and the minified `chunk-Y26DNVWA.js`. The bundled README quickstart focused on manually registered tools—`const server = new MCPServer({` and `server.tool(`—so it did not directly answer the task’s `fromOpenAPI` questions.
+
+Client-side verification discovery took a wrong turn because the expected MCP SDK package was absent: `rg: node_modules/@modelcontextprotocol/sdk: IO error ... No such file or directory`. The agent then used `npm ls` to establish that mcp-use instead provided `@modelcontextprotocol/server@2.0.0`, and ultimately wrote raw JSON-RPC/SSE parsing in `scripts/verify-mcp.ts` (`if (text.startsWith("event:"))`), adding avoidable verification plumbing.
+
+Dependency setup also caused churn. The first typecheck reported `Cannot find name 'node:http'` despite installing `@types/node`, and `npm ls` then showed `@types/node@26.6.4 invalid: "^24.10.1"` plus `typescript@7.0.2 invalid: "^5.9.3"`. The agent explicitly had to normalize versions—`npm install -D @types/node@24.10.1 typescript@5.9.3 tsx@4.21.0`—before addressing source errors.
+
+Typechecking required two additional edit cycles for the same strictness issue: `src/server.ts(129,11): error TS2322: Type 'number | undefined' is not assignable to type 'number'`, followed after one modification by the same error at `src/server.ts(130,11)`. This suggests a small TypeScript/narrowing papercut rather than an SDK failure.
+
+The final startup probe was somewhat awkward: the process command ended with exit code `143`, while a concurrent diagnostic failed because `fatal: not a git repository`; nevertheless, its output confirmed `Order MCP server listening at http://localhost:3101/mcp` and `GET /mcp 204 in 1ms`.
