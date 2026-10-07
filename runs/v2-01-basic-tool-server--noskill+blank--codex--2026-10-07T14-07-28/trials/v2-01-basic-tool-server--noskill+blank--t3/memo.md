@@ -1,0 +1,7 @@
+The agent relied on the installed package rather than a skill or external docs, first checking npm metadata with `npm view mcp-use version description repository.url`, then grepping `node_modules/mcp-use/README.md` and declaration files for `"httpStream|streamable|MCPServer|server\\.tool\\("`. The bundled README provided the decisive API pattern, including `import { MCPServer } from "mcp-use"` and `server.tool(...)`.
+
+A small TypeScript configuration papercut caused the first verification to fail even though `@types/node` had been installed: `error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? ... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json`, after which the final `npx tsc --noEmit` succeeded.
+
+The blank workspace also made the agent’s generic git-based checks noisy and wasted a command: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`, with exit code 129 from `git diff --check && git status --short`. This was unrelated to the SDK but reflects friction from applying repository-oriented verification to an empty scaffold.
+
+The runtime verification was otherwise direct and successful: the server logged `MCP server listening at http://localhost:3100/mcp`, `tools/list` exposed `"name":"add"` with both properties having `"type":"number"`, and `tools/call add` returned `"text":"42"`.
