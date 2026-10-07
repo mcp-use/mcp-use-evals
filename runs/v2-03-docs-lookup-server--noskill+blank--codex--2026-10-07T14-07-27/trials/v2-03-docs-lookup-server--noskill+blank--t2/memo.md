@@ -1,0 +1,9 @@
+The agent relied first on the npm README rather than a skill file, fetching `npm view mcp-use readme`, then inspected installed declarations with `rg -n "resource\\(" node_modules/mcp-use` and `sed -n '1,180p' node_modules/mcp-use/dist/resources.d.ts` to determine the resource API shape.
+
+Dependency/configuration setup took a wrong turn after installation: the first typecheck failed with `Cannot find name 'process'`, despite `@types/node` having been installed. The follow-up exposed version-range mismatches: `@types/node@26.6.4 invalid: "^25.0.3"` and `typescript@7.0.2 invalid: "^5.9.3"`, requiring edits to both `package.json` and `tsconfig.json`.
+
+A diagnostic command also assumed Git metadata that the blank workspace did not have; `git diff -- package.json tsconfig.json src/server.ts` failed with `warning: Not a git repository`, making an otherwise successful combined command exit with code 129.
+
+Running mcp-use created an unexpected local state file, `./.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":"8c77a935-12e4-4dfc-8037-e3a67550dad8"}`. The agent then grepped the bundled SDK for `usage\\.json|\\.mcp-use/usage|usageScope`, deleted that file, and added telemetry handling in `src/server.ts`: `process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false";`. This indicates an SDK side-effect that needed cleanup for an otherwise in-memory service.
+
+Verification was performed twice through hand-written JSON-RPC `curl` calls to `/mcp`; the second pass reported `All MCP verification checks passed.` The first server process ended with exit code 130 after successful requests, with logs such as `resources/read docs://does-not-exist /mcp 200`, prompting another start-and-verification cycle.

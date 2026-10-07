@@ -1,0 +1,7 @@
+The agent spent discovery time querying npm—`npm view mcp-use version description repository.url` and `npm view mcp-use readme --json`—then inspected installed declarations directly with `sed -n '1,280p' node_modules/mcp-use/dist/server.d.ts` and `sed -n '1,220p' node_modules/mcp-use/dist/resources.d.ts` to determine the API shape.
+
+The first typecheck failed because the generated npm scaffold remained CommonJS and the TypeScript configuration omitted Node types: `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then modified both `package.json` and `tsconfig.json`; the final package uses `"type": "module"` and includes `"@types/node": "^26.6.4"`.
+
+Protocol verification exposed an optional-dependency papercut. Although `npx mcp-use --help` advertised `client`, the first connection failed with `@mcp-use/client is required for this command.` and suggested `npm install @mcp-use/client`; the agent installed it before verification could continue.
+
+There was minor cleanup friction from assuming Git metadata existed: `git status --short` failed with `fatal: not a git repository (or any of the parent directories): .git`. Running the CLI also created `./.mcp-use/usage.json`, which the agent subsequently inspected and deleted via `fileChange({"event":"delete","path":".mcp-use/usage.json"})`.
