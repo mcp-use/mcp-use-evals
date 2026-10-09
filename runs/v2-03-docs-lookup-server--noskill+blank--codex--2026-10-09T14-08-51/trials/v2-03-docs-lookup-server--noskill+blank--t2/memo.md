@@ -1,0 +1,7 @@
+The agent had SDK discovery friction: `npm view mcp-use readme --json` yielded no README content, so it inspected package internals with `sed -n '1,300p' node_modules/mcp-use/dist/server.d.ts` and `rg -n "listen|resource\\(" node_modules/mcp-use/README.md node_modules/mcp-use/dist/*.d.ts`. No mcp-use skill file or external docs URL was used; the transcript instead shows direct inspection of `node_modules/mcp-use/dist/index.d.ts`, `server.d.ts`, `resources.d.ts`, and `tools.d.ts`.
+
+The first typecheck failed because the default npm scaffold remained CommonJS and the TypeScript config did not expose Node globals: `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then changed the package to `"type": "module"` and adjusted `tsconfig.json`, after which `npx tsc --noEmit` succeeded.
+
+Manual protocol verification also took a wrong turn: the first initialize request combined header version `2026-07-28` with a legacy initialize body and received `400 Bad Request` with `"the request headers and body disagree"`. Retrying without that header and with body protocol version `2025-06-18` produced `HTTP/1.1 200 OK`.
+
+The final cleanup command unnecessarily assumed a Git repository: `git diff --check && git status --short` failed with `warning: Not a git repository.` This did not affect the implementation, but ended the last tool call with exit code 129 after the resource-template check itself had succeeded.
