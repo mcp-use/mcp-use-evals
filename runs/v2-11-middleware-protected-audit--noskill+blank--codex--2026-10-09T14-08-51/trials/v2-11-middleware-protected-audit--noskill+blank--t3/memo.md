@@ -1,0 +1,7 @@
+The main miss was the read-tool response casing: `src/server.ts` returns ``text: `record ${id}```, while the grader expected output containing `Record R-1` and reported `"record R-1" did not match ... "Record R-1"`. The agent’s manual check failed to expose this because it called with lowercase `"id":"r-1"` and accepted `"text":"record r-1"` as correct.
+
+The agent spent time discovering the SDK API by grepping installed package internals: `rg -n "server\\.use|Streamable|...|MCPServer|resource\\(" node_modules/mcp-use`, then reading `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, `dist/resources.d.ts`, and `dist/middleware/mcp-middleware.d.ts`. One source-code search took a wrong path and produced `rg: node_modules/mcp-use/dist/server.js: No such file or directory`, after which it listed `node_modules/mcp-use/dist` and searched bundled chunks.
+
+TypeScript setup required a repair after the initial check failed with `Cannot find name 'process' ... add 'node' to the types field in your tsconfig`; modifying `tsconfig.json` made the next `npx tsc --noEmit` pass. Dependency pinning also needed a late correction: the first inspection returned `^2.0.4`, so the agent ran `npm install --save-exact mcp-use@2.0.4` and confirmed `2.0.4`.
+
+The live protocol verification otherwise directly exercised the requested paths: denial returned `"approval required"`, approval returned `"deleted r-1"`, and the resource returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
