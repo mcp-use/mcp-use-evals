@@ -1,0 +1,9 @@
+API discovery took some work because the npm README search returned no matches: `npm view mcp-use readme | rg ...` produced `""`. The agent then relied on installed declaration files, inspecting `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, `config.d.ts`, and `index.d.ts` to determine the `MCPServer`, `inputSchema`, and HTTP API shape; no skill file or fetched docs URL appears in the transcript.
+
+Manual protocol verification hit a version-handshake papercut. Sending `MCP-Protocol-Version: 2026-07-28` with `initialize` produced `400` and the confusingly specific error: `an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`. Removing that header and using body version `2025-11-25` succeeded.
+
+The first lifecycle test failed in the custom SSE parser with `TypeError: Cannot read properties of undefined (reading 'slice')`, because no line matched its split logic. A diagnostic request confirmed the actual framing was `text/event-stream` with `event: message` and `data: {...}` lines. That failed attempt had already created one ticket, as the diagnostic list returned `Open tickets (1): Reset password`, so the agent restarted the server before retrying.
+
+The retry exited successfully but printed no lifecycle assertions—the result was `{"exitCode":0,"output":""}`—so verification depended on server logs such as `tools/call create_ticket /mcp 200` and `tools/call close_ticket /mcp 200`, rather than visible response text. The agent nevertheless stated, `The full MCP lifecycle now passes`.
+
+The final cleanup command unnecessarily assumed a Git repository. Although `npx tsc --noEmit` ran first, `git diff --check` caused exit `129` with `warning: Not a git repository`, preventing the chained `git status` and source display from running.
