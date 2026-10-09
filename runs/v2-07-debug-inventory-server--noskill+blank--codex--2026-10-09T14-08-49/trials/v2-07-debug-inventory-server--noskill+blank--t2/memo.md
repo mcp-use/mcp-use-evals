@@ -1,0 +1,7 @@
+The first inspection command took a minor wrong turn because `git status --short` failed in the non-git workspace with `fatal: not a git repository`, causing the chained command to exit before completing all intended discovery.
+
+Dependencies were absent, so the agent had to pause for installation after `npm ls` reported `UNMET DEPENDENCY mcp-use@2.0.4` and the agent noted, `Dependencies are not installed in this workspace`. It then leaned on installed SDK declarations rather than a skill file or external docs, grepping `node_modules/mcp-use` for `class MCPServer|listen\(` and reading `node_modules/mcp-use/dist/server.d.ts`.
+
+End-to-end verification was thorough but manually verbose: the agent issued separate raw `curl` requests for `initialize`, `tools/list`, and each `tools/call`, including repeated headers such as `Accept: application/json, text/event-stream`. The handshake also exposed a protocol-version mismatch—the request sent `"protocolVersion":"2026-07-28"` while the server returned `"protocolVersion":"2025-11-25"`—although this did not block the successful run.
+
+Process cleanup was a papercut. Killing PID 417 returned `exitCode":143`, and a subsequent process check still showed PIDs `430` and `441` running `tsx src/server.ts`; the agent needed an additional `kill 430 441` before confirming `Couldn't connect to server`.

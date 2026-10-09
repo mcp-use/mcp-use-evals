@@ -1,0 +1,7 @@
+The main discovery friction was that the agent tried to inspect the SDK before dependencies existed: `rg: node_modules/mcp-use: IO error ... No such file or directory`. After `npm install`, it relied on grepping package internals and declarations—`node_modules/mcp-use/dist/server.d.ts`, `node-http.d.ts`, and `config.d.ts`—to confirm `listen()` behavior and the streamable HTTP API; no skill file or external docs URL appears in the transcript.
+
+A verification command produced a misleading failure because typechecking and an unrelated Git diff were chained: `npx tsc --noEmit && git diff ...` exited 129 with `warning: Not a git repository`, after which the agent inferred `Typechecking now passes.` Separating those checks would have avoided noise and made the successful typecheck explicit.
+
+The agent manually exercised JSON-RPC with lengthy `curl` commands rather than using an MCP client helper. It guessed `protocolVersion":"2026-07-28"`, while the server negotiated `"protocolVersion":"2025-11-25"`. This still worked, but indicates protocol/version discovery was not straightforward.
+
+The server process’s eventual `exitCode":130` and `"status":"failed"` came from stopping the long-running verification server, even though its request log showed successful calls such as `POST /mcp 200`. This is harmless but creates another misleading failure signal in an otherwise successful run.
