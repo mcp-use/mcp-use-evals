@@ -1,0 +1,7 @@
+The agent spent discovery time querying npm (`npm view mcp-use version description repository.url dist.tarball`) and grepping installed package contents for API shape (`rg -n "streamable|HTTP|create.*Server|server\.tool|McpServer|tool\(" node_modules/mcp-use`). It then relied on the local SDK README example at `node_modules/mcp-use/README.md`, including `export const getWeather = server.tool(`, plus declaration files such as `node_modules/mcp-use/dist/server.d.ts` and `node-bridge.d.ts`; no external docs fetch or skill file is visible.
+
+The first typecheck failed despite `@types/node` being installed: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent corrected `tsconfig.json` and reran `npx tsc --noEmit`, so this was a small configuration papercut rather than an SDK issue.
+
+Live verification was manual JSON-RPC via `curl` rather than an SDK client. The initialize request returned `"protocolVersion":"2025-06-18"`, and `tools/call` returned `"text":"41.75"` with `"structuredContent":{"sum":41.75}`. The server command later reported exit code 130, but its output confirms successful requests: `tools/call add /mcp 200`.
+
+The final workspace check took an avoidable wrong turn by running Git commands in a non-repository: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. Because the command chained `git diff --check && git status --short && sed ...`, that failure prevented the intended final source display.
