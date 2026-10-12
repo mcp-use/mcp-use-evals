@@ -1,0 +1,9 @@
+The main correctness miss was not SDK-related but an unchecked response-format assumption: `src/server.ts` returns ``text: `record:${id}``` and ``text: `deleted:${id}```, while the grader expected text containing `Record R-1` and `deleted R-1`. The agent’s own verification only confirmed generic success—`"text":"record:read-1"` and `"text":"deleted:delete-approved"`—so it did not test the expected human-readable wording.
+
+API discovery required substantial inspection of installed package internals. The agent ran `rg` across `node_modules/mcp-use` for `"server\\.use|mcp:tools/call|Streamable"` and then read `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, `resources.d.ts`, and `tools.d.ts`. It also queried npm metadata with `npm view mcp-use@2.0.4 version dependencies peerDependencies --json`, but no external docs URL or skill file appears in the transcript.
+
+Dependency setup took an avoidable extra cycle: the first typecheck failed with `Cannot find name 'process'. Do you need to install type definitions for node?`, after which `npm install --save-dev @types/node && npx tsc --noEmit` succeeded.
+
+The manual protocol verification was somewhat brittle. A combined curl command successfully exercised all three calls but ended with `Invalid JSON`, forcing a separate resource-read request. The final listing command also mixed successful protocol checks with repository-only commands and exited `129` because `warning: Not a git repository.`
+
+Process cleanup was awkward: after `kill 502`, the transcript still showed child processes `515` and `526`, requiring another `kill 515 526`. Despite these papercuts, the middleware and audit behavior were directly verified by `"approval required"` and the resource text `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
