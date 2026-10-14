@@ -1,0 +1,9 @@
+The decisive miss was tool-output wording: `src/server.ts` returns ``text: `record ${id}``` and ``text: `deleted record ${id}```, while the deterministic checks expected `Record R-1` and `deleted R-1`. The agent’s own verification reproduced `"record r-1"` and `"deleted record r-1"` but only checked that calls completed, so it did not catch capitalization or the extra word `record`.
+
+API discovery relied heavily on installed declarations rather than a skill or fetched docs: it ran `rg -n 'server\\.use|Streamable|streamable|...resource\\(' node_modules/mcp-use` and inspected `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `tools.d.ts`. It similarly grepped `@modelcontextprotocol/client` declarations for `StreamableHTTPClientTransport`, `callTool`, and `readResource`.
+
+There were several avoidable verification detours. Initial typechecking failed with `Cannot find name 'process'` despite installing `@types/node`, requiring a `tsconfig.json` adjustment. The first inline client failed because `Top-level await is currently not supported with the "cjs" output format`, then worked after wrapping the script in `(async () => { ... })()`.
+
+The denial path exposed an SDK/API surprise: the first test used `try/catch`, producing `"denied": ""`, although the server log showed `tools/call delete_record ERROR approval required`. After inspecting behavior, the agent correctly tested the returned tool-level error and observed `"isError": true` with `"text": "approval required"`.
+
+Final cleanup also wasted a command because `git diff --check` was run outside a repository and returned `warning: Not a git repository`; this made an otherwise successful resource-list/typecheck command exit `129`.

@@ -1,0 +1,9 @@
+The substantive miss was tool-result wording: `src/server.ts` returns ``text: `record:${id}` `` and ``text: `deleted:${id}` ``, while the deterministic checks expected strings containing `Record R-1` and `deleted R-1`. The agent’s manual verification reinforced rather than caught this mismatch because it used `"id":"record-1"` and accepted responses `"record:record-1"` and `"deleted:record-1"` without checking the grader-facing phrasing.
+
+API discovery relied heavily on installed declarations and package docs: the agent ran `rg -n "server\\.use|Streamable|streamable|registerTool|tool\\(" node_modules/mcp-use` and inspected `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, and `tools.d.ts`. An earlier attempt to obtain package documentation failed when `npm view mcp-use@2.0.4 readme --json` produced `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`, adding discovery friction.
+
+TypeScript setup needed one repair after the first check failed with `Cannot find name 'process'` and advised adding `'node' to the types field in your tsconfig`; the agent modified `tsconfig.json`, after which `npx tsc --noEmit` passed.
+
+The end-to-end verification also took a wrong turn when two curl commands were malformed: the approved delete succeeded, but the immediately following resource request returned `HTTP/1.1 400 Bad Request` and `Invalid JSON`. The agent recovered by separately issuing `resources/list` and `resources/read`, obtaining the expected audit text `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+There was minor scaffold/environment friction from running repository checks in a blank non-git directory: `git diff --check` emitted `warning: Not a git repository.` The final summary nevertheless stated only that “approved deletion succeeded” and “`npx tsc --noEmit` passes,” without validating the exact response strings that ultimately failed.
