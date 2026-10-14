@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than a skill file or fetched docs, first running `npm view mcp-use version description repository.url --json`, then grepping `node_modules/mcp-use` for `"streamable|Streamable|create.*Server|McpServer|tool\\("`, and finally reading `README.md`, `server.d.ts`, exports, and `listen()` declarations.
+
+The initial npm scaffold’s CommonJS default caused the first implementation failure: `package.json` contained `"type": "commonjs"`, and typechecking reported `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent fixed that by modifying `package.json`, after which `npx tsc --noEmit` succeeded.
+
+The first lifecycle harness repeated the same module-format papercut because `npx tsx -e` emitted CJS: `Top-level await is currently not supported with the "cjs" output format`. The next attempt wrapped the script in `void (async () => { ... })` and completed successfully.
+
+A late change to make environment-port handling explicit introduced another typecheck detour: `Cannot find name 'process'. Do you need to install type definitions for node? ... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json`, despite having already installed `@types/node` via `npm install -D typescript tsx @types/node`.
+
+The final validation command also included an assumption that the blank workspace was a Git repository: `git diff --check` failed with `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. This made the combined command exit nonzero even though the preceding `npx tsc --noEmit` had passed.
