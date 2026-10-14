@@ -1,0 +1,7 @@
+The agent had discovery friction because npm metadata provided no README content (`"readme": ""`), so it inspected installed SDK declarations directly with `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and `rg -n "listen\\(" node_modules/mcp-use/dist/server.d.ts node_modules/mcp-use/dist/*.d.ts` to determine the API shape. No mcp-use skill file or fetched docs URL appears; the explicit resource used was `node_modules/mcp-use/README.md` plus the package’s `.d.ts` files.
+
+The first typecheck failed despite `@types/node` being installed: `error TS2591: Cannot find name 'process'` followed by `@types/node@26.6.5`. The agent then modified `tsconfig.json`; the final configuration resolved this, but the transcript does not show the exact edit.
+
+Process management also cost extra steps. The combined foreground command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` ultimately ended with `exitCode":143`, and killing PID 465 left child processes running: `root 506 1 ... node node_modules/.bin/tsx src/server.ts` and `root 517 506 ... src/server.ts`. A second cleanup command, `kill 506 517`, was required.
+
+The successful protocol verification was concrete: `tools/list` exposed `"name":"add"` with both inputs typed as `"number"`, and `tools/call` returned `"text":"41.75"`. However, the invalid-input check produced an empty result (`"output":""`), while the final response asserted `Invalid non-numeric input is rejected by schema validation`; that specific verification was not visibly demonstrated in the transcript.
