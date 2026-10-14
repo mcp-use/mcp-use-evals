@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than external docs, grepping `node_modules/mcp-use` for `"fromOpenAPI|streamable|Streamable|MCPServer"` and reading `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/openapi/types.d.ts`. This surfaced the useful `listen(port?: number...)` signature and its returned `"url"`.
+
+The main SDK/API papercut was an attempted type import from an unavailable export path: TypeScript reported `Cannot find module 'mcp-use/openapi' or its corresponding type declarations.` The agent worked around this in `src/server.ts` with `Parameters<typeof MCPServer.fromOpenAPI>[0]["spec"]`, suggesting the OpenAPI option types were discoverable internally but not through the guessed public subpath.
+
+TypeScript narrowing also took two correction cycles: the first check reported `Property 'sku' does not exist on type 'object'` and `Property 'quantity' does not exist on type 'object'`; the next still reported `Type 'unknown' is not assignable to type 'number'.`
+
+Process handling wasted time during runtime verification. Two concurrent launches were visible as duplicate `npm exec tsx src/server.ts` process trees, followed by `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. Killing only parent PIDs left child processes behind, and `pkill -f 'tsx src/server.ts'` itself ended with `exitCode":143`. The environment also lacked the expected diagnostic utility: `/bin/bash: line 1: ss: command not found`.
+
+The hand-written MCP verifier initially assumed JSON despite the endpoint returning SSE, failing with `Unexpected token 'e', "event: mes"... is not valid JSON`; its first SSE parsing fix also failed with `"undefined" is not valid JSON`. Inspecting the raw response showed `content-type', 'text/event-stream'` and `event: message\ndata: {...}`, after which a regex-based parser worked. A final cleanup check unnecessarily assumed Git and failed with `warning: Not a git repository.`

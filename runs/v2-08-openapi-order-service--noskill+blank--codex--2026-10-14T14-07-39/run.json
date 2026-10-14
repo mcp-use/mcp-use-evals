@@ -1,0 +1,306 @@
+{
+  "runId": "v2-08-openapi-order-service--noskill+blank--codex--2026-10-14T14-07-39",
+  "batchId": "38577503095-1",
+  "startedAt": "2026-10-14T14:07:39.035Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-08-openapi-order-service": "617f085a2931"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-08-openapi-order-service",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "617f085a2931",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-08-openapi-order-service--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-08-openapi-order-service--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-10-14T14:07:39.054Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 36081 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:createOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:cancelOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 147959,
+        "turns": 18,
+        "tokensIn": 1431849,
+        "tokensOut": 9432,
+        "toolCalls": 31,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-08-openapi-order-service",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "617f085a2931",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-08-openapi-order-service--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-08-openapi-order-service--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-10-14T14:10:23.898Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 36851 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:createOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:cancelOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 102323,
+        "turns": 23,
+        "tokensIn": 911623,
+        "tokensOut": 8474,
+        "toolCalls": 26,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-08-openapi-order-service",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "617f085a2931",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-08-openapi-order-service--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-08-openapi-order-service--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-10-14T14:12:20.529Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": true,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 45497 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:createOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:cancelOrder:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:getOrder:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": null,
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 110997,
+        "turns": 21,
+        "tokensIn": 708870,
+        "tokensOut": 10816,
+        "toolCalls": 24,
+        "costUsd": null
+      }
+    }
+  ]
+}
