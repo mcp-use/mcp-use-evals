@@ -1,0 +1,9 @@
+The main friction was API discovery: fetching the npm README failed with `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`, so the agent instead inspected the installed package via `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and related declarations such as `resources.d.ts` and `tools.d.ts`. This node_modules inspection appears to have supplied the needed `MCPServer`, resource-template, tool, and `listen` API shapes.
+
+The first typecheck failed despite `@types/node` being installed: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json` and the final `npx tsc --noEmit` succeeded, indicating a small TypeScript configuration papercut rather than an SDK implementation issue.
+
+An unrelated verification command also wasted a turn: `npx tsc --noEmit && git diff --check && git status --short` failed because `warning: Not a git repository.` Since `tsc` had already succeeded before the chained Git command, the exit code obscured that success and prompted another final typecheck.
+
+Protocol verification was thorough but manually verbose, using repeated raw `curl` requests with headers including `Accept: application/json, text/event-stream` for initialization, resource listing/reading, and tool calls. The SDK’s validation behavior was explicitly checked and returned a useful structured error: `Input validation error: Invalid arguments for tool search_docs: query: Invalid input: expected string, received undefined`.
+
+Running the SDK created an incidental telemetry/state artifact, shown as `./.mcp-use/usage.json`; the agent had to delete it with a `fileChange` event and remove `.mcp-use`. The server process also required explicit cleanup via `kill 526 539 || true`, while the background execution ended with `exitCode:143`, adding minor lifecycle friction even though the implementation passed.

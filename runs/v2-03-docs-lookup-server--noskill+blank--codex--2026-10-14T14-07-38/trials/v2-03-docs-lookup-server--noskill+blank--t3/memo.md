@@ -1,0 +1,9 @@
+The main time sink was SDK/schema compatibility discovery. The agent first installed `zod@3.24.2`, then switched to `zod@4.1.12`, but typechecking reported that `Property 'jsonSchema' is missing`; it then queried available versions and upgraded again to `zod@4.6.7`, after which the schema errors disappeared. This suggests mcp-use’s requirement for a sufficiently recent Zod v4 implementation was not obvious from the initial package/API surface.
+
+Documentation discovery also had friction: fetching the npm README failed with `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`. The agent recovered by leaning heavily on installed package artifacts, inspecting `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/resources.d.ts`, and grepping declarations with `rg -n "listen\\(" ...` and `rg -n "zod|jsonSchema|toJSONSchema" ...`.
+
+A separate scaffold/configuration mistake caused another failed typecheck. The generated `package.json` visibly contained both `"type": "module"` and a later `"type": "commonjs"`, and TypeScript consequently emitted `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent had to modify `package.json` again before `npx tsc --noEmit` passed.
+
+There was minor workspace-discovery noise at the start: `pwd && rg --files ... && ls -la` exited with `exitCode":1` after only printing `"."`, requiring a second `ls -la` command. Cleanup/status checking also assumed Git and failed with `fatal: not a git repository`, though server cleanup then succeeded, confirmed by `Failed to connect to 127.0.0.1 port 3100`.
+
+The final verification was thorough but manually verbose, using repeated raw `curl` JSON-RPC requests for `resources/list`, `resources/templates/list`, `resources/read`, `tools/list`, and `tools/call`; the successful responses included `Documentation page 'unknown' not found.` and a deployment-only match for `"reverse proxy"`.
