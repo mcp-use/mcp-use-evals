@@ -1,0 +1,7 @@
+The agent had discovery friction around the SDK API: `npm view mcp-use readme --json` returned no README content, so it inspected installed package internals with `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and `resources.d.ts` to determine the registration and listen shapes.
+
+The first scaffold edit accidentally left conflicting module declarations in `package.json`: both `"type": "module"` and `"type": "commonjs"` appeared. This caused the initial typecheck failures, `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`, requiring edits to both `package.json` and `tsconfig.json` before `npx tsc --noEmit` passed.
+
+The SDK unexpectedly created `.mcp-use/usage.json` containing a `serverId`, prompting extra investigation via `rg -n "usage|telemetry|analytics" node_modules/mcp-use/dist` and deletion of that generated file. The final source works around this before importing the SDK: `src/server.ts` contains `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` followed by `const { MCPServer } = await import("mcp-use");`. The agent then spent additional requests confirming `telemetry file not created` and `no telemetry files after requests`, indicating telemetry behavior was a notable papercut for an otherwise local, no-network server.
+
+A generic cleanup check also wasted a turn because the blank workspace was not a Git repository: `git diff --check` failed with `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.
