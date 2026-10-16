@@ -1,0 +1,7 @@
+The decisive miss was a case-sensitive response mismatch: `src/server.ts` returns ``text: `record ${id}```, while the grader expected `Record R-1`. The agent’s own verification reinforced the mistake because it called with lowercase `"id":"r-1"` and accepted the response `"text":"record r-1"` rather than testing the grader-style capitalization.
+
+API discovery relied heavily on installed package artifacts: the agent inspected `node_modules/mcp-use/README.md`, then read `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, `resources.d.ts`, and `tools.d.ts`. This successfully established the middleware and resource shapes, summarized as “`supports typed mcp:tools/call middleware and static resources directly`.” No skill file or fetched documentation URL appears in the transcript.
+
+The implementation was otherwise exercised at protocol level: the transcript shows `"approval required"`, `"deleted r-1"`, and the ordered audit text `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`. However, the final verification command lost time by running `git diff --check` in a blank non-repository directory, producing `warning: Not a git repository` and exit code `129`.
+
+Process cleanup also took multiple attempts. Killing PID 459 left the service alive—`test server still responding`—so the agent had to inspect child processes and then `kill 472 483` before receiving `test server stopped`.
