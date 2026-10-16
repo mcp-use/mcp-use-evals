@@ -1,0 +1,7 @@
+The agent had SDK-discovery friction: `npm view mcp-use readme` produced `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`, so it fell back to packing the npm release and inspecting `package/README.md`, `package/dist/server.d.ts`, `package/dist/config.d.ts`, and `package/dist/tools.d.ts`. It did not use a skill file or fetch the linked docs URL; the visible resources were the npm metadata, packaged README, and declaration files.
+
+Manual MCP verification took a wrong turn on protocol negotiation. Using `mcp-protocol-version: 2026-07-28` first failed because the request lacked `_meta`, then failed again because it lacked `io.modelcontextprotocol/protocolVersion` and `io.modelcontextprotocol/clientCapabilities`; switching to `2025-03-26` made `tools/list` succeed.
+
+Process management caused the largest avoidable detour. Killing only launcher PID `449` left child processes `462` and `473` alive, and the next start failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. The stale server also retained prior in-memory state, producing `Ticket 3 created.`, `Open tickets (3): Billing issue, Password reset, Billing issue`, and `Ticket 1 not found.` The agent correctly diagnosed this—`I found an old test process had remained alive after its launcher exited`—then killed both remaining processes and reran successfully against a fresh server.
+
+There was also a minor environment-assumption detour: `git status --short` failed with `fatal: not a git repository`, requiring a separate process-list command.
