@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than external docs, grepping declarations and bundles with `rg -n "fromOpenAPI|Streamable|streamable|listen\(" node_modules/mcp-use` and reading `node_modules/mcp-use/dist/server.d.ts` plus `openapi/types.d.ts`. It also explored the MCP client API through `rg -n "StreamableHTTPClientTransport"` under `node_modules/@modelcontextprotocol/client/dist`, indicating some API-shape discovery friction.
+
+The first typecheck failed on ordinary narrowing rather than the SDK: `error TS18047: 'input' is possibly 'null'` appeared four times, after which a source edit made `npx tsc --noEmit` pass.
+
+The dependency was initially not pinned exactly despite the requirement: `package.json` first showed `"mcp-use": "^2.0.4"`, then was modified to `"mcp-use": "2.0.4"`. This was caught before completion.
+
+A notable SDK papercut was local telemetry/usage state. After running the server, the agent found `./.mcp-use/usage.json` containing `{"schemaVersion":1,"serverId":"..."}`, then searched the package for `"USAGE|usage\\.json|isUsageDisabled|DISABLE_USAGE"`, deleted the file, and adjusted startup. The final source explicitly works around this at `src/server.ts`: `process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false";` before `await import("mcp-use")`. The follow-up confirmed `No SDK telemetry state generated.`
+
+The final consistency check also took a small wrong turn because the blank workspace was not a Git repository: `git diff --check` returned `warning: Not a git repository`, forcing a second check without Git. End-to-end verification itself was successful—`Verified tools: cancelOrder, createOrder, getOrder`—although each separately launched long-running server command ended with `exitCode":130`, producing noisy “failed” tool results despite successful client verification.
