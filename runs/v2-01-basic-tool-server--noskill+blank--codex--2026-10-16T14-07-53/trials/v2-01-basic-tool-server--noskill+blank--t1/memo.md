@@ -1,0 +1,7 @@
+The agent had to discover the SDK API from the installed package rather than using a skill or fetched documentation: it inspected `node_modules/mcp-use/README.md`, then queried declarations with `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and searched for `"listen|streamable|http"`. The declaration’s guidance—`listen(port?: number ...): Promise<{ ... url: string; }>`—directly informed the eventual listener implementation.
+
+The main implementation stumble was TypeScript configuration. Although `@types/node` had already been installed, the first typecheck failed with `Cannot find name 'process'` and explicitly suggested adding `'node' to the types field in your tsconfig`; the agent modified `tsconfig.json`, after which `npx tsc --noEmit` passed. This is a small scaffold/configuration papercut rather than an SDK API issue.
+
+The agent also spent a tool call running repository checks in a blank, non-git workspace: `git diff --check && git status --short`, which failed with `warning: Not a git repository.` Because the command used `&&`, the subsequent source grep did not run, leading to another server start and request solely to confirm `tools/list`.
+
+Verification itself worked, but the harness labeled intentionally terminated server processes as failures: both server runs ended with `exitCode":130` and `"status":"failed"` despite logs such as `tools/call add /mcp 200` and `tools/list /mcp 200`. The successful call returned `"text":"20"`, and discovery showed only `"name":"add"` with both inputs typed as `"number"`.

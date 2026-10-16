@@ -1,0 +1,7 @@
+The agent had some API-discovery friction: after `npm view mcp-use readme --json` returned no README content, it inspected installed declarations with `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and `rg -n -C 4 "listen\\(" node_modules/mcp-use/dist/...`. This ultimately exposed the useful built-in example, `await server.listen(3000);`, and the documented return type containing `url: string`.
+
+Dependency compatibility caused an unnecessary reinstall. It first ran `npm install mcp-use@'^2.10.0' zod@'^3.24.2'`, then inspected the installed types and replaced Zod with `npm install zod@'^4.1.0'`. The transcript does not show an actual compiler error motivating that switch, so clearer SDK peer-dependency/schema-version guidance could have avoided it.
+
+The first typecheck failed despite installing `@types/node`: `error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? ... add 'node' to the types field in your tsconfig.` The agent then modified `tsconfig.json`, indicating a scaffold/configuration papercut rather than an SDK API issue.
+
+Verification was thorough but manual: it used raw `curl` JSON-RPC against `/mcp`, receiving `"text":"41.75"` for valid input and `"Input validation error: ... expected number, received string"` for invalid input. The verification server’s eventual shutdown appeared as a failed tool result, `{"exitCode":130,...,"status":"failed"}`, even though its logs showed successful requests: `tools/call add /mcp 200`.
