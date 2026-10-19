@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the entry at root as `index.ts`; the produced file is `index.ts` with `export default server;`, while the deterministic check reports `entry: FAIL — no entry file found (tried: src/server.ts, src/index.ts)`. The SDK CLI reinforced this mismatch by accepting the layout and reporting `[mcp-use] built index.ts + views ...`, so the agent’s local build and extensive protocol verification did not expose the grader-facing entry convention.
+
+There was avoidable packaging churn from editing `package.json` into an invalid duplicate-key state. The agent discovered both `"type": "module"` and `"type": "commonjs"` in the same file after start failed with `Cannot use import statement outside a module`, then explained that “`npm init` left a second `type` field that overrode the ESM setting.” This suggests scaffold/package editing was not checked before the first runtime attempt.
+
+Runtime startup also caused process-management confusion: an immediate probe returned `curl: (7) Failed to connect`, but a second start returned `listen EADDRINUSE`; process inspection then showed `node node_modules/.bin/mcp-use start --host 127.0.0.1`, and the endpoint subsequently returned `HTTP/1.1 200 OK`. The environment lacked a familiar diagnostic utility too: `/bin/bash: line 1: ss: command not found`.
+
+Client verification had its own papercut. Running the client said `[mcp-use] installing @mcp-use/client…` but immediately failed with `@mcp-use/client is not installed`, requiring an explicit `npm install @mcp-use/client@2.0.0`.
+
+For API discovery, the agent leaned heavily on installed-package internals rather than a skill or fetched docs: it read `node_modules/mcp-use/README.md`, inspected `node_modules/mcp-use/dist/server.d.ts`, `dist/tools.d.ts`, and React declarations, and ran `npx mcp-use --help`, `build --help`, and `start --help`. The transcript shows no skill-file or external docs URL usage.
