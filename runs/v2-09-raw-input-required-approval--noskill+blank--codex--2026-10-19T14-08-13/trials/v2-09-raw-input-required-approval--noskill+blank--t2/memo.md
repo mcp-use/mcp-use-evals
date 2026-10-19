@@ -1,0 +1,9 @@
+The agent spent substantial time reverse-engineering APIs and wire behavior from installed packages, using `find node_modules/mcp-use`, `rg -n "inputRequired|inputResponse|acceptedContent"`, and source inspection such as `sed -n '5500,5635p' node_modules/@modelcontextprotocol/server/dist/src-CX2iR2pK.mjs`; no skill file or fetched docs URL appears in the transcript.
+
+Dependency/toolchain setup caused a typecheck detour: `npx tsc --noEmit` failed with `Cannot find name 'process'`, followed by `npm ls` reporting `@types/node@26.6.5 invalid` and `typescript@7.0.2 invalid`. The agent repaired package/config files and then got `npx tsc --noEmit` to pass.
+
+Manual protocol verification had significant discovery friction. A modern-version `initialize` attempt failed because `an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`; `server/discover` then failed because `the required Mcp-Method header is absent`; and the first tool call failed because `the required Mcp-Name header is absent`. The agent inspected protocol internals and added those headers before successful calls.
+
+The key correctness miss was visible in the successful manual decline check but was not caught because the agent only checked terminality, not expected wording. The response text was `Deployment approval was not granted.`, and the agent concluded, `The live MCP checks passed`; however, `src/server.ts` returns that generic message for `response.action === "decline" || response.action === "cancel"`, while the separate false-approval path returns `Deployment was declined.`. This inconsistency directly exposed the contract-call failure around matching `decline`.
+
+Cleanup also hit environment papercuts: `git diff --check` produced `warning: Not a git repository`, while `fuser` and `ss` both failed with `command not found`, requiring process discovery via `ps -ef` and explicit `kill`.
