@@ -1,0 +1,9 @@
+The agent spent discovery time querying npm and inspecting installed SDK internals rather than using external docs: `npm view mcp-use version description repository.url dist.tarball --json`, followed by `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and `resources.d.ts`. This worked, but indicates API-shape discovery depended on declaration-file grepping.
+
+TypeScript setup required two correction cycles. The first check failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`; after modifying `package.json`, the second still reported `Cannot find name 'process'`, requiring a separate `tsconfig.json` change despite `@types/node@26.6.5` already being installed.
+
+The SDK’s telemetry behavior was a papercut. After successful implementation, the agent searched `node_modules/mcp-use/dist/usage.d.ts` and inspected `.mcp-use/usage.json`, then explicitly deleted it with `fileChange({"event":"delete","path":".mcp-use/usage.json"})`. The final source defensively sets `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` and comments that telemetry would otherwise create `a local identity file on first use` (`src/server.ts`).
+
+Process cleanup was awkward: after `kill 684 726 737`, the process list still showed `node node_modules/.bin/tsx src/server.ts`, requiring another `kill 726`. Both intentional server shutdowns also surfaced as failed tool results with `"exitCode":1` even though the output was merely `Project issue tracker MCP server listening at http://localhost:3101/mcp`, which adds misleading noise during verification.
+
+One unnecessary repository check also failed in the blank workspace: `git status --short && git diff --check` returned `fatal: not a git repository (or any of the parent directories): .git`.
