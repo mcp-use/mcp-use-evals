@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than docs: it queried npm with `npm view mcp-use@2.0.4 version description exports --json`, then grepped declarations using `rg -n "fromOpenAPI|streamable|listen\(|MCPServer" node_modules/mcp-use/dist --glob '*.d.ts'`, and inspected runtime implementation around `registerOpenAPITools`. This successfully clarified tag filtering and error behavior, summarized as `"supports the required tag filter and raw upstream error propagation"`, but contributed several exploratory calls before implementation.
+
+TypeScript exposed one small typing papercut after the initial implementation: `src/server.ts(109,11): error TS2322: Type 'unknown' is not assignable to type 'number'.` The agent corrected it and reran `npx tsc --noEmit`.
+
+Lifecycle verification lost time to process-management confusion. The first background launch returned PID `474`, but the immediate probe failed with `curl: (7) Failed to connect to 127.0.0.1 port 3100`. A second launch then reported `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`, while the curl against that port succeeded, showing the earlier server had eventually started. Cleanup was also awkward: after `kill 531`, process inspection still showed `547 ... node node_modules/.bin/tsx src/server.ts` and `558 ... src/server.ts`, requiring another explicit kill.
+
+Two environment assumptions created additional noise: port inspection failed because `/bin/bash: line 2: ss: command not found`, and repository checks produced `fatal: not a git repository`. Neither affected the implementation, but both were avoidable dead ends.
+
+The generated tool schema introduced a noteworthy API shape: `createOrder` required a nested `"body"` property, shown by `"required":["body"]`, so the verification call had to use `"arguments":{"body":{"sku":"green-tea","quantity":2}}` rather than placing request fields at the tool argument root.

@@ -1,0 +1,7 @@
+The main friction was API discovery through installed package internals rather than a concise SDK example: the agent ran `rg -n "fromOpenAPI|streamable|Streamable" node_modules/mcp-use/dist` and inspected `node_modules/mcp-use/dist/server.d.ts` plus `node_modules/mcp-use/dist/openapi/types.d.ts`. Client verification required several more searches after the first returned nothing: `rg -n "StreamableHTTPClientTransport|class Client" ...` produced `output":""`, followed by inspection of `@modelcontextprotocol/client/dist/index.d.mts` and searches for `listTools|callTool`.
+
+The final requirement pass took a minor wrong turn by assuming Git metadata existed: `git status --short && git diff --check` failed with `fatal: not a git repository`. The agent recovered by rerunning only package and file checks.
+
+The SDK also created a workspace artifact during execution: after deleting `.mcp-use/usage.json`, running verification caused `find .mcp-use ...` to report `.mcp-use/usage.json` again, requiring a second deletion. This is a small scaffold/telemetry papercut for a self-contained deliverable.
+
+The direct startup smoke test was operational but surfaced as a failed tool call because the long-running process was interrupted: `PORT=3123 npx tsx src/server.ts` returned `exitCode":130` even though it printed `MCP server listening at http://localhost:3123/mcp`. End-to-end verification itself was clean, with `Verified tools: cancelOrder, createOrder, getOrder` and `Verified create, retrieve with events, cancel, and missing-order lifecycle over MCP.`
