@@ -1,0 +1,9 @@
+The main discovery friction was documentation access: `npm view mcp-use readme --json` produced an empty file (`0 /tmp/mcp-use-readme.json`), so the agent instead grepped the installed package with `rg ... node_modules/mcp-use` and relied on `node_modules/mcp-use/README.md` plus `node_modules/mcp-use/dist/server.d.ts`. Those local files supplied the key API shapes, including `import { MCPServer } from "mcp-use"`, `server.tool(`, and `listen(port?: number | undefined, options?: ListenOptions)`.
+
+Dependency alignment required an extra check and reinstall. Before adjustment, `npm ls zod` showed the application on `zod@3.25.76` while mcp-use’s nested SDK packages used `zod@4.6.7`; the final `package.json` then pinned `"zod": "^4.6.7"`, and the next install reported `removed 4 packages, changed 1 package`.
+
+The first server launch was a wrong turn: `PORT=3123 npx tsx src/server.ts` exited with `exitCode:1` and dumped minified internals beginning at `node_modules/mcp-use/dist/index-node.js:99`, rather than a concise actionable error. The agent modified `src/server.ts`, reran `npx tsc --noEmit && PORT=3123 npx tsx src/server.ts`, and subsequently got `MCP server listening at http://localhost:3123/mcp`; the transcript does not expose the exact corrective edit.
+
+Verification was otherwise thorough: the tool response was `"text":"21.75"` for `19.5` and `2.25`, while invalid input returned `"Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string"`.
+
+A minor environment-assumption papercut appeared at the end when `git status --short` failed with `fatal: not a git repository`; the agent recovered by listing files with `rg --files -g '!node_modules/**'`.
