@@ -1,0 +1,7 @@
+The main time sink was SDK API discovery: the agent first queried npm with `npm view mcp-use version description repository.url dist-tags --json && npm view mcp-use readme --json`, then inspected installed package internals via `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and grepped declarations for `"listen\\(|serve\\(|streamable|MCPServer"`. This suggests the package README/npm metadata did not immediately provide enough implementation guidance, so the agent relied on `node_modules` type declarations to confirm `listen()` behavior and `PORT` precedence.
+
+Dependency setup was repeated: after an initial `npm install`, the agent modified `package.json` and ran `npm install && node -p "require('./node_modules/zod/package.json').version"` again, ending on Zod `4.6.7`. The transcript does not explain why that adjustment was necessary, making the compatibility expectation somewhat opaque.
+
+Runtime verification used lengthy hand-written JSON-RPC `curl` requests such as `curl ... --data '{"jsonrpc":"2.0","id":1,"method":"initialize"...}'`, rather than a documented SDK test helper or MCP client, adding ceremony to lifecycle testing.
+
+Running the SDK also created an unexpected telemetry/state artifact: the final file scan showed `./.mcp-use/usage.json`, which the agent explicitly removed with `fileChange({"event":"delete","path":".mcp-use/usage.json"})`. Test-server cleanup was mildly awkward: the listener tool ended with `exitCode":143` and `"status":"failed"` after process termination, prompting an additional `kill 469 482` and process check.
