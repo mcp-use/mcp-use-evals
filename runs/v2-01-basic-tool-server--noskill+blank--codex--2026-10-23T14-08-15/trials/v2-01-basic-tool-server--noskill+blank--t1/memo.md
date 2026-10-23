@@ -1,0 +1,11 @@
+The agent relied heavily on package-local materials rather than external docs: it inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/tools.d.ts`, finding the README example `import { MCPServer } from "mcp-use"` and `server.tool(...)`. It later grepped bundled implementation code to confirm listener behavior, locating `async listen(port=void 0,options={})`.
+
+The first typecheck exposed avoidable project-configuration friction: `Cannot find name 'process'` despite installing `@types/node`, and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then had to modify both `package.json` and `tsconfig.json`; the final package explicitly uses `"type": "module"`.
+
+End-to-end verification required additional node_modules archaeology because the expected client declaration path was wrong: `sed: can't read node_modules/@modelcontextprotocol/client/dist/esm/client/streamableHttp.d.ts: No such file or directory`. It then searched `@modelcontextprotocol/client/dist` for `StreamableHTTPClientTransport`, `listTools`, and `callTool`.
+
+The first inline client test also failed because `tsx -e` emitted CommonJS: `Top-level await is currently not supported with the "cjs" output format`. Wrapping the test in an async IIFE worked and produced `{"tools":["add"],"result":{"content":[{"type":"text","text":"42"}]}}`.
+
+A notable SDK/API surprise appeared during validation testing. The agent initially treated invalid arguments as a rejected promise and reported `Invalid input was accepted`; inspecting the returned value showed the SDK instead resolves with `{"content":[{"type":"text","text":"Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string"}],"isError":true}`. The agent explicitly corrected its understanding: `The SDK represents invalid tool arguments as an MCP error result (rather than throwing in the client)`.
+
+There was minor cleanup friction from assuming a Git checkout: `fatal: not a git repository`, followed by the full `git diff --no-index` usage output. Running the server also generated `./.mcp-use/usage.json`, which the agent subsequently deleted.
