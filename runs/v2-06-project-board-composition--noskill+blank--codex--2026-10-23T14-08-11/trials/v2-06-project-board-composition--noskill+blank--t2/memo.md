@@ -1,0 +1,9 @@
+The main friction was API discovery. The agent first queried npm metadata with `npm view mcp-use readme --json`, then inspected the installed package via `find node_modules/mcp-use`, `node_modules/mcp-use/README.md`, and declaration files including `dist/server.d.ts`, `dist/tools.d.ts`, and `dist/resources.d.ts`. This suggests the package README alone was not enough to establish the resource and transport APIs, requiring direct declaration-file inspection.
+
+One lookup took a wrong turn because it assumed an unshipped file: `rg: node_modules/mcp-use/dist/server.js: No such file or directory (os error 2)`. The same command dumped a large minified `dist/index-node.js` match, making transport discovery noisy rather than targeted.
+
+The actual implementation was straightforward once the API shape was found: `src/server.ts` uses `server.tool(...)`, `server.resource(...)`, `server.resourceTemplate(...)`, and `await server.listen();`, and the first `npx tsc --noEmit` completed with `exitCode":0`.
+
+Verification was thorough but manually implemented with raw JSON-RPC and SSE parsing: the agent used `curl ... method":"initialize"` and a custom Node helper that searched for `line.startsWith("data: ")`. The lifecycle itself passed with `MCP lifecycle verification passed`, but stopping the live server produced `exitCode":130` and `"status":"failed"`, even though the logged requests show the intended create/assign/resolve and resource-read sequence.
+
+The final cleanup check also took an avoidable wrong turn: `git status --short && git diff --check && npx tsc --noEmit` failed immediately with `fatal: not a git repository`, so the chained final typecheck never ran. This did not affect correctness because an earlier standalone `npm install && npx tsc --noEmit` had already succeeded.
