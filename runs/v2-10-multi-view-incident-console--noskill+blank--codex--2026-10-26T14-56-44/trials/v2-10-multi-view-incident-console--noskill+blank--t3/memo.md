@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the server at root `index.ts`; the grader searched only `src/server.ts` and `src/index.ts`, while the agent’s own file listing confirmed only `./index.ts`. The CLI masked this mismatch by reporting `[mcp-use] built index.ts + views ...`, so the agent concluded the project was complete without testing the expected conventional entry location.
+
+Dependency discovery also cost a retry: the agent initially installed `zod@3`, then typechecking failed because `Property 'jsonSchema' is missing`; switching via `npm install zod@4` fixed it. This compatibility requirement was not apparent from the initial install prompt or package metadata.
+
+The first production start failed because `npm init` created `"type": "commonjs"` and the generated build was ESM: `Cannot use import statement outside a module`. The agent then modified `package.json`; the later inspection showed `"type": "module"`. This is a scaffold papercut because the build itself had succeeded before start exposed the module-format mismatch.
+
+The agent leaned heavily on installed-package inspection rather than a skill file or fetched docs: it read `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/tools.d.ts`, and later `dist/react/hooks/use-tool-context.d.ts`. It also used `npx mcp-use --help` to discover CLI behavior. The transcript shows no mcp-use skill file being used.
+
+Runtime verification was otherwise extensive—`tools/list`, `resources/list`, both `resources/read`, and both `tools/call` returned successfully—and the final script printed matching `"resultViews"` and MIME types. However, that verification exercised the CLI-built root entry, not the grader’s entry discovery contract, leaving the core packaging error undetected.
