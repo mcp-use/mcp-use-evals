@@ -1,0 +1,9 @@
+The main miss was tool response wording: `src/server.ts` returns ``text: `read record ${id}``` and ``text: `deleted record ${id}```, while the deterministic checks expected text containing `Record R-1` and `deleted R-1`. The agent’s end-to-end test did not catch this because it used a different identifier—`"id":"record-1"`—and only concluded that “`the approved deletion reached its handler`,” without asserting exact response text.
+
+The agent relied heavily on installed-package inspection rather than external docs, running `sed` over `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/README.md`, and `node_modules/mcp-use/dist/middleware/mcp-middleware.d.ts`, plus `rg -n "mcp:tools/call|McpMiddleware" ...` to discover middleware and server API shape. That exploration successfully established that “`The installed framework exposes the required mcp:tools/call hook and mounts /mcp by default.`”
+
+There was avoidable TypeScript setup churn: the first check failed with `Cannot find name 'process'`, despite `@types/node` having been installed, because the generated TypeScript configuration did not expose Node types. Dependency metadata also temporarily disagreed with installed versions: `@types/node@26.6.5 invalid: "^25.0.0"` and `typescript@7.0.2 invalid: "^5.9.0"`, requiring edits to `package.json` and `tsconfig.json` followed by another `npm install`.
+
+Manual protocol verification also lost time to malformed shell JSON. The combined curl attempt ended with `Invalid JSON`, and the first audit-resource read returned `HTTP/1.1 400 Bad Request` with `Invalid JSON`; switching to `--data-binary @- <<'EOF'` then worked and returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+The final repository check unnecessarily assumed Git metadata: `git diff -- src/server.ts package.json tsconfig.json` failed with `warning: Not a git repository`, despite the initial `pwd` output showing only `.` and no repository files.
