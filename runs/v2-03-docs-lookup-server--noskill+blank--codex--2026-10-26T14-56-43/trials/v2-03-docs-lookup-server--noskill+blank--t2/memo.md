@@ -1,0 +1,9 @@
+The agent had discovery friction around the SDK API and leaned heavily on installed package internals, first reading `node_modules/mcp-use/README.md` and `package.json`, then inspecting `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `tools.d.ts`; the transcript explicitly shows `rg -n "listen\\(|resource\\(" node_modules/mcp-use/README.md node_modules/mcp-use/dist -g '*.d.ts'`. It also explored the CLI and client package via `npx mcp-use --help`, `npx mcp-use client --help`, and a grep for `StreamableHTTPClientTransport`. No skill file or external docs URL appears in the transcript.
+
+The first typecheck failed because Node globals were unavailable: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent recovered by running `npm install && npx tsc --noEmit`, suggesting some scaffold/config churn after initially installing `@types/node`.
+
+Protocol verification also took a retry because `tsx -e` inherited CommonJS behavior from the generated package setup: `Top-level await is currently not supported with the "cjs" output format`. Wrapping the verification script in `(async () => { ... })` then worked. The generated npm scaffold had `"type": "commonjs"`, which contributed to this avoidable verification papercut even though the server itself ran successfully.
+
+The final cleanup command introduced unrelated noise by assuming a Git repository: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`, and the combined command exited with code 129 despite the preceding typecheck succeeding. The temporary listener shutdown also produced an `exitCode:143`, after which the agent had to check `pgrep -af 'tsx src/server.ts'`.
+
+Installation surfaced ecosystem warnings that did not block the run: `4 vulnerabilities (3 low, 1 high)` and `esbuild@0.28.2 (postinstall: node install.js)` requiring allow-scripts review.

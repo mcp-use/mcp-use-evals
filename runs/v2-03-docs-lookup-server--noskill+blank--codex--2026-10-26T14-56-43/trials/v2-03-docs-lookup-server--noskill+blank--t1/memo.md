@@ -1,0 +1,9 @@
+The agent relied heavily on installed package internals rather than external docs, inspecting `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `tools.d.ts` via commands such as `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts`; no skill file or fetched docs URL appears in the transcript.
+
+The first typecheck failed despite `@types/node` being installed: `error TS2591: Cannot find name 'process'`, prompting inspection of `npm ls @types/node typescript` and a `tsconfig.json` modification. This is a TypeScript configuration papercut rather than an SDK API issue.
+
+End-to-end verification hit confusing CLI dependency behavior. Running `npx mcp-use client connect` said `[mcp-use] installing @mcp-use/client…` and even reported `added 1 package`, but immediately failed with `[mcp-use] @mcp-use/client is not installed.` The agent then explicitly ran `npm install -D @mcp-use/client`, used it successfully for resource/tool checks, and later removed it with `npm uninstall -D @mcp-use/client`.
+
+The SDK created an unexpected local telemetry artifact, shown as `./.mcp-use/usage.json`. The agent deleted it, grepped package internals for `isUsageDisabled`, then added `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` at `src/server.ts` to keep the server local. That required a second server run to confirm the artifact no longer appeared.
+
+There was also avoidable cleanup churn: the agent initially installed `@modelcontextprotocol/sdk` alongside `mcp-use`, then removed it with `npm uninstall @modelcontextprotocol/sdk` after confirming it was unnecessary. A final validation command also produced noise because the blank directory was not a repository: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.
