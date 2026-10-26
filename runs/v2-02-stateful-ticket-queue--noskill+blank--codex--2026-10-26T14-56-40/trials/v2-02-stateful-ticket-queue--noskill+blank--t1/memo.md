@@ -1,0 +1,7 @@
+The main discovery cost was determining the SDK shape from installed artifacts rather than an example: the agent first queried npm with `npm view mcp-use version description repository.url dist.tarball && npm view mcp-use readme --json`, then inspected `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, and grepped `rg -n "listen\\(" node_modules/mcp-use/dist/server.d.ts node_modules/mcp-use/dist/*.d.ts`. The type declaration ultimately supplied the important port behavior: `Port precedence is the argument, PORT, config.port, then 3000`.
+
+The only implementation wrong turn was a generated escaping typo in `src/server.ts:26`: `id: z.string().describe("Ticket id, such as \\\\"1\\\\""),`. It caused `error TS1005: ',' expected` and two `error TS1127: Invalid character` diagnostics, requiring inspection and a correction before `npx tsc --noEmit` passed.
+
+There were two incidental workflow papercuts after implementation. Installation reported `5 vulnerabilities (3 low, 2 high)` and warned that `esbuild@0.28.2` had `install scripts not yet covered by allowScripts`. The final repository check was also inapplicable to the blank workspace: `git status --short && git diff --check` failed with `fatal: not a git repository (or any of the parent directories): .git`.
+
+The manual MCP verification otherwise worked directly over `/mcp`; the first probe returned all four tools, and the lifecycle produced `Created ticket 1`, `Ticket 999 not found`, `Closed ticket 1`, and `Open tickets (1): Billing question`.

@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than a skill file or fetched docs: it ran `npm view mcp-use readme --json`, then searched `node_modules/mcp-use` with `rg -n "streamable|Streamable|tool\("`, and opened `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/mount-mcp.d.ts`. It later grepped the bundled MCP client declarations for `StreamableHTTP` and `callTool(` to construct its verifier.
+
+A package-scaffold edit caused the main wrong turn. The generated `package.json` initially had `"type": "commonjs"`, and after editing it contained both `"type": "module"` and a later `"type": "commonjs"`. This produced `error TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` The agent inspected `package.json`, corrected it, and reran typechecking.
+
+The verification command unnecessarily assumed a Git worktree: `npx tsc --noEmit && git diff --check && git status --short` failed with `warning: Not a git repository.` Because the commands were chained with `&&`, the overall result was exit code 129 even though the preceding typecheck had succeeded.
+
+The first lifecycle test omitted the explicit idempotent second claim: its output included only one `claim_ticket: Ticket 1 claimed.` The agent then modified `src/server.ts` and reran verification; the second output showed two consecutive `claim_ticket: Ticket 1 claimed.` lines. This added an extra server restart/test cycle despite the implementation already being idempotent at `src/server.ts` (`ticket.claimed = true;`).
+
+Dependency installation also surfaced ecosystem noise: npm reported `4 vulnerabilities (3 low, 1 high)` and warned that `esbuild@0.28.2` had an install script “`not yet covered by allowScripts`,” although neither blocked the successful run.
