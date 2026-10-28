@@ -1,0 +1,7 @@
+The repair itself was direct: the agent identified that “`error cases throw, reservations add stock, and restocks update a discarded copy`,” then corrected those localized bugs in `src/server.ts`.
+
+SDK discovery had minor friction because dependencies were initially absent: the first API search returned “`node_modules missing`” and “`No such file or directory`,” requiring `npm install`. After installation, the agent relied on grepping and reading package declarations—`node_modules/mcp-use/dist/server.d.ts` showed “`await server.listen(3000);`”—rather than a skill file or fetched documentation. This confirmed the listener API but added several exploratory calls for a simple signature.
+
+Verification was thorough but manually verbose, using raw `curl` JSON-RPC requests with headers such as “`MCP-Protocol-Version: 2025-06-18`.” The live results correctly demonstrated stateful behavior, including “`Reserved 3 of coffee-mug`,” “`insufficient stock for coffee-mug`,” “`Restocked 5 of coffee-mug`,” and final “`coffee-mug: 10\ndesk-lamp: 2`.”
+
+A minor cleanup detour occurred when the agent ran `git diff` in a directory without repository metadata; it failed with “`warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.” The server process was nevertheless stopped, as the subsequent process check produced no `pgrep` output alongside the final source listing.
