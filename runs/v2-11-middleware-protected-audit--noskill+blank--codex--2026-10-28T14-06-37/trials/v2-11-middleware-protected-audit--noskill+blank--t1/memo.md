@@ -1,0 +1,9 @@
+The decisive miss was tool response wording: `src/server.ts` returns ``text: `record:${id}``` and ``text: `deleted:${id}```, while the grader expected text containing `Record R-1` and `deleted R-1`. The agent’s own live verification surfaced the exact outputs—`"record:alpha"` and `"deleted:alpha"`—but it accepted them as correct and concluded, `The live endpoint has accepted the read ... and accepted the approved delete`, so the final verification did not check expected human-readable phrasing.
+
+SDK/API discovery required substantial inspection of installed package internals rather than a concise example: the agent read `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/middleware/mcp-middleware.d.ts`, and searched bundled JavaScript for `runMcpOperation|composeMiddleware`. It also inspected the underlying protocol schema at `node_modules/@modelcontextprotocol/server/dist/src-CX2iR2pK.mjs`, including `arguments: z.record(z.string(), z.unknown()).optional()`.
+
+Manual HTTP verification took several retries because protocol requirements were not initially anticipated. The first attempt produced `the request headers and body disagree` and requests `missing the required per-request envelope key(s): _meta`; removing the modern protocol header then produced `Client must accept both application/json and text/event-stream`. Adding `accept: application/json, text/event-stream` finally yielded `HTTP/1.1 200 OK`.
+
+There was also a TypeScript configuration papercut after installing `@types/node`: the first typecheck failed with `Cannot find name 'node:url'` and `Cannot find name 'process'`, advising `add 'node' to the types field in your tsconfig`; modifying `tsconfig.json` resolved it.
+
+The final surface check unnecessarily ran Git commands in a blank, non-repository workspace and ended with `warning: Not a git repository`, giving that combined command exit code `129` despite successful `tools/list` and `resources/list` responses.

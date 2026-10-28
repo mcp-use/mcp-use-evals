@@ -1,0 +1,9 @@
+The decisive miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the grader expected `Record R-1`. The agent’s live check did not catch this because it tested `id: "record-1"` and accepted the output `"text":"record record-1"` without asserting an expected string.
+
+There was initial TypeScript module-configuration friction after `npm init` created `"type": "commonjs"`. The first typecheck failed with `"The 'import.meta' meta-property is not allowed in files which will build into CommonJS output"` and `"The current file is a CommonJS module and cannot use 'await' at the top level"`; the agent then modified `package.json` and `tsconfig.json` before `npx tsc --noEmit` succeeded.
+
+The agent relied heavily on package metadata and installed declarations rather than a skill file: it fetched `npm view mcp-use@2.0.4 ... readme --json`, then searched `node_modules/mcp-use/dist` with `rg -n "use\\(|resource\\(|listen\\(|http"` and opened `server.d.ts`, `mcp-middleware.d.ts`, and `resources.d.ts`. The npm README exposed the docs URL `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`, but the transcript does not show that URL being fetched.
+
+A cleanup/check command also wasted a turn because the blank directory was not a repository: `git diff --check` returned `"warning: Not a git repository"`, causing exit code 129 even though `tools/list` had succeeded. The running server process later ended with exit code 130 after otherwise successful protocol checks.
+
+Dependency pinning needed a late correction: the agent first observed the lockfile root dependency as `"^2.0.4"` and only after `npm install --package-lock-only` confirmed `"2.0.4"`. The SDK also created an unexpected `.mcp-use/usage.json` containing a `"serverId"`, which the agent explicitly deleted before finishing.

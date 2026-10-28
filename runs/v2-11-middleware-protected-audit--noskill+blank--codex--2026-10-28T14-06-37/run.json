@@ -1,0 +1,324 @@
+{
+  "runId": "v2-11-middleware-protected-audit--noskill+blank--codex--2026-10-28T14-06-37",
+  "batchId": "40702398210-1",
+  "startedAt": "2026-10-28T14:06:37.519Z",
+  "agentRunner": "codex",
+  "agentModel": "gpt-5.6-terra",
+  "judgeModel": "gpt-5.6-sol",
+  "manifest": {
+    "graderVersion": "2.1.0",
+    "sandbox": "docker",
+    "taskPromptHashes": {
+      "v2-11-middleware-protected-audit": "69fbe2089ca9"
+    },
+    "skillHash": null
+  },
+  "trials": [
+    {
+      "task": "v2-11-middleware-protected-audit",
+      "variant": "noskill+blank",
+      "trial": 1,
+      "promptHash": "69fbe2089ca9",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-11-middleware-protected-audit--noskill+blank--t1/memo.md",
+      "transcriptPath": "trials/v2-11-middleware-protected-audit--noskill+blank--t1/transcript.md",
+      "timestamp": "2026-10-28T14:06:37.567Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 41617 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:read_record:1",
+            "pass": false,
+            "required": true,
+            "detail": "read_record({\"id\":\"R-1\"}) -> \"record:R-1\" did not match {\"type\":\"contains\",\"value\":\"Record R-1\"}"
+          },
+          {
+            "id": "call:delete_record:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:delete_record:2",
+            "pass": false,
+            "required": true,
+            "detail": "delete_record({\"id\":\"R-1\",\"approvalCode\":\"APPROVE-DELETE\"}) -> \"deleted:R-1\" did not match {\"type\":\"contains\",\"value\":\"deleted R-1\"}"
+          },
+          {
+            "id": "post-call-resource-read:audit://events:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 118503,
+        "turns": 16,
+        "tokensIn": 786757,
+        "tokensOut": 7072,
+        "toolCalls": 23,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-11-middleware-protected-audit",
+      "variant": "noskill+blank",
+      "trial": 2,
+      "promptHash": "69fbe2089ca9",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-11-middleware-protected-audit--noskill+blank--t2/memo.md",
+      "transcriptPath": "trials/v2-11-middleware-protected-audit--noskill+blank--t2/transcript.md",
+      "timestamp": "2026-10-28T14:08:51.068Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 35299 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:read_record:1",
+            "pass": false,
+            "required": true,
+            "detail": "read_record({\"id\":\"R-1\"}) -> \"read record R-1\" did not match {\"type\":\"contains\",\"value\":\"Record R-1\"}"
+          },
+          {
+            "id": "call:delete_record:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:delete_record:2",
+            "pass": false,
+            "required": true,
+            "detail": "delete_record({\"id\":\"R-1\",\"approvalCode\":\"APPROVE-DELETE\"}) -> \"deleted record R-1\" did not match {\"type\":\"contains\",\"value\":\"deleted R-1\"}"
+          },
+          {
+            "id": "post-call-resource-read:audit://events:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 90296,
+        "turns": 13,
+        "tokensIn": 674673,
+        "tokensOut": 6305,
+        "toolCalls": 24,
+        "costUsd": null
+      }
+    },
+    {
+      "task": "v2-11-middleware-protected-audit",
+      "variant": "noskill+blank",
+      "trial": 3,
+      "promptHash": "69fbe2089ca9",
+      "agentRunner": "codex",
+      "agentModel": "gpt-5.6-terra",
+      "sdkVersion": "2.0.4",
+      "memoPath": "trials/v2-11-middleware-protected-audit--noskill+blank--t3/memo.md",
+      "transcriptPath": "trials/v2-11-middleware-protected-audit--noskill+blank--t3/transcript.md",
+      "timestamp": "2026-10-28T14:10:35.216Z",
+      "error": null,
+      "valid": true,
+      "grade": {
+        "contractPass": false,
+        "checks": [
+          {
+            "id": "install",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "typecheck",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "source",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "entry",
+            "pass": true,
+            "required": true,
+            "detail": "src/server.ts"
+          },
+          {
+            "id": "start",
+            "pass": true,
+            "required": true,
+            "detail": "entry src/server.ts, port 35131 (PORT env respected)"
+          },
+          {
+            "id": "handshake",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "tools",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "resources",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:read_record:1",
+            "pass": false,
+            "required": true,
+            "detail": "read_record({\"id\":\"R-1\"}) -> \"record R-1\" did not match {\"type\":\"contains\",\"value\":\"Record R-1\"}"
+          },
+          {
+            "id": "call:delete_record:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "call:delete_record:2",
+            "pass": true,
+            "required": true,
+            "detail": null
+          },
+          {
+            "id": "post-call-resource-read:audit://events:1",
+            "pass": true,
+            "required": true,
+            "detail": null
+          }
+        ],
+        "failureCode": "contract.calls",
+        "sdkPath": "mcp-use",
+        "scoredForPassRate": true
+      },
+      "perf": {
+        "durationMs": 86137,
+        "turns": 17,
+        "tokensIn": 774597,
+        "tokensOut": 6056,
+        "toolCalls": 27,
+        "costUsd": null
+      }
+    }
+  ]
+}
