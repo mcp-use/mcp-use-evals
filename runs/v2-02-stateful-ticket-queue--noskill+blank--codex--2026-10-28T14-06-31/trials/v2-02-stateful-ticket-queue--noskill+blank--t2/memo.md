@@ -1,0 +1,9 @@
+The agent had to discover the SDK shape rather than relying on a skill: it queried npm with `npm view mcp-use readme --json`, then inspected installed declarations via `sed -n '1,180p' node_modules/mcp-use/dist/server.d.ts` and grepped `node_modules/mcp-use` for `listen\(|serve\(|start\(`. The npm README pointed to `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`, but the transcript does not show that URL being fetched directly.
+
+The initial scaffold caused an avoidable module/typecheck detour. `npm init -y` created `"type": "commonjs"`, after which `npx tsc --noEmit` failed with `Cannot find name 'process'`, ``The 'import.meta' meta-property is not allowed in files which will build into CommonJS output``, and `The current file is a CommonJS module and cannot use 'await' at the top level`. The agent then modified both `package.json` and `tsconfig.json` before typechecking successfully.
+
+Verification exposed an SDK CLI papercut: although `npx mcp-use --help` advertised `client   Connect to and invoke MCP servers`, the first connection attempt failed with `@mcp-use/client is required for this command.` The agent had to run `npm install -D @mcp-use/client` before the advertised client workflow worked.
+
+The SDK also created an unexpected project file during execution: the agent found `.mcp-use/usage.json`, deleted it, searched SDK internals with `rg -n "usage\.json|usage" node_modules/mcp-use/dist`, and added the source workaround `(globalThis as typeof globalThis & { __MCP_USE_ANONYMIZED_TELEMETRY__?: boolean }).__MCP_USE_ANONYMIZED_TELEMETRY__ = false;` in `src/server.ts`. That is notable friction for a task explicitly requiring ticket state to use “no files.”
+
+A final cleanup check also wasted a command because the blank workspace was not a Git repository: `git diff --check` returned `warning: Not a git repository.`

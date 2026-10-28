@@ -1,0 +1,7 @@
+The main discovery friction was API shape: the agent first consulted the npm metadata/readme (`npm view mcp-use readme`) and found the documentation link `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`, then inspected installed declarations with `rg -n "listen\\(|serve\\(|streamable|HTTP|http" node_modules/mcp-use/dist -g '*.d.ts'`. It did not visibly fetch that docs URL or use a skill file.
+
+An attempted package inspection failed because the SDK blocks its package metadata subpath: `Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './package.json' is not defined by "exports" in node_modules/mcp-use/package.json`. The agent recovered by directly reading `node_modules/mcp-use/package.json` with `sed`, but this is a package-export papercut.
+
+Lifecycle verification also hit an optional-dependency surprise. Although `npx mcp-use client --help` advertised client commands, the first connection failed with `"code":"client_install_required"` and `"@mcp-use/client is required for this command."`; the agent then had to run `npm install -D @mcp-use/client` before testing.
+
+The final verification command unnecessarily included `git status --short` in a blank, non-git workspace, causing an otherwise successful repeated-claim/typecheck sequence to exit nonzero with `fatal: not a git repository (or any of the parent directories): .git`. The repeated claim calls themselves both returned `"Ticket 2 claimed."`, so this was verification-command noise rather than an implementation issue.
