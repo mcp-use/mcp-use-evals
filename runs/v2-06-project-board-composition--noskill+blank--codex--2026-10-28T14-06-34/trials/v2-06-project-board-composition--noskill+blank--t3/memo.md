@@ -1,0 +1,7 @@
+The main SDK papercut was a Zod-version mismatch: the first typecheck rejected each schema because `Property 'jsonSchema' is missing`, and `npm ls zod` showed the app on `zod@3.25.76` while MCP dependencies used `zod@4.6.7`. The agent recovered by modifying `package.json` and rerunning `npm install && npx tsc --noEmit`, which exited successfully.
+
+API discovery relied on the installed package rather than prior knowledge: the agent inspected `node_modules/mcp-use/README.md`, then read `node_modules/mcp-use/dist/server.d.ts` and `node_modules/mcp-use/dist/resources.d.ts` while grepping for `"resource\\(|listen\\(|streamable|HTTP"`.
+
+Most wasted time came from hand-written curl verification. The first lifecycle script produced repeated `Invalid JSON`, a `Method not found`, and server logs with several `POST /mcp 400`; the agent explicitly acknowledged, `"I hit a malformed JSON request in my verification script"`. Its first restart attempt also failed—`curl: (7) Failed to connect to 127.0.0.1 port 3100`—with an empty `/tmp/mcp-issue-tracker.log`, requiring another foreground launch via `PORT=3100 npx tsx src/server.ts`.
+
+A final unrelated repository check added noise: `git status --short` failed with `fatal: not a git repository`. Cleanup also surfaced as a failed tool result despite successful typechecking: the final process-killing command returned `exitCode:143`, although its output showed the complete successful lifecycle, including `resources/read issue://999 /mcp 200`.
