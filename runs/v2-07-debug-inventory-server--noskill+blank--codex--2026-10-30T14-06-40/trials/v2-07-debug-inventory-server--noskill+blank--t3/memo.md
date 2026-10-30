@@ -1,0 +1,7 @@
+The main setup papercut was running the typecheck before dependencies were installed: `npx tsc --noEmit` fetched the unrelated `tsc@2.0.4` package and failed with `This is not the tsc command you are looking for`; the agent then recovered with `npm install`.
+
+To confirm the SDK API, the agent inspected installed package sources rather than using an external docs URL: `sed -n '1,180p' node_modules/mcp-use/dist/server.d.ts`, `sed -n '80,170p' node_modules/mcp-use/dist/config.d.ts`, and a grep of `node_modules/mcp-use/README.md`. This revealed the `MCPServer.listen` documentation and example `await server.listen(3000);`. The agent briefly asserted the project “`needs explicit HTTP startup configuration`,” but the final source retained `await server.listen();` (`src/server.ts`), and subsequent checks showed both `PORT=3100` and the default port worked.
+
+Verification had one avoidable shell/quoting detour: a combined `get_stock`/`tools/list` curl command returned `curl: (22) The requested URL returned error: 400Invalid JSON`; rerunning the `tools/list` request separately succeeded and displayed all four schemas.
+
+The initial repository inspection also produced a harmless failed command because `git status --short` ran outside a Git checkout: `fatal: not a git repository (or any of the parent directories): .git`.
