@@ -1,0 +1,7 @@
+The main correctness miss was tool response wording: `src/server.ts` returns ``text: `record:${id}` `` and ``text: `deleted:${id}` ``, while the deterministic checks expected text containing `Record R-1` and `deleted R-1`. The agent’s own verification reinforced these mismatches without questioning them: it observed `"text":"record:record-1"` and `"text":"deleted:record-2"` and still concluded “Verified” successfully.
+
+API discovery relied on grepping installed package declarations rather than a skill or fetched docs: `rg -n "server\\.use|Streamable|streamable|registerTool|resource" node_modules/mcp-use ...`, followed by reading `node_modules/mcp-use/dist/server.d.ts` and `middleware/mcp-middleware.d.ts`. That route did produce working middleware and resource registration, but it added discovery overhead.
+
+Dependency setup had a version-resolution papercut. The first typecheck failed with `Cannot find name 'process'`, despite having installed `@types/node`; inspection then showed `@types/node@26.6.6 invalid: "^24.10.1"` and `typescript@7.0.2 invalid: "^5.9.3"`. Running `npm install && npx tsc --noEmit` repaired the installation.
+
+End-to-end verification also lost time to shell-command issues. The combined delete/resource command ended with `Invalid JSONcurl: (22) ... 400`, requiring a separate resource-read request. The final validation command unnecessarily ran `git diff --check` in a blank non-git directory and failed with `warning: Not a git repository`, even though the preceding `tools/list` and `resources/list` calls succeeded.

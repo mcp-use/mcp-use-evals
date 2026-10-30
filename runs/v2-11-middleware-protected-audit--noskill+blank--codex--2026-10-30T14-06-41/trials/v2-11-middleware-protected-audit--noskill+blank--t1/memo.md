@@ -1,0 +1,7 @@
+The main miss was response wording: `src/server.ts` returns ``text: `record:${id}` `` and ``text: `deleted:${id}` ``, while the deterministic checks expected “Record R-1” and “deleted R-1.” The agent’s own verification exposed the exact outputs—`"text":"record:r-1"` and `"text":"deleted:r-1"`—but it concluded that “`The four requested operations now work`” without checking likely consumer-facing text conventions.
+
+With no skill provided, the agent discovered the API by inspecting installed declarations: it ran `rg -n "class MCPServer|MCPServer|Streamable|streamable|\\.use\\(" node_modules/mcp-use/dist` and then read `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, `resources.d.ts`, and `middleware/mcp-middleware.d.ts`. That route worked, but contributed discovery overhead before implementation.
+
+Verification had avoidable command friction. The combined curl sequence ended with `Invalid JSON`, requiring a separate resource-read request. The final combined checks also invoked Git in a blank non-repository directory and failed with `warning: Not a git repository`, so the command exited `129` despite earlier checks succeeding.
+
+Server cleanup also took several attempts. After `kill 424`, the process remained as `node node_modules/.bin/tsx src/server.ts`; `kill 437 448` still left both processes listed, and only `kill -9 437 448` cleared them. This suggests the chosen foreground/background execution flow made process ownership unclear during verification.
