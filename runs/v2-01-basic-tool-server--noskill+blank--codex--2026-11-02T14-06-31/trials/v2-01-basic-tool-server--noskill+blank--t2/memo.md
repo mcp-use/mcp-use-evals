@@ -1,0 +1,7 @@
+The main friction was API discovery: the agent first queried npm with `npm view mcp-use version description repository.url dist-tags --json`, then searched installed package internals using `rg -n "streamable|Streamable|createMcp|McpServer|tool\\(" node_modules/mcp-use`. It ultimately relied on `node_modules/mcp-use/README.md` for the `MCPServer`/Zod tool pattern and `node_modules/mcp-use/dist/server.d.ts` for listener behavior, especially the declaration that port precedence is “`the argument, PORT, config.port, then 3000`.” No external docs page or skill file was used in the visible transcript.
+
+The first typecheck failed despite `@types/node` being installed: `error TS2591: Cannot find name 'process'` followed by the suggestion to “`add 'node' to the types field in your tsconfig`.” Inspection confirmed `@types/node@26.6.6` was present, while `tsconfig.json` lacked a `types` setting; the agent modified the config and the next `npx tsc --noEmit` passed.
+
+There was also minor package-scaffold cleanup friction: the inspected `package.json` contained both `"type": "module"` and a later `"type": "commonjs"`, inherited from `npm init -y` output showing `"type": "commonjs"`. The agent had to modify `package.json` again before successful verification.
+
+End-to-end verification was otherwise direct: initialization returned server info for `"add-server"`, `tools/list` exposed only `"name":"add"`, and `tools/call` returned `"text":"41.75"`. The validation check also produced the useful SDK error `"expected number, received string"`.
