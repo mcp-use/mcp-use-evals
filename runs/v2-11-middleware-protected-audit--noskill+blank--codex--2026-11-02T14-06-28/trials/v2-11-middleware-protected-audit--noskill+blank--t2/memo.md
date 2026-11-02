@@ -1,0 +1,7 @@
+The key miss was the approved-delete response casing: `src/server.ts` returns ``text: `Deleted record ${id}```, and the agent’s verification confirmed `"Deleted record r-1"`. Because it tested with lowercase ID `"id":"r-1"` and only observed success rather than checking the required matcher literally, it did not catch the grader-sensitive difference between `Deleted` and `deleted`.
+
+API discovery consumed several steps. The agent first queried npm with `npm view mcp-use@2.0.4 ...`, then inspected `node_modules/mcp-use/README.md`, and subsequently searched declaration and bundled files with commands including `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts` and `rg -n "listen\\(" ...`. This shows reliance on package metadata, README, and grepping installed SDK declarations rather than a skill file or fetched documentation URL.
+
+Verification had a shell-quoting papercut: the combined approved-delete/resource-read command produced `HTTP/1.1 400 Bad Request` and `Invalid JSON`. The agent recovered by issuing the resource request separately, which returned `"1|read_record|allowed\\n2|delete_record|denied\\n3|delete_record|allowed"`.
+
+Process cleanup also took multiple attempts. After `kill 485`, the transcript still showed child processes `498 node node_modules/.bin/tsx src/server.ts` and `509 ... src/server.ts`; a later `kill 498` was needed to clear them. The status check also emitted `fatal: not a git repository`, because it ran `git status --short` in the blank workspace.
