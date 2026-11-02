@@ -1,0 +1,7 @@
+The implementation repair itself was direct: the agent identified that “`errors are thrown instead of returned, reservations move stock in the wrong direction, and restocks update a throwaway copy`,” then changed only `src/server.ts`.
+
+SDK discovery had minor friction because the first API search ran before dependencies were installed and returned `node_modules/mcp-use: No such file or directory`. After `npm install`, the agent leaned on installed declarations rather than external docs, inspecting `node_modules/mcp-use/dist/server.d.ts`, where the listen contract states: “`Port precedence is the argument, PORT, config.port, then 3000`.” The broad initial grep also produced a large minified bundle excerpt beginning at `node_modules/mcp-use/dist/mcp-proxy-NETCUGUD.js:2`, suggesting the package’s generated layout made targeted API inspection noisier than necessary.
+
+The first end-to-end test script failed because `npx tsx -e` compiled as CJS: “`Top-level await is currently not supported with the "cjs" output format`.” The agent then wrapped the same script in “`(async () => { ... })();`,” after which all calls succeeded. This was verification-tool friction rather than an SDK/server defect.
+
+The final diff check also took an avoidable wrong turn because the workspace lacked Git metadata: “`warning: Not a git repository. Use --no-index to compare two paths outside a working tree`.” The agent recovered by printing `src/server.ts` directly with `sed -n '1,220p' src/server.ts`.
