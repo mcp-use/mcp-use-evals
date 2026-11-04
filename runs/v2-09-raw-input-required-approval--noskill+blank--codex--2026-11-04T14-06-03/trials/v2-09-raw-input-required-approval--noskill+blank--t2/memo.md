@@ -1,0 +1,9 @@
+The decisive miss was the decline/cancellation wording: `src/server.ts` returns `"Deployment approval was not granted."` whenever `response.kind !== "elicit" || response.action !== "accept"`, while only accepted `approve: false` returns `"Deployment was declined."`. The verification did not catch this because it asserted only terminality—`declined.isError` and absence of another input request—before printing `verified accepted approval with note and terminal declined approval`; it did not assert that the decline result text contained “decline.”
+
+API discovery consumed several searches through installed declarations, including `rg -n "inputRequired|inputResponse|acceptedContent|streamable|MCPServer" node_modules/mcp-use` and inspection of `node_modules/mcp-use/dist/tools.d.ts`, `response-helpers.d.ts`, `server.d.ts`, and `context.d.ts`. One search dead-ended with exit code 1: `rg -n "declare (function|const) ... node_modules/@modelcontextprotocol/server`.
+
+The first protocol-level verification also took a wrong turn because the test client initialized without elicitation capability; the tool returned `Cannot request input 'deployment-approval' ... the client ... did not declare the required capability`. The agent then switched to directly calling `respondToDeploymentRequest(...)`, which verified local branching but missed the grader-sensitive error message.
+
+There were two TypeScript papercuts. Despite installing `@types/node`, the initial config produced `Cannot find name 'process'` and required adding Node types. A later edit widened `isError` to `boolean`, causing `Type 'boolean' is not assignable to type 'true'`; the final source fixed this with `isError: true as const`.
+
+A final repository check was wasted because the blank workspace was not a Git repository: `warning: Not a git repository. Use --no-index`.
