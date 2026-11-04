@@ -1,0 +1,9 @@
+The main wrong turn was installing Zod 3: `npm install mcp-use@2.12.2 zod@3` led to `Property 'jsonSchema' is missing`, plus handler arguments inferred as `unknown`. Upgrading with `npm install zod@4` made `npx tsc --noEmit` pass, suggesting the SDK’s required schema-generation compatibility was not obvious during dependency setup.
+
+Discovery relied heavily on package internals rather than a skill or fetched docs: the agent searched `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/resources.d.ts`, and `dist/tools.d.ts` using `rg`. Its initial attempt to retrieve npm README metadata failed with `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`, adding an avoidable discovery detour.
+
+Verification also hit client-package friction. `npm ls @modelcontextprotocol/sdk --all` returned `└── (empty)`, after which the agent manually constructed repeated `curl` JSON-RPC requests with headers such as `MCP-Protocol-Version: 2025-03-26` rather than using a client library.
+
+The SDK unexpectedly created project-local telemetry state despite the in-memory-only intent: `find` revealed `./.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":"320f03fd-d2bd-4001-a1c0-78a71e5ef008"}`. The agent then grepped `node_modules/mcp-use/dist/internal/usage.js` and modified `src/server.ts` to set `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false"` before dynamically importing the SDK; this extra workaround is a notable filesystem/telemetry papercut.
+
+Shutdown and final hygiene took extra attempts. Killing PID 531 left child processes `node node_modules/.bin/tsx src/server.ts` and `/usr/local/bin/node ... src/server.ts`, requiring a second kill. A routine `git diff --check` also failed because the blank workspace was `Not a git repository`.
