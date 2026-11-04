@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry at root `index.ts`; the grader searched only `src/server.ts` and `src/index.ts`, while the produced source is explicitly `index.ts`. This happened despite the CLI exposing `--entry <path>` and the agent never adding a conventional `src/` entry or persisting an explicit entry configuration.
+
+Initial view typing failed with repeated `Property 'incident' does not exist on type 'never'` and `Property 'id' does not exist on type 'never'`. The agent then inspected `node_modules/mcp-use/dist/react/hooks/use-tool-context.d.ts` and ran `npx mcp-use typecheck`, which generated `mcp-env.d.ts` with `tools: typeof import("./index.js");`; after view and tsconfig edits, typecheck/build passed.
+
+The npm scaffold introduced a module-format papercut: startup failed with `Failed to load the ES module: .mcp-use/build/index.js` and `Cannot use import statement outside a module`. Inspection revealed contradictory duplicate fields in `package.json`: `"type": "module"` followed later by `"type": "commonjs"`. The agent corrected the package and subsequently got `mcp-use server running at http://localhost:3210/mcp`.
+
+Discovery relied heavily on installed-package internals rather than a skill file or fetched documentation: commands inspected `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/react/index.d.ts`, and grepped `node_modules/@mcp-use/cli` for `"mcp-env|views/|view.tsx|entry"`. The npm metadata route was unhelpful: `npm view mcp-use@2.0.4 readme --json` returned only npm notices.
+
+Protocol verification also hit client-install friction. `npx mcp-use client connect` said `[mcp-use] installing @mcp-use/client…` but immediately failed with `@mcp-use/client is not installed`, requiring the explicit workaround `npm install -D @mcp-use/client@2.0.0`.
+
+Finally, the inline-resource marker probe reported `"hasMarker":false` for both views even though source contains `views/incident-list/view.tsx: <main data-view="incident-list"` and `views/incident-detail/view.tsx: <main data-view="incident-detail"`. The agent switched to source grep rather than resolving why the built HTML check could not find the literals.
