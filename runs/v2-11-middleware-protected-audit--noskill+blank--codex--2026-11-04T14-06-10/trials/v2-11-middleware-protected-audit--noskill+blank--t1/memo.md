@@ -1,0 +1,7 @@
+The decisive miss was a response-text casing mismatch: `src/server.ts` returns ``text: `record ${id}```, while the grader expected `Record R-1`; the agent’s own verification displayed `"text":"record alpha"` but only concluded ``read_record` succeeds`, so the end-to-end check did not validate the exact expected payload.
+
+API discovery relied heavily on installed package internals rather than a skill file or external docs: the agent ran `find node_modules/mcp-use`, searched with `rg -n "server\\.use|Streamable|..."`, and opened `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, and `node_modules/mcp-use/README.md`. This did lead to the correct middleware API, summarized as “`supports typed mcp:tools/call middleware directly`.”
+
+There were two avoidable setup detours. TypeScript initially failed with `Cannot find name 'process'` despite `@types/node` being installed, requiring a `tsconfig.json` change after inspecting `npx tsc --showConfig`. The agent also chained successful typechecking to `git diff --check`, which failed because `Not a git repository`, creating a noisy false-negative command even though “`Type checking now passes`.”
+
+The manual protocol verification was otherwise concrete: the denied call returned `"approval required"`, and the resource returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`. However, using ad hoc `curl` assertions without checking exact expected read text allowed the capitalization defect to survive.
