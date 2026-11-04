@@ -1,0 +1,7 @@
+The repair itself was direct after inspection: the agent identified that “`errors are thrown instead of returned, reservations add stock, and restocks update a discarded copy`,” matching the explicit bug comments in the original `src/server.ts`.
+
+SDK discovery had minor friction because dependencies were initially absent: grepping `node_modules/mcp-use` returned “`No such file or directory (os error 2)`,” followed by `npm install`, which took “`16s`.” The agent then relied on installed SDK declarations rather than external docs, inspecting `node_modules/mcp-use/dist/server.d.ts`; the useful listener documentation stated, “`Port precedence is the argument, PORT, config.port, then 3000`.” This confirmed that the existing `await server.listen();` could remain unchanged.
+
+Verification was thorough but manually verbose: the agent constructed raw `curl` JSON-RPC requests against “`http://127.0.0.1:3100/mcp`” for initialization and each tool call. The live output confirmed state persistence with “`Reserved 3 of coffee-mug`,” then “`insufficient stock for coffee-mug`,” “`Restocked 4 of coffee-mug`,” and finally “`coffee-mug: 9\ndesk-lamp: 2`.”
+
+There was a small environment/scaffold papercut during final review: `git status --short && git diff` failed with “`fatal: not a git repository (or any of the parent directories): .git`,” forcing a fallback to rereading `src/server.ts`. The dependency installation also created `package-lock.json`, as shown by the final “`ls package-lock.json`” output, despite the functional change being confined to `src/server.ts`.
