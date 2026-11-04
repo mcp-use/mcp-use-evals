@@ -1,0 +1,9 @@
+The main friction was SDK discovery: the agent first queried npm with `npm view mcp-use version description repository.url dist-tags --json && npm view mcp-use readme --json`, then relied on installed-package inspection via `rg -n "streamable|http|createServer|McpServer|tool\\(" node_modules/mcp-use/README.md node_modules/mcp-use/dist` and `sed -n '380,420p' node_modules/mcp-use/dist/server.d.ts`. The README quickstart supplied the `MCPServer`, `server.tool`, and Zod pattern (`import { MCPServer } from "mcp-use";`), while the declaration file established the listener API: `listen(port?: number | undefined, options?: ListenOptions)`.
+
+The first typecheck exposed a setup omission rather than an SDK issue: `error TS2580: Cannot find name 'process'. Do you need to install type definitions for node?`. The agent then modified `package.json`, reinstalled, and got `npx tsc --noEmit` passing.
+
+A late cleanup step wasted a tool call by assuming a Git worktree in the blank directory: `git diff --check && git status --short`, which failed with `warning: Not a git repository.` Because it was chained after the typecheck, the overall command returned exit code 129 despite the compile having succeeded.
+
+Verification was thorough but manually verbose: the agent issued separate `curl` requests for initialization, tool listing, and each lifecycle operation before repeating the lifecycle with a Node script. The first server process and the second both ended with exit code 130—e.g. `"status":"failed"` alongside `Support ticket MCP server listening at http://localhost:3210/mcp`—which is noisy tooling feedback for an intentionally stopped long-running server, not an application failure.
+
+No skill file or external docs page was used; the visible resources were npm metadata, `node_modules/mcp-use/README.md`, and declaration files such as `node_modules/mcp-use/dist/server.d.ts`.
