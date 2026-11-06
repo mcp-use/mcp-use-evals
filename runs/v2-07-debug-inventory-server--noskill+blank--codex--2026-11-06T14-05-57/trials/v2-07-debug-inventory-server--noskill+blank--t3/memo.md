@@ -1,0 +1,7 @@
+The repair itself was direct, but the agent spent several calls confirming listener behavior by grepping installed SDK files: `rg -n "class MCPServer|listen\\(" node_modules/mcp-use` and inspecting `node_modules/mcp-use/dist/server.d.ts`, which documented `listen(port?: number | undefined, options?: ListenOptions)`. This resolved uncertainty around leaving `await server.listen();` unchanged while relying on `PORT`.
+
+Verification hit a process-launch false start: the background command `PORT=3100 npx tsx src/server.ts > /tmp/inventory-mcp.log 2>&1 &` returned PID `428`, but the first request failed with `curl: (7) Failed to connect to 127.0.0.1 port 3100`, and `ps -p 428 -f` showed no process. The agent recovered by running `PORT=3100 npx tsx src/server.ts` interactively, after which initialization succeeded.
+
+A final repository review also took an avoidable dead end because `git status --short && git diff --check` returned `fatal: not a git repository`. The agent then fell back to `ls -la && sed -n '1,220p' src/server.ts`.
+
+The live checks were mostly thorough—responses included `Reserved 3 of coffee-mug`, `insufficient stock for coffee-mug`, `Restocked 4 of coffee-mug`, and `SKU missing-sku not found`—but stopping the interactive server surfaced as a failed tool result with `^C` and `"exitCode":1`, a minor verification-harness papercut rather than a server defect.
