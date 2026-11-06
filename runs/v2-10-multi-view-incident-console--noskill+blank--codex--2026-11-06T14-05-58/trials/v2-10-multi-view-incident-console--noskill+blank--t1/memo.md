@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry at repository root: the produced server is `index.ts`, while the grader reports `no entry file found (tried: src/server.ts, src/index.ts)`. This was masked because the SDK CLI accepted that layout and printed `[mcp-use] built index.ts + views (incident-detail, incident-list)`, so the agent never created a conventional `src/index.ts` or tested the grader’s expected discovery path.
+
+Dependency setup hit an avoidable peer-resolution failure: `npm error ERESOLVE unable to resolve dependency tree`, specifically because the initial project had `zod@"^3.24.0"` while `@mcp-use/client@2.4.5` required `peer zod@"^4.2.0"`.
+
+With no skill scaffold, the agent leaned heavily on installed-package inspection, running `sed -n '95,225p' node_modules/mcp-use/README.md`, reading `node_modules/mcp-use/dist/index.d.ts`, and grepping for `"mcp-env|bootstrapView|view.tsx|useToolContext"`. The README’s explicit guidance, `Replace its index.ts with a view-bound tool like this`, likely reinforced the root-entry choice that conflicted with the grader.
+
+Manual protocol verification consumed several attempts before the official client worked. The first request failed because `an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`; subsequent requests were missing `_meta`, then missing `io.modelcontextprotocol/protocolVersion` and `io.modelcontextprotocol/clientCapabilities`. Switching to `MCPClient` succeeded with `server/discover mcp-use/2.4.5`.
+
+The client API also caused a small verification stumble: destructuring `const { tools } = await connection.listTools()` led to `TypeError: Cannot read properties of undefined (reading 'map')`; changing it to `const tools = await connection.listTools()` produced `MCP verification passed`.
+
+The initial resource-marker assertion incorrectly reported `"hasExpectedMarker": false` because it searched emitted HTML for normal quote syntax, while inspection showed bundled code as `{"data-view":\`incident-list\`}`. The agent corrected this by inspecting the resource text and source paths such as `views/incident-list/view.tsx:27: <main data-view="incident-list"`.
