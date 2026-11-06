@@ -1,0 +1,9 @@
+The agent spent early effort discovering the SDK shape rather than relying on a skill file: it fetched npm metadata/readme with `npm view mcp-use readme --json`, then searched installed declarations using `rg -n "listen\(|serve\(|start\(" node_modules/mcp-use` and inspected `node_modules/mcp-use/dist/server.d.ts` and `tools.d.ts`. This worked, but indicates the package readme alone did not immediately provide enough implementation detail.
+
+The first typecheck failed because Node globals were omitted from the TypeScript configuration: `error TS2591: Cannot find name 'process'` and `add 'node' to the types field in your tsconfig`. The agent corrected `tsconfig.json`, but this was avoidable setup churn given that `@types/node` had already been installed.
+
+A subsequent verification command unnecessarily assumed a Git repository and failed after typechecking: `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`. Because `npx tsc --noEmit && git diff --check` chained unrelated checks, the command exited `129` despite the typecheck apparently succeeding.
+
+Protocol verification was thorough but manual: the agent issued raw `curl` JSON-RPC requests for `initialize`, `tools/call`, and `tools/list`; the successful call returned `"text":"42"`, while invalid input returned `"Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string"`. Process cleanup also produced a superficially alarming tool failure—`exitCode":143` and `"status":"failed"`—even though the output showed the server had handled all requests and was intentionally killed with `kill 493 506 517`.
+
+The SDK created an incidental state file, `./.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":...}`; the agent noticed and deleted it before finishing.
