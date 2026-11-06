@@ -1,0 +1,9 @@
+The agent had API-discovery friction and leaned on installed-package internals rather than external docs: it opened `node_modules/mcp-use/README.md`, then searched declarations with `rg -n "resource\(|streamable|listen\(|createServer|registerResource|resources"` and read `dist/server.d.ts`, `dist/resources.d.ts`, and `dist/config.d.ts`. That search also produced a distracting glob error: `rg: node_modules/mcp-use/dist/internal/*.d.ts: No such file or directory`.
+
+TypeScript configuration required a repair after the first check failed with `Cannot find name 'process'`, despite `@types/node` already having been installed; the compiler explicitly suggested adding `'node' to the types field in your tsconfig`, after which the agent modified `tsconfig.json`.
+
+Process management cost time during verification. The combined command `npx tsc --noEmit && PORT=31337 npx tsx src/server.ts` left the server running, so a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:31337`. The agent then had to inspect processes, finding `npm exec tsx src/server.ts`, `node node_modules/.bin/tsx src/server.ts`, and the underlying Node process.
+
+The first manual MCP verification successfully exercised discovery and several state transitions, with outputs including `"Created issue 1."`, `"assignee: unassigned"`, and `"Issue 1 assigned to Avery."`. However, a later lifecycle script failed with `exitCode":143` and no output, while the server process separately ended with `exitCode":143`; this made the transcript’s final assertions such as `Board count moved 1 → 0 after resolution` less directly auditable from the visible output.
+
+A final cleanup/check command also assumed Git in a blank workspace: `git diff --check && git status --short` failed with `warning: Not a git repository`, and because it used `&&`, the intended `sed -n '1,240p' package.json` did not run.
