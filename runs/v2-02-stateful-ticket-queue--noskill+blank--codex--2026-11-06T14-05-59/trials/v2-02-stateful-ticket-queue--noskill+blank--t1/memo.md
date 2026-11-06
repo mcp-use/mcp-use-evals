@@ -1,0 +1,5 @@
+The agent had API-discovery friction: it first queried npm metadata/readme with `npm view mcp-use readme --json`, then inspected installed declarations using `rg -n "serve\\(|streamable|Streamable|listen|createServer" node_modules/mcp-use` and `sed -n '380,430p' node_modules/mcp-use/dist/server.d.ts`. The declaration was ultimately sufficient, exposing `listen(port?: number ...): Promise<{ ... url: string; }>`.
+
+Verification took a minor wrong turn when the first handwritten initialization command failed with `Expected ',', got ')'` and `SyntaxError: Unexpected token ')'`; the corrected request immediately returned `200 event: message`.
+
+There was also avoidable scaffold/environment friction after successful lifecycle testing: `git status --short && git diff --check` failed with `fatal: not a git repository`, requiring a follow-up command with `git diff --check 2>/dev/null || true`. The server process itself ended with `exitCode":130` after logging all successful requests, which made the tool result appear `"status":"failed"` even though the transcript showed `tools/list /mcp 200` and the implementation had already been exercised successfully.
