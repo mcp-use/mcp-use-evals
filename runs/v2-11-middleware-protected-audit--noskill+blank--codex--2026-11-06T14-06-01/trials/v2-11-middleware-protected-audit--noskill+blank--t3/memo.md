@@ -1,0 +1,7 @@
+The decisive miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the deterministic check expected text containing `Record R-1`. The agent’s own verification reinforced the wrong output without checking compatibility, observing `"text":"record alpha"` and then proceeding.
+
+The agent leaned heavily on installed-package discovery rather than a skill file or external docs, inspecting `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `middleware/mcp-middleware.d.ts`, and `tools.d.ts`; it also grepped the MCP client package for `"StreamableHTTPClientTransport"`.
+
+Protocol verification took two avoidable wrong turns. The first initialization mixed a modern header with a legacy handshake and produced `"the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header"`, after which the agent retried with protocol version `"2025-11-25"`. The first combined audit-resource check also ended in `"Invalid JSON"`, requiring a separate retry that successfully returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+A final validation command unnecessarily assumed a Git checkout: `git diff --check` failed with `"Not a git repository. Use --no-index to compare two paths outside a working tree"`. The agent recovered by rerunning `npx tsc --noEmit`, but this added noise after typechecking had already passed.
