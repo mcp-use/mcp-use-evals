@@ -1,0 +1,11 @@
+The agent relied heavily on package internals rather than a skill file or fetched docs: it inspected `node_modules/mcp-use/README.md`, declaration files, and bundled JavaScript with searches for `"fromOpenAPI|streamable|listen|mount"` and `"function registerOpenAPITools"`. This was useful for discovering the generated argument shape—`"uses a \`body\` input field for JSON request bodies, while path/query parameters remain top-level"`—but required several exploratory calls into `node_modules`.
+
+The initial scaffold caused an ESM/CommonJS mismatch. `npm init -y` created `"type": "commonjs"`, after which typechecking failed with `TS1470: The 'import.meta' meta-property is not allowed in files which will build into CommonJS output.` The agent then inspected `package.json` and changed it to `"type": "module"`.
+
+The first lifecycle verifier assumed plain JSON and failed because the SDK returned SSE: `SyntaxError: Unexpected token 'e', "event: mes"... is not valid JSON`. The agent added SSE parsing in `src/verify.ts`, specifically checking `text.trimStart().startsWith("event:")` and extracting `data:` lines. This indicates transport response framing was not obvious from the initial API exploration.
+
+The exact-version requirement was initially missed because installation produced `"package spec: ^2.0.4"`. The agent caught this during final checks and reran `npm install --save-exact mcp-use@2.0.4`, after which the output showed `"package spec: 2.0.4"`.
+
+A final check also wasted time by assuming a Git repository: `git diff --check` failed with `warning: Not a git repository`, making that compound command exit `128` despite the server having started successfully.
+
+The SDK created a local telemetry identity file during verification—`./.mcp-use/usage.json` containing `"serverId"`—which prompted another investigation of SDK internals for `MCP_USE_ANONYMIZED_TELEMETRY`. The final source disables it with `process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false";`, and the agent deleted the generated file before rerunning verification.
