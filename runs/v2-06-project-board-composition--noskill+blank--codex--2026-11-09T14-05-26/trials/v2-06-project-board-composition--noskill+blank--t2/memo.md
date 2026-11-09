@@ -1,0 +1,9 @@
+The main friction was API discovery: the agent queried npm metadata with `npm view mcp-use version description repository.url dist-tags --json`, then inspected installed declarations via `sed -n '1,440p' node_modules/mcp-use/dist/server.d.ts` and `sed -n '1,220p' node_modules/mcp-use/dist/resources.d.ts`. It also explicitly grepped the package for transport and registration shapes with `rg -n "streamable|resource|McpServer|createMCP" node_modules/mcp-use/dist node_modules/mcp-use/README.md`, rather than relying on a skill file or fetched docs URL.
+
+Dependency compatibility prompted extra investigation: `npm ls zod --all` showed the project on `zod@3.25.76` while mcp-use’s MCP dependencies used `zod@4.6.7`, and `node_modules/mcp-use/package.json:175` specified `"zod": "^4.6.6"`. The agent then reran `npm install && npx tsc --noEmit`, which reported `removed 4 packages, changed 1 package`; this suggests the SDK’s expected Zod major was not obvious during initial setup.
+
+Verification also hit a package-layout wrong turn. The agent tried `node_modules/@modelcontextprotocol/client/dist/esm/client/index.d.ts` and received `exitCode:2`; it recovered by inspecting package exports with `console.log(require('./node_modules/@modelcontextprotocol/client/package.json').exports)` and then imported `Client, StreamableHTTPClientTransport` from the package root.
+
+Process cleanup was mildly awkward. After the verification server ended with `exitCode:143`, killing PID 476 left the child running—`489 node node_modules/.bin/tsx src/server.ts`—so a second `kill 489` was required. The final connectivity check confirmed cleanup with `Failed to connect to 127.0.0.1 port 3100`.
+
+Despite those papercuts, the end-to-end client exercise was thorough, including `empty summary: Open issues: 0`, mutation visibility through `after resolve issue: ... Status: resolved`, and both `tool not found: Issue 999 not found` and `resource not found: Issue 999 not found`.
