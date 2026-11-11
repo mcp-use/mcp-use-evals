@@ -1,0 +1,7 @@
+The decisive miss was a response-text mismatch: `src/server.ts:68` returns ``text: `record ${id}```, while the grader expected `Record R-1`. The agent’s own verification exposed the lowercase output—`"text":"record record-1"`—but it only checked that the call succeeded, not the required capitalization or the grader’s likely input.
+
+API discovery relied heavily on the installed package rather than a skill or external docs: it inspected `node_modules/mcp-use/README.md`, `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, `tools.d.ts`, and grepped for `"server\\.use"` and `"resource\\("`. This worked, but contributed several exploratory commands before implementation.
+
+The initial scaffold fought TypeScript module configuration. The first typecheck failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`, even though `@types/node@26.6.6` was installed; the agent then modified both `package.json` and `tsconfig.json` before `npx tsc --noEmit` passed.
+
+Verification otherwise covered the intended protocol path and audit ordering: the denied call returned `"approval required"`, and the final resource contained `"1|read_record|allowed\\n2|delete_record|denied\\n3|delete_record|allowed"`. However, the final cleanup command unnecessarily ran `git diff --check` in a blank non-repository workspace and failed with `warning: Not a git repository`, adding noise after the implementation already typechecked.

@@ -1,0 +1,9 @@
+The main miss was response wording, not MCP behavior: `src/server.ts` returns ``text: `Read record ${id}``` while the check required `Record R-1`, and returns ``text: `Deleted record ${id}``` while the check required lowercase `deleted R-1`. The agent’s live verification reproduced both strings—`"Read record record-1"` and `"Deleted record record-1"`—but still concluded, `End-to-end verification passed`, so it did not validate outputs against the expected substrings.
+
+SDK discovery took several steps. The agent first queried npm metadata with `npm view mcp-use@2.0.4 readme --json`, then ran `npm pack mcp-use@2.0.4 --dry-run`; because dry-run created no archive, the subsequent extraction failed with `mcp-use-2.0.4.tgz: Cannot open: No such file or directory`. It then relied directly on installed SDK declarations and documentation via `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/middleware/mcp-middleware.d.ts`, and `node_modules/mcp-use/README.md`, plus grepping implementation/type files with `rg -n "tools/call|mcpMiddleware|middlewares"`.
+
+Dependency alignment also caused churn: it initially installed `zod@3`, observed both `zod@3.25.76` and SDK-side `zod@4.6.7`, then corrected this with `npm install zod@4`.
+
+TypeScript setup required one repair after `npx tsc --noEmit` reported `Cannot find name 'process'`; the agent modified `tsconfig.json` after confirming `@types/node@26.6.6` was installed. A combined verification command misleadingly failed only because `git status --short` ran outside a repository: `fatal: not a git repository`.
+
+Protocol verification was slowed by shell/JSON quoting errors. The first combined call sequence ended with `Invalid JSON`, and the first audit read returned `HTTP/1.1 400 Bad Request` with `Invalid JSON`; switching to `--data-binary @- <<'JSON'` made `resources/list` and `resources/read` succeed.
