@@ -1,0 +1,7 @@
+Discovery required inspecting the installed package because `npm view mcp-use readme --json` returned an empty string (`"output":""`). The agent then leaned on `node_modules/mcp-use/README.md` and grepped declarations with `rg -n "listen|streamable|HTTP|mount" ...`, followed by reading `dist/server.d.ts`, `dist/node-http.d.ts`, and `dist/index.d.ts` to determine the listener and `/mcp` API shape.
+
+The first typecheck failed despite `@types/node` already being installed: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent had to modify `tsconfig.json` and rerun `npx tsc --noEmit`, which then passed.
+
+Verification itself worked: initialization returned `"serverInfo":{"name":"add-server","version":"1.0.0"}`, and `tools/call` returned `"text":"42"`. However, stopping the temporary server produced a tool-level failure, `"exitCode":130`, even though its log showed successful requests such as `tools/call add /mcp 200`; this is noisy for an otherwise successful verification run.
+
+The final inspection command also took an avoidable wrong turn: `git status --short && sed -n '1,160p' src/server.ts` stopped at `fatal: not a git repository`, so the `&&` prevented the intended source display.
