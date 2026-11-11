@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry at root `index.ts`; the grader only tried `src/server.ts` and `src/index.ts`, while the agent followed the installed README’s instruction, `Replace its index.ts with a view-bound tool like this:`. This is a scaffold/contract mismatch: the local CLI accepted it—`[mcp-use] built index.ts + views ... → .mcp-use/build/index.js`—but the deterministic entry check could not discover it.
+
+The agent spent substantial time reverse-engineering the SDK through package internals, including `rg -n "createMcpServer|...|view" node_modules/mcp-use/dist node_modules/mcp-use/README.md` and inspecting `node_modules/mcp-use/node_modules/@mcp-use/cli/dist/commands/build.js`. Package layout caused minor friction: initial searches returned `node_modules/@mcp-use: No such file or directory`, before `npm ls` revealed the CLI nested under `node_modules/mcp-use/node_modules/@mcp-use/cli`.
+
+The first production start failed because npm initialization left CommonJS configuration: `Warning: Failed to load the ES module` and `Cannot use import statement outside a module`. The agent then modified `package.json`, after which the server reported `mcp-use server running at http://localhost:3100/mcp`.
+
+A late payload refinement introduced a TypeScript regression because a readonly tuple did not satisfy the mutable output-schema array: `structuredContent: { incidents: readonly [...] }` was `not assignable to parameter of type 'ToolCallback...'`; another `index.ts` edit restored a successful build and typecheck.
+
+Verification also took an avoidable detour when the agent expected the compiled resource HTML to contain the JSX marker literally: `Error: ui://views/incident-list.html marker missing`. It corrected course by checking source literals instead, e.g. `views/incident-list/view.tsx:24: data-view="incident-list"`, explaining that the compiled representation differed.
+
+Although protocol checks locally exercised `tools/list`, `resources/list`, both resource reads, and both tool calls—shown by `resources/read ui://views/incident-detail.html` and `tools/call get_incident`—those checks did not catch the grader’s required entry-location convention.
