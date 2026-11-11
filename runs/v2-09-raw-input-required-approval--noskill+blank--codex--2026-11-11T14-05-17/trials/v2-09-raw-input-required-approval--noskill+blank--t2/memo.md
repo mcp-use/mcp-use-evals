@@ -1,0 +1,7 @@
+The main time sink was API and protocol discovery through installed package internals: the agent ran `rg -n "inputRequired|inputResponse|acceptedContent|streamable" node_modules/mcp-use` and then inspected `node_modules/@modelcontextprotocol/server/dist/createMcpHandler-dBHMsxwf.d.cts`; no skill file or fetched docs URL appears in the transcript.
+
+Manual verification initially used a legacy-style request and received the confusing runtime error `the client on this 2025-era connection did not declare the required capability`. After grepping internals for `2026-07-28|clientInfo|clientCapabilities|protocolVersion|inputResponses`, the next request still failed because `the required Mcp-Method header is absent`; only the subsequent request adding `mcp-protocol-version`, `mcp-method`, `mcp-name`, and the `_meta` capability envelope produced `resultType":"input_required"`. This suggests the raw HTTP requirements for testing the newer stateless protocol were not readily discoverable from the initial API surface.
+
+There was also dependency-version churn: after installation reported Zod `3.25.76`, the agent separately ran `npm install zod@'^4.2.1'`, which `removed 10 packages, changed 1 package`. The eventual implementation typechecked, but determining the compatible Zod setup required an extra install.
+
+The final cleanup command assumed a Git worktree and failed with `warning: Not a git repository. Use --no-index to compare two paths outside a working tree`, adding an avoidable unsuccessful tool call after verification had already passed.
