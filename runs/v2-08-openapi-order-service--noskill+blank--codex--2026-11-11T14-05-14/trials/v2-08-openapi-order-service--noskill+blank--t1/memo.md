@@ -1,0 +1,9 @@
+The agent had to discover the SDK shape by inspecting the installed package rather than working from an immediately known API: it ran `rg -n "fromOpenAPI|Streamable|streamable|MCPServer" node_modules/mcp-use` and opened `node_modules/mcp-use/dist/server.d.ts`, `config.d.ts`, `openapi/types.d.ts`, and the README. This exploration established that the factory and listener defaults were sufficient: “`The SDK’s OpenAPI factory generates the tools directly and keeps its default /mcp streamable endpoint`.”
+
+The first implementation lost a small amount of time to TypeScript narrowing around parsed JSON: `Type 'unknown' is not assignable to type 'number'` at `src/server.ts(58,20)`. After one source modification, typechecking proceeded.
+
+Process management caused avoidable verification churn. The combined command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` left a server running, and a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. The agent then had to inspect processes via `ps -ef | rg 'tsx src/server.ts|node.*server.ts'` and later explicitly `kill 428 462 473`.
+
+The manual lifecycle test also contained malformed JSON: its combined curl output began `Invalid JSON`, so the retrieval-with-events step did not execute successfully there, although cancellation and the subsequent missing read did. The agent recovered by adding `scripts/verify-mcp.mjs`, whose final run reported `MCP lifecycle verified: three orders tools, create/get/cancel, and 404 not found.`
+
+A final cleanup/check command returned failure for an unrelated workspace assumption: `fatal: not a git repository (or any of the parent directories): .git`, despite the verification immediately before it succeeding. The installed dependency check ultimately confirmed `mcp-use@2.0.4`.
