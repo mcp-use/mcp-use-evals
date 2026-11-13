@@ -1,0 +1,9 @@
+Discovery relied on npm metadata and grepping installed declaration files rather than a skill file or fetched docs URL: `npm view mcp-use version description repository.url`, followed by `sed -n '1,360p' node_modules/mcp-use/dist/server.d.ts`. The package README offered no guidance—the command `npm view mcp-use readme` returned `output":""`—so the agent inspected `index.d.ts`, `tools.d.ts`, `resources.d.ts`, and `server.d.ts` to determine API shape.
+
+The first typecheck failed because Node globals were omitted from the TypeScript configuration: `error TS2591: Cannot find name 'process'`. The agent then modified `tsconfig.json` to add `"types": ["node"]`.
+
+Server-process handling caused avoidable churn. A combined command, `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts`, left the server running; a second launch then failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. Later, successful verification servers were surfaced as failed tool calls when terminated, with `exitCode":143`, and required explicit process inspection and cleanup via `ps -ef | rg 'tsx|src/server'` and `kill 716 757 758 769`.
+
+The SDK created an unexpected project artifact, `.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":"38fbb734-fdcd-424e-8e0b-33be654a0ffc"}`. The agent investigated bundled code for telemetry controls using `rg -n "usage\\.json|...|MCP_USE.*TELEMETRY"` and ultimately added `Object.assign(globalThis, { __MCP_USE_ANONYMIZED_TELEMETRY__: false });` in `src/server.ts`, then deleted the artifact. This indicates telemetry/usage-file behavior was non-obvious and consumed extra work.
+
+A final repository inspection also assumed Git despite the blank workspace: `git status --short` produced `fatal: not a git repository`, and `git diff` emitted its full usage text.

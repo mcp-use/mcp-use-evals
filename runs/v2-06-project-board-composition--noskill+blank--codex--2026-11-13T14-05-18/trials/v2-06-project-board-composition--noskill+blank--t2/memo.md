@@ -1,0 +1,7 @@
+The main discovery friction was failed npm README retrieval: `SyntaxError: /tmp/mcp-use-readme.json: Unexpected end of JSON input`. The agent recovered by inspecting the installed package directly, using `sed -n '1,220p' node_modules/mcp-use/README.md` and then grepping declarations with `rg -n "resource\\(|listen\\(|streamable|nodeHttp|Node" node_modules/mcp-use/README.md node_modules/mcp-use/dist/*.d.ts`; this indicates the package README and `.d.ts` files were the key API-shape resources.
+
+Dependency discovery also took an extra pass: after the initial install, `npm ls zod --depth=0` reported `└── (empty)`, so the agent explicitly ran `npm install zod`, which then showed the SDK already brought `zod@4.6.7` transitively while also establishing it as a direct dependency.
+
+The implementation and lifecycle verification itself were clean: `npx tsc --noEmit` returned exit code 0, and the observed state progressed through `"Open issues: 0"`, `"Open issues: 1"`, assignment `"Issue 1 assigned to Ada"`, and resolution `"Issue 1 resolved"`.
+
+Cleanup caused avoidable late-run churn unrelated to the SDK. The combined cleanup command failed because `git status --short` produced `fatal: not a git repository`, and the attempted listener shutdown did not work: `server is still running`. The agent then had to inspect processes via `ps -ef | rg 'tsx src/server|server.ts|3100'` and manually `kill 489 501 502 513` before confirming `verification server stopped`.
