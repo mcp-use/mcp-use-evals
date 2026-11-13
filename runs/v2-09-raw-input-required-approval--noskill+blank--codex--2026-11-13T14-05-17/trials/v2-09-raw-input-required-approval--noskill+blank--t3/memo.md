@@ -1,0 +1,11 @@
+The decisive miss was the explicit decline branch: `src/server.ts` returns `approvalError(environment, "Deployment was not approved.")` for `response.action === "decline" || response.action === "cancel"`. That message does not contain “decline,” matching the reported failure: `did not match {"type":"contains","value":"decline"}`. Ironically, the separate accepted-but-false branch used `"Deployment was declined."`, so reusing that wording for an actual decline would likely have avoided the contract-call failure.
+
+The agent’s own verification did not catch this semantic expectation because it only checked terminality, concluding, `declined input returned a single isError: true terminal result with no input_required field`. The observed response clearly showed the problematic wording: `"text":"Deployment was not approved."` and `"reason":"Deployment was not approved."`.
+
+API discovery consumed substantial effort through installed-package inspection rather than a skill or fetched docs. The agent used `rg -n "inputRequired|inputResponse|acceptedContent|streamable|http" node_modules/mcp-use`, inspected multiple `.d.ts` files, and runtime-probed helpers with `import { inputRequired } from 'mcp-use'`. This did establish the generated schema correctly, as the probe showed `"required": ["approve"]`.
+
+The first implementation also hit a typing surprise: `TS2345` said the callback returning an error envelope was not assignable to `ToolResult<{ environment: string; deployed: true; ... }>`. The eventual source addressed that by broadening `deploymentOutput` into a discriminated union containing both `deployed: true` and `deployed: false`.
+
+Manual HTTP verification had avoidable protocol-discovery friction. Three requests failed sequentially with `an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`, then `the required Mcp-Method header is absent`, then `the required Mcp-Name header is absent`. The agent resolved these by grepping `node_modules/@modelcontextprotocol/client` and `node_modules/@modelcontextprotocol/server` and adding the required modern headers.
+
+A final hygiene command also assumed a Git checkout and failed with `Not a git repository`; the agent then reran dependency inspection separately.
