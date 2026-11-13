@@ -1,0 +1,9 @@
+The agent relied on the installed package rather than external docs, inspecting `node_modules/mcp-use/README.md`, grepping `node_modules/mcp-use/dist/*.d.ts` for `"listen\\(|streamable|http"`, and reading `server.d.ts`, `config.d.ts`, and `tools.d.ts` to discover the API shape.
+
+The main wrong turn was malformed module configuration: `package.json` temporarily contained both `"type": "module"` and `"type": "commonjs"`. This caused the first typecheck to fail with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`, despite `@types/node` already being installed. The agent then corrected `package.json` and added Node types to `tsconfig.json`; the final configuration shows `"type": "module"` and typechecking succeeded with `npx tsc --noEmit`.
+
+Verification worked, but process management added friction. Running `npx tsc --noEmit && PORT=3210 npx tsx src/server.ts` left multiple wrapper/child processes—`npm exec tsx src/server.ts`, `node node_modules/.bin/tsx src/server.ts`, and the loaded Node process—and the first cleanup attempt failed because `kill 461` targeted a process no longer shown and `git status --short` returned `fatal: not a git repository`. A second command explicitly killed PIDs `503 514`.
+
+The SDK also created an unexpected workspace artifact, `.mcp-use/usage.json`, containing `{"schemaVersion":1,"serverId":"..."}`. The agent noticed and manually deleted it with the `fileChange` event for `.mcp-use/usage.json`, then removed `.mcp-use`.
+
+The actual protocol check was direct and successful: the `tools/call` response returned `"text":"6.5"`, while invalid input returned `"Input validation error: Invalid arguments for tool add: a: Invalid input: expected number, received string"`.
