@@ -1,0 +1,7 @@
+The agent briefly lost time probing the SDK before dependencies were installed: `rg: node_modules/mcp-use: IO error ... No such file or directory`, then ran `npm install` and successfully inspected `node_modules/mcp-use/dist/server.d.ts`, including the documented `await server.listen(3000);` API. It relied on grepping installed package declarations rather than a skill file or fetched docs, as shown by `rg -n "class MCPServer|listen\\(" node_modules/mcp-use`.
+
+The initial workspace inspection also produced an avoidable command failure because `git status --short` ran outside a repository: `fatal: not a git repository (or any of the parent directories): .git`.
+
+Live verification took one wrong turn by sending `get_stock` as a top-level JSON-RPC method, yielding `{"code":-32601,"message":"Method not found"}` and server logging `get_stock ERROR Method not found`. The agent then corrected this to `method":"tools/call"` with `name":"get_stock"`, which returned `SKU unknown-sku not found`.
+
+The repair itself was direct once the scaffold was inspected: the original source explicitly exposed `// BUG: a reservation should decrease stock, not increase it.` and `// BUG: this copy is discarded after the call`, while the produced `src/server.ts` uses `inventory.set(sku, available - quantity)` and `inventory.set(sku, available + quantity)`.

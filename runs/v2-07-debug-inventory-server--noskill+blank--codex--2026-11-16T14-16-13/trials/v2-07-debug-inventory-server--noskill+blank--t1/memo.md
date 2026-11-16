@@ -1,0 +1,7 @@
+The first inspection command unnecessarily failed because it assumed a Git checkout: `fatal: not a git repository (or any of the parent directories): .git`. The agent also searched for SDK internals before dependencies existed—`rg ... node_modules/mcp-use` returned no output—then had to run `npm install`.
+
+After installation, it leaned on the installed package rather than a skill file or external docs, inspecting `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/index.d.ts`, and README examples via `rg -n -C 4 'listen\\(|server.tool\\(' node_modules/mcp-use/README.md`. The declaration’s example, `await server.listen(3000);`, confirmed the listener API, although the existing source already used `await server.listen(...)`.
+
+The actual repair was direct because the scaffold explicitly identified both mutation defects: `// BUG: a reservation should decrease stock, not increase it.` and `// BUG: this copy is discarded after the call, so restocks are not shared.` The remaining behavioral issue was similarly visible in repeated `throw new Error(...)` branches.
+
+Verification was thorough but manually verbose: the agent first sent a raw `curl` initialize request and then wrote an inline Node client for eight calls. The server process was ultimately reported as failed only because it was interrupted—`^C` with `"exitCode":1`—which is noisy despite the preceding successful `POST /mcp 200` requests.
