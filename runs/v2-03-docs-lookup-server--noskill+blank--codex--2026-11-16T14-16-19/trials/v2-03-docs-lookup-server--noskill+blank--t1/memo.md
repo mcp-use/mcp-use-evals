@@ -1,0 +1,9 @@
+The agent relied heavily on installed-package inspection rather than a skill file or fetched docs, first running `npm view mcp-use version description repository.url --json`, then grepping `node_modules/mcp-use` for `"Streamable|streamable|resource\\(|tool\\("`, and reading `node_modules/mcp-use/README.md`, `dist/server.d.ts`, and `dist/resources.d.ts`. It also searched the bundled MCP client for `StreamableHTTPClientTransport`, suggesting some API-discovery friction before implementing the server.
+
+The initial scaffold created a CommonJS package (`"type": "commonjs"`), which conflicted with top-level await, while the initial TypeScript configuration omitted Node globals. The first typecheck failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level`; the agent then modified both `package.json` and `tsconfig.json`.
+
+The verification startup took a wrong turn: after issuing `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts`, it launched `PORT=3100 npx tsx src/server.ts` again and received `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. It recovered by inspecting processes with `ps -ef | rg 'tsx src/server|node.*server'` and confirmed the first instance was healthy via `HTTP/1.1 204 No Content`.
+
+End-to-end verification required verbose hand-written JSON-RPC `curl` calls with repeated headers such as `'Accept: application/json, text/event-stream'` and `'MCP-Protocol-Version: 2025-11-25'`; no higher-level inspector or client helper was used. Cleanup also produced a misleading failure because the running server exited with code 143 despite having logged `Documentation MCP server listening at http://localhost:3100/mcp`.
+
+Finally, the agent assumed a Git worktree during review, but `git diff -- package.json tsconfig.json src/server.ts` failed with `warning: Not a git repository`, adding an avoidable terminal error after successful verification.
