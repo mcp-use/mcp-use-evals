@@ -1,0 +1,7 @@
+The decisive miss was the explicit decline wording: `src/server.ts` returns `terminalError("Deployment was not approved.")` for `response.action === "decline"`, while only accepted `{ approve: false }` returns `terminalError("Deployment was declined.")`. The agent’s own verification exposed both different messages—`ERROR Deployment was not approved.` and `ERROR Deployment was declined.`—but it concluded broadly that “`Declined approval returns one terminal isError result`” without noticing the grader expected decline-identifying text.
+
+API discovery was node_modules-heavy: the agent ran `rg -n "inputRequired|inputResponse|acceptedContent|streamable|Streamable|http" node_modules/mcp-use` and then inspected `@modelcontextprotocol/server` declaration bundles for helper signatures. No skill file or fetched documentation URL appears in the transcript.
+
+Manual protocol verification took several retries because the modern HTTP contract was not immediately clear. The first request failed with `an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`; subsequent calls failed because `the required Mcp-Method header is absent` and then `the required Mcp-Name header is absent`. Success came only after adding both headers.
+
+Process management also caused minor friction: a second launch failed with `EADDRINUSE: address already in use 127.0.0.1:3100`, and cleanup via `fuser -k 3100/tcp` failed with `fuser: command not found`, requiring `ps` and explicit `kill 541 554 565`.
