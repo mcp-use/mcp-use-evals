@@ -1,0 +1,9 @@
+Discovery took several steps: the first upstream README fetch failed with `curl: (22) The requested URL returned error: 404`, after which the agent relied on the installed package README and type declarations via `sed -n '1,260p' node_modules/mcp-use/README.md` and grepped SDK declarations with `rg -n "listen\\(|noauth|securitySchemes|resourceTemplate"`.
+
+The initial schema setup hit a dependency/API compatibility issue: typechecking reported that the Zod object was “`not assignable to type 'StandardSchemaWithJSON<unknown, unknown>'`” because “`Property 'jsonSchema' is missing`,” with handler parameters consequently inferred as `unknown`. The agent modified `package.json`, reran installation—“`removed 4 packages, changed 1 package`”—and only then got a clean `npx tsc --noEmit`.
+
+Protocol verification also had discovery friction. The agent first searched for the older client package path, but got “`node_modules/@modelcontextprotocol/sdk/dist: No such file or directory`”; `npm ls` showed the installed dependency was instead “`@modelcontextprotocol/server@2.3.1`.” It avoided further client-library investigation and exercised the server directly with repeated `curl` JSON-RPC requests.
+
+The SDK unexpectedly created a local metadata file despite the application’s in-memory requirement: `find` showed “`.mcp-use/usage.json`,” containing `{"schemaVersion":1,"serverId":"46956f60-9457-4301-889a-2f15cb681acb"}`. The agent then inspected `node_modules/mcp-use/dist/usage.d.ts`, deleted the file, and added the workaround in `src/server.ts`: `process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false"`.
+
+A generic final check also wasted a call because the blank workspace was not a repository: `git status --short` failed with “`fatal: not a git repository`,” requiring a separate final typecheck. The server shutdowns were recorded as failed tool calls with `exitCode:130`, although their logs showed successful requests such as “`tools/call resolve_issue /mcp 200`.”
