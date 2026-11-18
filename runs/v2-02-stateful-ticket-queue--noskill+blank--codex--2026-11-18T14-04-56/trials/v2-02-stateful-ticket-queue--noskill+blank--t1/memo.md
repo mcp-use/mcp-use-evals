@@ -1,0 +1,11 @@
+The agent had substantial API-discovery friction because `npm view` returned an empty README (`"readme": ""`), so it inspected the installed package directly with `find node_modules/mcp-use`, `rg -n "streamable|Streamable..."`, and excerpts from `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/config.d.ts`, and `dist/tools.d.ts`. The useful SDK clues were the README’s `import { MCPServer } from "mcp-use"` example and the declaration `listen(port?: number ...): Promise<{ port: number; url: string; }>`.
+
+The first typecheck failed because package editing left contradictory module declarations: `package.json` contained both `"type": "module"` and `"type": "commonjs"`, producing `TS1309: The current file is a CommonJS module and cannot use 'await' at the top level.` Removing the duplicate fixed that wrong turn.
+
+A routine verification command also failed unnecessarily because the blank workspace was not a Git repository: `git diff --check` returned `warning: Not a git repository.` This obscured the fact that the preceding `npx tsc --noEmit` had apparently succeeded.
+
+The SDK’s anonymous telemetry caused an unexpected filesystem side effect despite the in-memory-only intent: the final-project listing exposed `./.mcp-use/usage.json`. The agent then grepped SDK internals, found `env("MCP_USE_ANONYMIZED_TELEMETRY")==="false"`, deleted the generated file, and added `process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";` in `src/server.ts`. Because that assignment appears after the static `import { MCPServer } from "mcp-use";`, this required extra investigation rather than an obvious documented configuration path.
+
+Late configuration cleanup introduced another transient type error: `src/server.ts(6,1): error TS2591: Cannot find name 'process' ... add 'node' to the types field in your tsconfig.` The subsequent final `npx tsc --noEmit` succeeded, but this was avoidable churn.
+
+Server teardown was also awkward: after `kill 521`, child processes remained as `534 node node_modules/.bin/tsx src/server.ts` and `545 ... src/server.ts`, requiring additional targeted kills.
