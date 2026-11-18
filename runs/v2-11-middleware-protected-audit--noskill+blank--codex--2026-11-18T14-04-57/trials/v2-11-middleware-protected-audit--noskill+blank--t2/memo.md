@@ -1,0 +1,9 @@
+The main miss was tool response wording: `src/server.ts` returned ``text: `record:${id}` `` and ``text: `deleted:${id}` ``, while the grader expected strings containing `Record R-1` and `deleted R-1`. The agent’s wire verification confirmed only its own outputs—`"text":"record:r1"` and `"text":"deleted:d1"`—so it did not test against the expected human-readable contract.
+
+SDK discovery relied heavily on installed package artifacts: it opened `node_modules/mcp-use/README.md`, `dist/index.d.ts`, `dist/server.d.ts`, `dist/resources.d.ts`, and grepped for `"resource\\(|mcp:tools/call|streamable|listen\\("`. No skill file or fetched documentation URL appears; the initial resource check was `npm view mcp-use@2.0.4 ...`.
+
+There was avoidable TypeScript/configuration friction. The first typecheck failed with `Cannot find name 'process'` despite `@types/node@26.6.6` being installed, requiring a `tsconfig.json` adjustment. The displayed `package.json` also contained conflicting duplicate module declarations—`"type": "module"` and later `"type": "commonjs"`—before the agent modified it again.
+
+Process handling cost time: the combined command `npm install --package-lock-only && npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` left the server running, so the next launch failed with `EADDRINUSE: address already in use 127.0.0.1:3100`. Cleanup later produced `exitCode":143` after `kill 492`.
+
+Manual verification was brittle in two places. A combined curl sequence ended its resource read with `HTTP/1.1 400 Bad Request` and `Invalid JSON`, requiring a retry with `--data-binary`. The final hygiene command also failed because the blank workspace was not a repository: `warning: Not a git repository`, causing `git diff --check` to return exit code 129.
