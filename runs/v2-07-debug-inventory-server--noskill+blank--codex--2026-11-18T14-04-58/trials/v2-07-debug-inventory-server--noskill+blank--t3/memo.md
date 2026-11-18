@@ -1,0 +1,7 @@
+The first inspection command was marked failed because the directory lacked Git metadata: `fatal: not a git repository (or any of the parent directories): .git`; including `git status --short` added avoidable noise despite successfully listing the project files.
+
+The agent installed dependencies with `npm install`, which consumed `16s` and surfaced distracting warnings including `11 high severity vulnerabilities` and `esbuild@0.28.2 (postinstall: node install.js)`. It then relied on grepping installed SDK declarations rather than a skill file or fetched documentation: `rg -n "listen\\(" node_modules/mcp-use/dist node_modules/mcp-use -g '*.d.ts' -g '*.js'`, followed by inspection of `node_modules/mcp-use/dist/server.d.ts`. That declaration provided the needed API shape directly: `listen(port?: number | undefined, options?: ListenOptions)` and the example `await server.listen(3000);`.
+
+Live verification required hand-authored JSON-RPC `curl` requests to `/mcp`, including explicit headers `accept: application/json, text/event-stream`; the handshake returned `content-type: text/event-stream`, so responses then had to be stripped with `sed -n 's/^data: //p'`. This worked, but it is a relatively cumbersome discovery/testing path for a basic MCP server.
+
+The final server process was intentionally interrupted after testing, but the tool recorded that cleanup as a failure: `"exitCode":130` and `"status":"failed"`, even though its preceding log showed successful calls such as `tools/call reserve_stock` and `tools/list`.
