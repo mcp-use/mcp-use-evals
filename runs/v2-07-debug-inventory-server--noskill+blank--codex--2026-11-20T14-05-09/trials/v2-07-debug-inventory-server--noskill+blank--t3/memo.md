@@ -1,0 +1,7 @@
+The first inspection command was needlessly marked failed because it bundled `git status --short` in a directory where `fatal: not a git repository` was expected, although file discovery succeeded.
+
+With no skill resource used, the agent leaned on installed-package inspection to confirm the listener API, explicitly saying `I’m checking the installed SDK’s HTTP listener contract` and grepping `node_modules/mcp-use`; the useful declaration was `await server.listen(3000);` in `node_modules/mcp-use/dist/server.d.ts`. This added discovery work even though the existing source already ended with `await server.listen();`.
+
+Dependency setup introduced minor noise: `npm install` took `16s`, reported `5 high severity vulnerabilities`, and warned that `esbuild@0.28.2` had an install script `not yet covered by allowScripts`, though installation completed.
+
+Verification was correct but manually repetitive: the agent issued separate long `curl` commands for initialization and each tool call, repeatedly supplying `Accept: application/json, text/event-stream` and `MCP-Protocol-Version: 2025-06-18`. The stopped server process was also surfaced as a failed tool result—`"exitCode":130` and `"status":"failed"`—despite this being intentional after `I’ll stop the verification server`.
