@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the entry at root `index.ts`; the grader only searched `src/server.ts` and `src/index.ts`, while the agent’s own build output reinforced the incompatible layout with `[mcp-use] built index.ts + views ... → .mcp-use/build/index.js`. The CLI exposed an entry override—`--entry <path> Server entry module`—but the agent neither moved the file under `src/` nor configured a conventional entry path.
+
+Typed view context caused an avoidable iteration: the first check failed with `'context.toolOutput' is of type 'unknown'` and an implicit-`any` callback. Running `npx mcp-use typecheck` then reported `[mcp-use] created mcp-env.d.ts`, after which `npx tsc --noEmit && npx mcp-use build --inline` succeeded. This indicates generated registration types were required but not obvious before the first compile.
+
+The npm scaffold also created module-format friction. Startup initially failed with `Cannot use import statement outside a module`; inspection showed duplicate contradictory fields in `package.json`, including both `"type": "module"` and `"type": "commonjs"`. The agent repaired that before successfully reaching `mcp-use server running at http://localhost:3100/mcp`.
+
+Discovery relied heavily on package internals rather than a focused guide: it fetched `npm view mcp-use@2.0.4 readme --json`, inspected `node_modules/mcp-use/dist/tools.d.ts` and `node_modules/mcp-use/dist/views/types.d.ts`, and searched for `useToolContext` in `node_modules/mcp-use/dist/react`. No skill file was used; the variant was `noskill+blank`.
+
+The agent did successfully exercise the runtime through the CLI—`tools call list_incidents`, `tools call get_incident id=INC-102`, and both `resources read ui://views/...` commands—but this verification did not catch the submission-layout mismatch that ultimately blocked grading.

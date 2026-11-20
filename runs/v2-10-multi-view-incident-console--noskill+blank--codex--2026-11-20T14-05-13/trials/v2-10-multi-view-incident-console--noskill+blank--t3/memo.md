@@ -1,0 +1,9 @@
+The decisive miss was entry placement: the agent created root-level `index.ts` with `export default server;`, while the grader reported `no entry file found (tried: src/server.ts, src/index.ts)`. This is understandable discovery friction because grepping the installed CLI showed root entries were valid candidates: `["src/index.ts", ... "index.ts", ...]`, and the CLI itself successfully reported `[mcp-use] built index.ts + views`. The agent therefore verified the SDK workflow but not the evaluator’s narrower entry convention.
+
+Typed view context initially failed because generated registration types did not yet exist: `Property 'incident' does not exist on type 'unknown'` and `'context.toolOutput' is of type 'unknown'`. Running `npx mcp-use build --inline` generated `mcp-env.d.ts`, after which `npx tsc --noEmit` passed. This build-before-typecheck dependency is a papercut for a prompt explicitly requiring typechecking.
+
+The first start also failed because `npm init` had produced `"type": "commonjs"`; the runtime error was `Cannot use import statement outside a module`. The agent had to change `package.json` to `"type": "module"` before start worked.
+
+Client verification had another SDK/CLI rough edge: `mcp-use client connect` said `[mcp-use] installing @mcp-use/client…`, installed it, then immediately failed with `@mcp-use/client is not installed`; rerunning succeeded and showed `@mcp-use/client@2.4.6`.
+
+The agent leaned heavily on package introspection rather than a skill file: it fetched the npm README containing `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`, inspected `node_modules/mcp-use/dist/...`, and grepped CLI internals for `resolveEntry|index\\.ts|...`. Verification became somewhat process-heavy, including lingering servers shown by `ps -ef` and multiple exits with `exitCode":143`, despite successful MCP calls.
