@@ -1,0 +1,9 @@
+The agent had discovery friction on the SDK API and relied first on npm metadata/readme—`npm view mcp-use readme --json` exposed `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`—then inspected installed declarations with `rg -n "resource\\(" node_modules/mcp-use/dist` and `sed -n '1,280p' node_modules/mcp-use/dist/server.d.ts`. No skill file was used in the visible transcript.
+
+The first typecheck failed because the generated TypeScript configuration omitted Node globals despite installing `@types/node`: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent corrected `tsconfig.json` and subsequently ran `npx tsc --noEmit`.
+
+Server-process handling caused a detour: `PORT=3100 npx tsx src/server.ts` apparently remained running, and a second launch produced `listen EADDRINUSE: address already in use 127.0.0.1:3100`. The process listing confirmed three related processes, including `npm exec tsx src/server.ts` and `/usr/local/bin/node ... src/server.ts`.
+
+A hand-crafted MCP initialization attempt used incompatible protocol signaling and returned a fairly specific but surprising error: `an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header`. The agent then switched to the packaged client via `npx mcp-use client connect tracker http://127.0.0.1:3100/mcp`, which worked and was used for lifecycle verification.
+
+Two cleanup/review commands also generated avoidable noise. The attempted CLI command `resources templates list` was unsupported and returned `Usage: mcp-use client tracker <tools|resources|prompts|auth> ...` with exit code 2, even though the preceding unknown-resolution call succeeded. Likewise, `git diff --check` was run in a blank non-repository workspace and emitted `warning: Not a git repository.` The client connection also created `./.mcp-use/usage.json`, which the agent later explicitly deleted.
