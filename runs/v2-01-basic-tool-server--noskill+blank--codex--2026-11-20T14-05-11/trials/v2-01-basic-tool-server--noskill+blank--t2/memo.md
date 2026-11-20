@@ -1,0 +1,9 @@
+The agent relied on package-local documentation and type declarations rather than a skill file or fetched docs: it inspected `node_modules/mcp-use/README.md`, searched `node_modules/mcp-use/dist/*.d.ts` for `"listen\\(|serve\\(|streamable|http"`, and opened `server.d.ts` plus `config.d.ts`. The README exposed the external docs URL, `"https://docs.mcp-use.com/v2/typescript/getting-started/welcome"`, but the transcript does not show it being fetched.
+
+The first typecheck failed because TypeScript did not include Node globals even though `@types/node` had been installed: `Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent described this as a `"TypeScript 7 configuration detail (explicit Node globals)"` and modified `tsconfig.json` before retrying.
+
+The generated npm scaffold also required adjustment: `npm init -y` created `"main": "index.js"` and `"type": "commonjs"`, while the final `package.json` used `"main": "src/server.ts"` and `"type": "module"`.
+
+Runtime verification exposed a security-oriented SDK warning that could confuse a minimal local-server task: `listen() is serving on 0.0.0.0 without Host validation... set allowedHosts to restrict it.` The agent manually exercised initialization, `tools/list`, valid calls, and invalid input through verbose raw `curl` JSON-RPC requests; validation produced the useful message `"expected number, received string"`.
+
+Process cleanup was somewhat awkward. Terminating the first server yielded exit code 143, and after `kill 553 595 || true`, the immediate process listing still showed `595 node node_modules/.bin/tsx src/server.ts`; a later check confirmed it was gone.
