@@ -1,0 +1,9 @@
+The agent relied heavily on installed package internals to discover the API shape, running `rg -n "fromOpenAPI|streamable|Streamable" node_modules/mcp-use` and inspecting `node_modules/mcp-use/dist/openapi/types.d.ts`, `server.d.ts`, and the minified `chunk-Y26DNVWA.js`; no skill file or fetched documentation appears in the transcript.
+
+The first implementation needed a TypeScript repair because `npx tsc --noEmit` reported four errors such as `Property 'sku' does not exist on type 'object'` and `Property 'quantity' does not exist on type 'object'`. The produced fix adds an explicit narrowing/cast in `src/server.ts`: `body as Record<string, unknown>`.
+
+The verification flow fought the long-running server command. The combined command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` remained active while later curls ran, and eventually returned `exitCode":130` with status `"failed"` despite logs showing successful lifecycle calls such as `tools/call createOrder` and `tools/call getOrder ERROR order ord-1001 not found`. A later combined verification command also produced only `mcp-use=2.0.4` on stdout, while the server log separately showed `tools/call cancelOrder ERROR order ord-1001 not found`, making the verification output less straightforward than necessary.
+
+There was minor environment-assumption cleanup: `git status --short` failed with `fatal: not a git repository`, after which the agent switched to `ls -la`. Running the SDK also created `.mcp-use/usage.json` containing `{"schemaVersion":1,"serverId":...}`, which the agent explicitly deleted and then removed via `rmdir .mcp-use`; this is a small SDK-generated workspace papercut for a blank scaffold.
+
+Package installation surfaced ecosystem noise unrelated to the implementation: npm reported `5 high severity vulnerabilities` and warned that `esbuild@0.28.2` had an install script `not yet covered by allowScripts`.
