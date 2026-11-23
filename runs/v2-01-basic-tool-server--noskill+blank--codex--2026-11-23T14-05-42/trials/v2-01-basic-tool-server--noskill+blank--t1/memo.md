@@ -1,0 +1,7 @@
+The agent had to discover the SDK shape by inspecting the installed package rather than using a skill or external docs: it ran `sed -n '1,260p' node_modules/mcp-use/dist/server.d.ts`, searched for `"streamable|listen\\(|serve\\(|http"`, and inspected `node_modules/mcp-use/README.md` plus `config.d.ts` and `tools.d.ts`.
+
+The initial scaffold configuration caused an avoidable failed typecheck: `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` Although `@types/node` was installed, the compiler explicitly required adding `'node' to the types field`; the generated package also initially contained `"type": "commonjs"`, which had to be changed to `"type": "module"`.
+
+The live tool test exposed a CLI argument-parsing papercut. Calling `add a=2.5 b=4.75` produced `expected number, received string` for both fields. Only after consulting `npx mcp-use client local tools call --help`, which explained `key:=<json> pairs`, did `a:=2.5` and `b:=4.75` return `"text":"7.25"`.
+
+Server lifecycle handling also cost time. The combined command `npx tsc --noEmit && PORT=3100 npx tsx src/server.ts` remained active, then a second background server was launched. Killing PID `565` did not stop the first process, as the subsequent check reported `server still running`; the agent then inspected `ps -ef` and manually killed PIDs `489 530 541`. This was ultimately cleaned up, with the final check reporting `server stopped`.

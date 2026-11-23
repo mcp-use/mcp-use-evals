@@ -1,0 +1,7 @@
+The agent had to discover the API by inspecting the installed package rather than relying on prior guidance: it searched `node_modules/mcp-use/dist` and `node_modules/mcp-use/README.md` for `"streamable|Streamable|...|MCPServer"` and then read `server.d.ts`, eventually finding `listen(port?: number | undefined, options?: ListenOptions)`. The README quickstart supplied the core pattern, including `import { MCPServer } from "mcp-use";` and `inputSchema: weatherInput`.
+
+The first typecheck failed because Node globals were not enabled in TypeScript despite `@types/node` being installed: `error TS2591: Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent corrected this with `"types": ["node"]` in `tsconfig.json`.
+
+Verification process management caused avoidable churn. The combined command ``npx tsc --noEmit && PORT=3100 npx tsx src/server.ts`` left a server running, so a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`. The agent then used `ps -ef | rg 'tsx src/server|node.*server'` to identify the surviving process before testing it.
+
+A final cleanup command also produced noisy failure because the blank workspace was not a Git repository: `fatal: not a git repository (or any of the parent directories): .git`, followed by `git diff --check` usage output and exit code 129. Starting the SDK also created `./.mcp-use/usage.json` containing a `serverId`; the agent explicitly deleted `.mcp-use/usage.json` afterward, indicating an unexpected generated artifact during a simple run.
