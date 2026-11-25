@@ -1,0 +1,7 @@
+The main discovery friction was API-shape lookup. With a blank workspace, the agent first fetched the npm metadata/readme via `npm view mcp-use version description readme --json`, then inspected installed declarations using `rg -n "listen\\(|serve\\(|Streamable|HTTP|MCPServer" node_modules/mcp-use` and `sed -n '1,240p' node_modules/mcp-use/dist/server.d.ts`. No skill file was used; the npm readme exposed the docs URL `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`, but the transcript does not show that URL being fetched directly.
+
+The only implementation correction was a missing Node type dependency. The first typecheck failed with `error TS2580: Cannot find name 'process'. Do you need to install type definitions for node?`, after which the agent modified `package.json`, reran `npm install && npx tsc --noEmit`, and succeeded. This is a small scaffold/setup papercut that could have been avoided by including `@types/node` initially.
+
+Dependency installation also emitted an environment-specific warning: `esbuild@0.28.2 (postinstall: node install.js)` was “`not yet covered by allowScripts`,” with advice to run `npm install-scripts approve <pkg>`. It did not block execution.
+
+The live server command ultimately appeared as a failed tool result solely because it was interrupted after verification: `exitCode":130`, despite its output showing successful requests such as `tools/call create_ticket /mcp 200` and `tools/list /mcp 200`. That status could be misleading in coding-agent workflows even though the server and lifecycle worked.
