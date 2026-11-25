@@ -1,0 +1,7 @@
+The agent had API-discovery friction: it first queried npm metadata with `npm view mcp-use version description readme --json`, then searched installed declarations using `rg -n "class MCPServer|serve\(|listen\(|Streamable|streamable" node_modules/mcp-use`, and inspected `node_modules/mcp-use/dist/server.d.ts`; no skill file or fetched documentation URL appears in the transcript.
+
+The first typecheck failed despite `@types/node` being installed: `error TS2591: Cannot find name 'process'... add 'node' to the types field in your tsconfig.` The agent then confirmed `@types/node@26.6.10` was present and modified `tsconfig.json`, indicating a configuration papercut rather than a missing dependency.
+
+The npm scaffold briefly fought the intended ESM setup. `npm init -y` created `"type": "commonjs"`, and the later diagnostic showed a malformed intermediate `package.json` containing both `"type": "module"` and `"type": "commonjs"`. The agent needed another `package.json` edit before continuing.
+
+Verification was manual and somewhat cumbersome: the agent constructed raw JSON-RPC `curl` requests with required `Accept: application/json, text/event-stream` headers for `initialize`, `tools/call`, and `tools/list`. The successful server process was ultimately reported by the tool as `exitCode":130` and `"status":"failed"` after showing `MCP server listening at http://localhost:3000/mcp`, which is noisy termination behavior even though the MCP checks had succeeded.
