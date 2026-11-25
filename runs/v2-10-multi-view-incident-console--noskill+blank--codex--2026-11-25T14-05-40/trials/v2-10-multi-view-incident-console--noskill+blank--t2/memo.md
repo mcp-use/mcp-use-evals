@@ -1,0 +1,11 @@
+The decisive wrong turn was placing the entry point at root (`[tool] fileChange({"event":"create","path":"index.ts"})`), while the grader searched only `src/server.ts` and `src/index.ts`; this was masked because the SDK CLI accepted it and reported `[mcp-use] built index.ts + views ... → .mcp-use/build/index.js`. The agent then concluded success with `Build and runtime checks now pass`, despite never validating the expected source-entry convention.
+
+Dependency setup also caused avoidable churn. Installing Zod 3 conflicted with the client’s peer requirement: `peer zod@"^4.2.0" from @mcp-use/client@2.0.0`. Because that failed install omitted TypeScript, `npx tsc` fetched the unrelated deprecated package and returned `This is not the tsc command you are looking for`; the agent then had to reinstall the complete dev dependency set.
+
+The npm scaffold introduced another papercut by setting `"type": "commonjs"`. Although build succeeded, start failed with `Cannot use import statement outside a module`, requiring a package.json correction before runtime verification.
+
+View typing was not inferred cleanly on the first attempt: TypeScript reported `Property 'incident' does not exist on type '{}'`, `Type '{}' is not assignable to type 'ReactNode'`, and `Property 'incidents' does not exist on type '{}'`. The resulting source uses casts such as `toolOutput as IncidentListOutput | undefined`, suggesting the generated `mcp-env.d.ts`/`useToolContext` typing path was not immediately usable.
+
+The agent leaned on npm metadata and the package README via `npm view mcp-use@2.0.4 ...`, then inspected installed declarations directly with `sed -n '1,280p' node_modules/mcp-use/dist/tools.d.ts` and related files. It also discovered the CLI verification workflow incrementally through `npx mcp-use client --help`, `tools --help`, and `resources --help`; no skill file or fetched documentation page appears in the transcript.
+
+A verification command also produced noise because the blank directory was not a repository: `warning: Not a git repository. Use --no-index`. The first HTML-marker check returned `false false` for both resources, after which the agent weakened the check to `resource.text.includes(name)` and reported `Verified both readable MCP App HTML resources.`

@@ -1,0 +1,9 @@
+The decisive wrong turn was placing the entry point at repository root as `index.ts`; the grader required `src/server.ts` or `src/index.ts`, while the agent treated the SDK message ``[mcp-use] built index.ts + views ... → .mcp-use/build/index.js`` as sufficient and later reported ``Default-exported server in index.ts``. This mismatch was never checked against the expected project layout, so all downstream contract checks were blocked despite local build/start success.
+
+The agent relied on the npm package README via ``npm view mcp-use@2.0.4 readme`` and extensively inspected installed declarations with ``rg ... node_modules/mcp-use -g '*.d.ts'`` and `node_modules/mcp-use/dist/tools.d.ts`; no skill file or fetched documentation URL appears in the transcript.
+
+Dependency compatibility caused a detour: installing `zod@4.1.12` produced ``Property 'jsonSchema' is missing`` schema errors, after which the agent inspected the SDK’s nested version—``console.log(require('./node_modules/mcp-use/node_modules/zod/package.json').version)`` returned `4.6.7`—and fixed typechecking by installing ``zod@4.6.7``.
+
+Runtime verification also hit protocol friction. The first initialize request returned ``400 Bad Request`` because ``an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header``; retrying with body protocol `2025-11-25` succeeded. A later verification script failed for an unrelated shell-quoting issue with ``fatal: not a git repository``, although the server log showed the intended tool and resource calls had completed with `200`.
+
+The final confidence statement—``Verification passed``—was based on direct CLI/runtime checks, but those checks did not expose the entry-discovery incompatibility that ultimately caused `contract.entry`.
