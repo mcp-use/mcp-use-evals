@@ -1,0 +1,11 @@
+The agent relied on package metadata and installed declarations rather than a skill file or external docs, first querying `npm view mcp-use@2.0.4` and then grepping `node_modules/mcp-use/dist` for `"server\\.use|Streamable|streamable|registerTool|resource"` and reading `server.d.ts`, `mcp-middleware.d.ts`, and `resources.d.ts`.
+
+Setup briefly fought contradictory module configuration: the inspected `package.json` contained both `"type": "module"` and `"type": "commonjs"`, producing `TS1470: The 'import.meta' meta-property is not allowed in files which will build into CommonJS output` plus missing Node globals despite `@types/node@26.6.10` being installed. The agent corrected the configuration and reached a passing `npx tsc --noEmit`.
+
+Protocol verification also took a wrong turn by combining a modern header with a legacy initialize body; the server clearly reported `"the request headers and body disagree: an initialize request (legacy handshake) was sent with a modern MCP-Protocol-Version header"`. Retrying without that header and with `"protocolVersion":"2025-11-25"` worked.
+
+Most importantly, the agent saw the exact resource-name mismatch but still declared success. `resources/list` returned `"name":"audit_events"`, while the source registered `name: "audit_events"` at `src/server.ts`; the final assessment nevertheless said, `"The protocol checks succeeded"`. This missed the grader’s expected `audit-events`.
+
+The end-to-end checks also validated only self-chosen wording, not likely contract-sensitive output. The read response was `"Read record alpha"` and the approved delete response was `"Deleted record alpha"`; these later failed expectations for text containing `Record R-1` and lowercase `deleted R-1`. The final statement that `"the approved one reached the handler"` established routing but did not catch these response-shape mismatches.
+
+A final review command unnecessarily assumed Git and failed with `"fatal: not a git repository (or any of the parent directories): .git"`, after which the agent switched to direct file inspection.
