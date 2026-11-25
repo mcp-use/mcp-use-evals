@@ -1,0 +1,9 @@
+The main friction was API discovery: the agent first queried npm metadata and the package README with `npm view mcp-use ...` and `npm view mcp-use readme`, then inspected installed declarations using `rg -n "resource\(" node_modules/mcp-use` and `sed -n '1,460p' node_modules/mcp-use/dist/server.d.ts`. No mcp-use skill file or fetched docs URL appears in the transcript; the README only surfaced the documentation link `"https://docs.mcp-use.com/v2/typescript/getting-started/welcome"`.
+
+The blank scaffold introduced a TypeScript module/configuration detour. `npm init -y` generated `"type": "commonjs"`, after which the first typecheck failed with `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then modified both `package.json` and `tsconfig.json` before typechecking successfully.
+
+A verification command also produced avoidable noise because the directory was not a Git repository: `git diff --check && git status --short` ended with `warning: Not a git repository.` This made the combined command exit `129` even though the preceding `npx tsc --noEmit` had apparently succeeded.
+
+The mcp-use CLI had a small discoverability mismatch. The agent tried `npx mcp-use client local resources templates list`, but the CLI returned `Usage: mcp-use client local <tools|resources|prompts|auth> ...`; checking `resources --help` then showed only `list` and `read <uri>`. The agent recovered by directly reading templated URIs, including `npx mcp-use client local resources read issue://1`.
+
+The client verification also triggered an implicit global-side installation: `[mcp-use] installing @mcp-use/client into /root/.mcp-use/client-sdk…`. Despite these detours, the lifecycle check itself worked, including `"text": "Issue 1 assigned to Ada"` and `"text": "Issue 404 not found"`.
