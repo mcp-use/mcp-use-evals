@@ -1,0 +1,7 @@
+The main friction was API discovery: the agent first fetched the package README with `npm view mcp-use@2.12.10 readme --json`, then searched installed internals using `rg -n "resource\(|class MCPServer|listen\(|Streamable|streamable|http" node_modules/mcp-use...`, and finally inspected declarations with `sed -n '1,280p' node_modules/mcp-use/dist/server.d.ts` plus `resources.d.ts` and `tools.d.ts`. This suggests the package README alone did not provide enough immediately usable detail for resources, templates, and HTTP startup.
+
+The first typecheck failed because Node typings were omitted: `error TS2580: Cannot find name 'process'. Do you need to install type definitions for node?`. The agent recovered by running `npm install --save-dev @types/node`, after which `npx tsc --noEmit` passed.
+
+There was a small workspace/scaffold mismatch during cleanup: `git status --short && git diff --check` produced `fatal: not a git repository (or any of the parent directories): .git`, requiring a separate `pgrep` call afterward. Server cleanup also surfaced as a failed tool result despite being intentional: after `kill 486 499`, the background process returned `exitCode":143` and `"status":"failed"`. That status could be misleading even though the preceding log showed successful requests such as `resources/read docs://missing /mcp 200` and `tools/call search_docs /mcp 200`.
+
+Protocol verification was otherwise thorough but manually repetitive, using several raw `curl --request POST http://127.0.0.1:3100/mcp` calls rather than an SDK client or inspector.
