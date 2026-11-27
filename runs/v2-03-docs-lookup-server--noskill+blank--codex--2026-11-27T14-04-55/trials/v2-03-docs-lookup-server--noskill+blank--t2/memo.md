@@ -1,0 +1,9 @@
+The agent needed substantial API discovery before implementation: it fetched the npm README, which pointed to `https://docs.mcp-use.com/v2/typescript/getting-started/welcome`, then inspected package declarations with `rg -n "class MCPServer|resource\\(|listen\\(|streamable|http" node_modules/mcp-use/dist`. It specifically opened `node_modules/mcp-use/dist/server.d.ts`, `resources.d.ts`, and `node-http.d.ts`, suggesting the README alone did not provide enough resource/template and listener detail.
+
+The blank scaffold caused an avoidable module/configuration detour. `npm init -y` generated `"type": "commonjs"`, and the first typecheck failed with both `Cannot find name 'process'` and `The current file is a CommonJS module and cannot use 'await' at the top level.` The agent then inspected `npx tsc --showConfig` and modified both `package.json` and `tsconfig.json` before typechecking passed.
+
+A generic repository check also wasted a command after compilation succeeded: `git diff --check && git status --short` failed because `Not a git repository. Use --no-index to compare two paths outside a working tree`. This was scaffold friction rather than an SDK problem.
+
+For end-to-end verification, the agent installed an additional client package with `npm install -D @mcp-use/client`, then learned its invocation incrementally through `npx mcp-use --help`, `npx mcp-use client --help`, and separate `resources --help` and `tools --help` calls. Once discovered, the client workflow was effective: `Connected and saved docs-test.`, resource reads returned HTTP 200, and `tools call search_docs query='TERMINATES TLS'` returned `"deployment: Deployment"`.
+
+The live server emitted OAuth discovery 404s—`GET /.well-known/oauth-protected-resource/mcp 404` and `GET /.well-known/oauth-protected-resource 404`—during otherwise successful unauthenticated client operations. These were harmless here but add noisy, potentially confusing logs.
