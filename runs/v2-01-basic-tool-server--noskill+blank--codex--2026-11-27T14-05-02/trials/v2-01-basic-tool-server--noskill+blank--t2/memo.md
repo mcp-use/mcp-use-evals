@@ -1,0 +1,7 @@
+The agent spent discovery time querying npm (`npm view mcp-use version description repository.url dist.tarball` and `npm view mcp-use readme --json`) and then inspecting installed SDK declarations with `rg -n "class MCPServer|serve\(|listen\(|streamable|HTTP" node_modules/mcp-use...` plus `sed` on `node_modules/mcp-use/dist/server.d.ts`; this suggests the README alone did not provide enough immediately usable API shape.
+
+The main wrong turn was TypeScript configuration: the first `npx tsc --noEmit` failed with `Cannot find name 'process'` even though `@types/node` had already been installed. The agent diagnosed this using `npm ls @types/node typescript` and fixed `tsconfig.json`; the initial config lacked an explicit Node types entry, showing only `"skipLibCheck": true` before the modification.
+
+There was also a small irrelevant cleanup failure: `git status --short && git diff...` returned `fatal: not a git repository`, which added no validation value in the blank, non-git workspace.
+
+Runtime verification itself was direct and successful: `tools/list` returned the typed `add` schema, and `tools/call` with `19.5` and `22.25` returned `"41.75"`. The server process was deliberately interrupted and therefore reported `exitCode":130`, while its output confirmed both requests completed with `200`.
