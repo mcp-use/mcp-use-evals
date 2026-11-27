@@ -1,0 +1,7 @@
+The main miss was tool-response wording: `src/server.ts` returns ``text: `record:${id}``` and ``text: `deleted:${id}```, while the deterministic checks expected strings containing `Record R-1` and `deleted R-1`. The agent’s live verification reproduced those exact outputs—`"text":"record:one"` and `"text":"deleted:three"`—but treated them as successful, so the checks validated transport behavior without catching response-format incompatibility.
+
+The agent relied heavily on installed package declarations and README rather than external docs, first grepping with `rg -n "class MCPServer|MCPServer|Streamable|streamable|server\\.use|tools/call" node_modules/mcp-use`, then reading `node_modules/mcp-use/dist/server.d.ts`, `tools.d.ts`, `resources.d.ts`, `middleware/mcp-middleware.d.ts`, and `node_modules/mcp-use/README.md`. That discovery produced the correct middleware shape, reflected in `src/server.ts` as `server.use("mcp:tools/call", async (ctx, next) => {`.
+
+Verification had a minor shell/JSON stumble: after three successful calls, the combined curl command ended with `Invalid JSON`, requiring separate resource-list and resource-read calls afterward. Cleanup also took two attempts: after `kill 415`, the process check still showed `node node_modules/.bin/tsx src/server.ts`, so the agent then issued `kill 428`.
+
+A non-git blank workspace caused noisy, unhelpful diagnostics when the agent ran `git status --short` and `git diff`: the result was `fatal: not a git repository` followed by the full `git diff --no-index` usage text.

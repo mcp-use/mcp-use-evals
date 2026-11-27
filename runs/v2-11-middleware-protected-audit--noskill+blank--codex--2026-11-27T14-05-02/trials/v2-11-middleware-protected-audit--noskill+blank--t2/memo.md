@@ -1,0 +1,7 @@
+The decisive miss was the read tool’s response casing: `src/server.ts` returns ``text: `record ${id}```, while the grader expected `Record R-1`; the agent’s own verification showed `"text":"record record-1"` but still concluded, `"The three tool calls behave correctly"`. Testing with `"id":"record-1"` rather than the grader-style `R-1` also made this exact-output mismatch easier to overlook.
+
+API discovery relied heavily on installed package internals: the agent ran `rg -n "mcp:tools/call|streamable|server\\.use\\(|createMCPServer|MCPServer|resource" node_modules/mcp-use` and inspected `node_modules/mcp-use/README.md`, `dist/server.d.ts`, `dist/middleware/mcp-middleware.d.ts`, `dist/tools.d.ts`, and `dist/resources.d.ts`. No skill file or fetched documentation URL appears in the transcript.
+
+There were two minor setup/verification detours. Typechecking initially failed with `Cannot find name 'process'` despite `@types/node` being installed, requiring a `tsconfig.json` modification before `npx tsc --noEmit` passed. The first combined audit-read command ended with `Invalid JSON`; the agent called it `"a request-format hiccup"` and retried using `--data-binary`, which successfully returned `"1|read_record|allowed\n2|delete_record|denied\n3|delete_record|allowed"`.
+
+The final validation command also unnecessarily assumed a Git repository: `git diff --check && git status --short` failed with `warning: Not a git repository`, although the preceding `tools/list` and `resources/list` requests had succeeded.
