@@ -1,0 +1,7 @@
+The main discovery friction was checking SDK internals before dependencies existed: `rg: node_modules/mcp-use: IO error for operation on node_modules/mcp-use: No such file or directory`, followed by `npm install`. After installation, the agent leaned on local package internals rather than a skill file or fetched docs, inspecting `node_modules/mcp-use/dist/server.d.ts`, `node_modules/mcp-use/dist/config.d.ts`, and `node_modules/mcp-use/README.md`; the declaration clarified that `MCPServer.listen` has “`Explicit bind host; takes precedence over HOST and configured host.`”
+
+The first broad SDK grep produced a large minified bundle hit beginning `node_modules/mcp-use/dist/chunk-GX6PGIEO.js:1:function escapeHtml`, so discovery was noisier than necessary before the targeted declaration-file read.
+
+Server verification had process-management friction. After invoking `PORT=3100 npx tsx src/server.ts`, a second launch failed with `Error: listen EADDRINUSE: address already in use 127.0.0.1:3100`; the already-running instance was nevertheless usable and returned `HTTP/1.1 200 OK`. Cleanup then required multiple attempts: after `kill 413`, two processes remained—`446 node node_modules/.bin/tsx src/server.ts` and `457 /usr/local/bin/node ... src/server.ts`—before `kill 446 457` cleared them.
+
+The initial repository inspection also bundled `git status --short` into an otherwise useful command, causing the tool call to report failure solely because `fatal: not a git repository (or any of the parent directories): .git`.
